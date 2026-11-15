@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Mon espace{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h1 class="text-xl font-bold text-slate-800">Mon espace élève</h1>
+  {% if student %}
+  <p class="text-sm text-slate-600">{{ student.last_name }} {{ student.first_name }}</p>
+  <p class="text-xs text-slate-400 font-mono">{{ student.matricule }}</p>
+  {% if enrollment %}
+  <p class="text-xs text-blue-600 mt-1">{{ enrollment.classroom.name }} · {{ enrollment.classroom.level.name }}</p>
+  {% endif %}
+  {% else %}
+  <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm mt-2">Compte non lié à une fiche élève.</div>
+  {% endif %}
+</div>
+
+<div class="grid grid-cols-2 gap-2 mb-4">
+  <a href="{% url 'grades:bulletin_list' %}" class="bg-white border rounded-xl p-4 text-center text-sm">
+    <i class="fas fa-star text-violet-600 text-xl"></i><br>Mes notes & bulletins
+  </a>
+  <a href="{% url 'timetable:home' %}" class="bg-white border rounded-xl p-4 text-center text-sm">
+    <i class="fas fa-calendar-alt text-cyan-600 text-xl"></i><br>Emploi du temps
+  </a>
+  <a href="{% url 'attendance:list' %}" class="bg-white border rounded-xl p-4 text-center text-sm">
+    <i class="fas fa-user-clock text-rose-600 text-xl"></i><br>Mes absences
+  </a>
+  <a href="{% url 'communication:list' %}" class="bg-white border rounded-xl p-4 text-center text-sm">
+    <i class="fas fa-bullhorn text-amber-600 text-xl"></i><br>Annonces
+  </a>
+  <a href="{% url 'finance:classes' %}" class="bg-white border rounded-xl p-4 text-center text-sm">
+    <i class="fas fa-wallet text-emerald-600 text-xl"></i><br>Mes frais
+  </a>
+  <a href="{% url 'communication:inbox' %}" class="bg-white border rounded-xl p-4 text-center text-sm">
+    <i class="fas fa-envelope text-blue-600 text-xl"></i><br>Messages
+  </a>
+</div>
+
+{% if announcements %}
+<div class="bg-white rounded-2xl border p-4">
+  <p class="text-sm font-semibold mb-2">Annonces</p>
+  {% for a in announcements %}
+  <a href="{% url 'communication:detail' a.pk %}" class="block text-sm py-1.5 border-b border-slate-50">{{ a.title }}</a>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}

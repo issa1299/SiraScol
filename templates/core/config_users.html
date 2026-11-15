@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block title %}Utilisateurs & rôles{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'core:config_home' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Configuration</a>
+  <h1 class="text-xl font-bold text-slate-800 mt-1">Utilisateurs & rôles</h1>
+  <p class="text-xs text-slate-500">Comptes de connexion à l'application</p>
+</div>
+
+{# Rôles rappel #}
+<div class="bg-slate-50 border rounded-2xl p-3 mb-4 text-[11px] text-slate-600 space-y-1">
+  <p><strong>Administrateur / Directeur</strong> — tout + configuration</p>
+  <p><strong>Secrétaire</strong> — élèves, notes, finance, absences</p>
+  <p><strong>Enseignant</strong> — ses classes, notes, absences</p>
+  <p><strong>Parent</strong> — ses enfants, bulletins, paiements</p>
+</div>
+
+{# Créer #}
+<form method="post" action="{% url 'core:config_user_save' %}" class="bg-white rounded-2xl border p-4 mb-4 space-y-3">
+  {% csrf_token %}
+  <input type="hidden" name="id" id="user-edit-id" value="">
+  <p class="text-sm font-semibold text-slate-700" id="user-form-title">Nouvel utilisateur</p>
+  <div class="grid grid-cols-2 gap-2">
+    <div>
+      <label class="text-xs text-slate-500">Identifiant *</label>
+      <input name="username" id="user-username" required class="w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="ex: secretaire1">
+    </div>
+    <div>
+      <label class="text-xs text-slate-500">Mot de passe <span id="pwd-hint">*</span></label>
+      <input name="password" id="user-password" type="password" class="w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="••••••">
+    </div>
+  </div>
+  <div class="grid grid-cols-2 gap-2">
+    <div>
+      <label class="text-xs text-slate-500">Prénom</label>
+      <input name="first_name" id="user-first" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+    </div>
+    <div>
+      <label class="text-xs text-slate-500">Nom</label>
+      <input name="last_name" id="user-last" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+    </div>
+  </div>
+  <div>
+    <label class="text-xs text-slate-500">E-mail</label>
+    <input name="email" id="user-email" type="email" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+  </div>
+  <div>
+    <label class="text-xs text-slate-500">Téléphone</label>
+    <input name="phone" id="user-phone" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+  </div>
+  <div>
+    <label class="text-xs text-slate-500">Rôle *</label>
+    <select name="role" id="user-role" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+      {% for v,l in roles %}
+      <option value="{{ v }}">{{ l }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="flex gap-2">
+    <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold">Enregistrer</button>
+    <button type="button" onclick="resetUserForm()" class="px-4 text-sm text-slate-500 border rounded-xl">Nouveau</button>
+  </div>
+</form>
+
+{# Filtres #}
+<form method="get" class="flex gap-2 mb-3">
+  <input name="q" value="{{ q }}" placeholder="Rechercher…" class="flex-1 border rounded-xl px-3 py-2.5 text-sm">
+  <select name="role" onchange="this.form.submit()" class="border rounded-xl px-2 py-2.5 text-sm">
+    <option value="">Tous rôles</option>
+    {% for v,l in roles %}
+    <option value="{{ v }}" {% if role_f == v %}selected{% endif %}>{{ l }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="space-y-2 pb-8">
+{% for u in users %}
+<div class="bg-white rounded-xl border p-3 {% if not u.is_active %}opacity-60{% endif %}">
+  <div class="flex justify-between items-start gap-2">
+    <div class="min-w-0">
+      <p class="font-semibold text-sm">
+        {{ u.get_full_name|default:u.username }}
+        {% if not u.is_active %}<span class="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded">Inactif</span>{% endif %}
+        {% if u.is_superuser %}<span class="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Super</span>{% endif %}
+      </p>
+      <p class="text-xs text-slate-500 font-mono">{{ u.username }}</p>
+      <p class="text-xs text-slate-400">
+        {% if u.profile %}{{ u.profile.get_role_display }}{% else %}—{% endif %}
+        {% if u.email %} · {{ u.email }}{% endif %}
+      </p>
+    </div>
+  </div>
+  <div class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-slate-50">
+    <button type="button"
+      onclick="editUser({{ u.id }}, '{{ u.username|escapejs }}', '{{ u.first_name|escapejs }}', '{{ u.last_name|escapejs }}', '{{ u.email|escapejs }}', '{% if u.profile %}{{ u.profile.role }}{% endif %}', '{% if u.profile %}{{ u.profile.phone|escapejs }}{% endif %}')"
+      class="text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg">Modifier</button>
+    <form method="post" action="{% url 'core:config_user_toggle' u.pk %}" class="inline">
+      {% csrf_token %}
+      <button class="text-xs bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg">
+        {% if u.is_active %}Désactiver{% else %}Activer{% endif %}
+      </button>
+    </form>
+    <button type="button" onclick="document.getElementById('pwd-{{ u.id }}').classList.toggle('hidden')"
+      class="text-xs bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg">Mot de passe</button>
+  </div>
+  <form method="post" action="{% url 'core:config_user_password' u.pk %}" id="pwd-{{ u.id }}" class="hidden mt-2 flex gap-2">
+    {% csrf_token %}
+    <input type="password" name="password" placeholder="Nouveau mot de passe" required class="flex-1 border rounded-lg px-2 py-1.5 text-sm">
+    <button class="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs">OK</button>
+  </form>
+</div>
+{% empty %}
+<p class="text-center text-slate-400 text-sm py-8">Aucun utilisateur.</p>
+{% endfor %}
+</div>
+
+<script>
+function editUser(id, username, first, last, email, role, phone) {
+  document.getElementById('user-edit-id').value = id;
+  document.getElementById('user-username').value = username;
+  document.getElementById('user-username').readOnly = true;
+  document.getElementById('user-first').value = first || '';
+  document.getElementById('user-last').value = last || '';
+  document.getElementById('user-email').value = email || '';
+  document.getElementById('user-phone').value = phone || '';
+  document.getElementById('user-password').value = '';
+  document.getElementById('user-password').required = false;
+  document.getElementById('pwd-hint').textContent = '(optionnel)';
+  if (role) document.getElementById('user-role').value = role;
+  document.getElementById('user-form-title').textContent = 'Modifier — ' + username;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+function resetUserForm() {
+  document.getElementById('user-edit-id').value = '';
+  document.getElementById('user-username').value = '';
+  document.getElementById('user-username').readOnly = false;
+  document.getElementById('user-first').value = '';
+  document.getElementById('user-last').value = '';
+  document.getElementById('user-email').value = '';
+  document.getElementById('user-phone').value = '';
+  document.getElementById('user-password').value = '';
+  document.getElementById('user-password').required = true;
+  document.getElementById('pwd-hint').textContent = '*';
+  document.getElementById('user-form-title').textContent = 'Nouvel utilisateur';
+}
+</script>
+{% endblock %}

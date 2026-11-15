@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Gestion des Élèves{% endblock %}
+{% block content %}
+
+<div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+  <div>
+    <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+      <i class="fas fa-user-graduate text-blue-600"></i> Gestion des Élèves
+    </h1>
+    <p class="text-xs text-slate-500 mt-0.5">
+      Cliquez sur un élève pour accéder à son profil · {{ stats.total }} élève(s)
+      {% if selected_year %}· {{ selected_year.name }}{% endif %}
+    </p>
+  </div>
+</div>
+
+{# Stats #}
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
+  <div class="bg-white rounded-xl border p-3 flex items-center gap-3">
+    <span class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fas fa-users"></i></span>
+    <div>
+      <p class="text-lg font-bold">{{ stats.total }}</p>
+      <p class="text-[10px] uppercase text-slate-400">Total</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border p-3 flex items-center gap-3">
+    <span class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><i class="fas fa-check-circle"></i></span>
+    <div>
+      <p class="text-lg font-bold">{{ stats.actifs }}</p>
+      <p class="text-[10px] uppercase text-slate-400">Actifs</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border p-3 flex items-center gap-3">
+    <span class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center"><i class="fas fa-male"></i></span>
+    <div>
+      <p class="text-lg font-bold">{{ stats.boys }}</p>
+      <p class="text-[10px] uppercase text-slate-400">Garçons</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border p-3 flex items-center gap-3">
+    <span class="w-10 h-10 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center"><i class="fas fa-female"></i></span>
+    <div>
+      <p class="text-lg font-bold">{{ stats.girls }}</p>
+      <p class="text-[10px] uppercase text-slate-400">Filles</p>
+    </div>
+  </div>
+</div>
+
+{# Filtres #}
+<form method="get" class="bg-white rounded-xl border p-3 mb-3 flex flex-col sm:flex-row gap-2 flex-wrap">
+  <input type="text" name="q" value="{{ q }}" placeholder="Rechercher…"
+         class="border rounded-xl px-3 py-2.5 text-sm flex-1 min-w-[8rem]">
+  <select name="classroom" class="border rounded-xl px-3 py-2.5 text-sm">
+    <option value="">Toutes classes</option>
+    {% for c in classrooms %}
+    <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c }}</option>
+    {% endfor %}
+  </select>
+  <select name="status" class="border rounded-xl px-3 py-2.5 text-sm">
+    <option value="">Tous statuts</option>
+    {% for v, l in status_choices %}
+    <option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ l }}</option>
+    {% endfor %}
+  </select>
+  <select name="gender" class="border rounded-xl px-3 py-2.5 text-sm">
+    <option value="">Tous</option>
+    <option value="M" {% if gender == 'M' %}selected{% endif %}>Garçons</option>
+    <option value="F" {% if gender == 'F' %}selected{% endif %}>Filles</option>
+  </select>
+  <button type="submit" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium">
+    <i class="fas fa-search"></i>
+  </button>
+  <a href="{% url 'students:list' %}" class="border px-3 py-2.5 rounded-xl text-sm text-slate-600"><i class="fas fa-redo"></i></a>
+</form>
+
+{# Actions #}
+<div class="flex flex-wrap gap-2 mb-4">
+  <button type="button" onclick="openModalUrl('{% url 'students:create' %}?modal=1','Inscription d\'un élève')"
+          class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+    <i class="fas fa-plus"></i> Inscrire
+  </button>
+  <button type="button" onclick="window.print()" class="inline-flex items-center gap-2 border text-sm px-4 py-2.5 rounded-xl text-slate-700">
+    <i class="fas fa-print"></i> Imprimer
+  </button>
+  <a href="{% url 'students:list_pdf' %}?q={{ q|urlencode }}{% if classroom_id %}&classroom={{ classroom_id }}{% endif %}{% if status %}&status={{ status }}{% endif %}"
+     class="inline-flex items-center gap-2 bg-rose-600 text-white text-sm px-4 py-2.5 rounded-xl">
+    <i class="fas fa-file-pdf"></i> PDF
+  </a>
+</div>
+
+{# Tableau #}
+<div class="bg-white rounded-xl border overflow-hidden">
+  <div class="px-4 py-3 border-b flex justify-between items-center">
+    <p class="text-sm font-semibold">Liste des élèves</p>
+    <span class="text-xs text-slate-400">{{ stats.total }} élève(s)</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-left text-[10px] uppercase text-slate-500">
+        <tr>
+          <th class="px-3 py-2">Matricule</th>
+          <th class="px-3 py-2">Élève</th>
+          <th class="px-3 py-2">Classe</th>
+          <th class="px-3 py-2">Âge</th>
+          <th class="px-3 py-2">Parent</th>
+          <th class="px-3 py-2">Scolarité</th>
+          <th class="px-3 py-2">Payé</th>
+          <th class="px-3 py-2">Reste</th>
+          <th class="px-3 py-2">Statut</th>
+          <th class="px-3 py-2"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for r in rows %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-3 py-2.5 font-mono text-xs">{{ r.student.matricule }}</td>
+          <td class="px-3 py-2.5">
+            <button type="button" class="flex items-center gap-2 text-left"
+                    onclick="openModalUrl('{% url 'students:detail' r.student.pk %}?modal=1','{{ r.student.last_name }} {{ r.student.first_name }}')">
+              {% if r.student.photo %}
+              <img src="{{ r.student.photo.url }}" class="w-8 h-8 rounded-lg object-cover" alt="">
+              {% else %}
+              <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold">
+                {{ r.student.last_name|first|upper }}
+              </span>
+              {% endif %}
+              <span class="font-medium">{{ r.student.last_name }} {{ r.student.first_name }}</span>
+            </button>
+          </td>
+          <td class="px-3 py-2.5">{{ r.classroom|default:"—" }}</td>
+          <td class="px-3 py-2.5">{% if r.age %}{{ r.age }} ans{% else %}—{% endif %}</td>
+          <td class="px-3 py-2.5 text-xs">
+            {% if r.parent %}
+            {{ r.parent.last_name }} {{ r.parent.first_name }}
+            {% if r.parent.phone %}<span class="block text-slate-400">{{ r.parent.phone }}</span>{% endif %}
+            {% else %}—{% endif %}
+          </td>
+          <td class="px-3 py-2.5 text-xs">{{ r.due|floatformat:0 }}</td>
+          <td class="px-3 py-2.5 text-xs text-emerald-700">{{ r.paid|floatformat:0 }}</td>
+          <td class="px-3 py-2.5 text-xs {% if r.reste > 0 %}text-amber-600 font-semibold{% endif %}">{{ r.reste|floatformat:0 }}</td>
+          <td class="px-3 py-2.5">
+            <span class="text-[11px] px-2 py-0.5 rounded-full font-medium
+              {% if r.student.status == 'actif' %}bg-emerald-100 text-emerald-700{% else %}bg-slate-100 text-slate-600{% endif %}">
+              {{ r.student.get_status_display }}
+            </span>
+          </td>
+          <td class="px-3 py-2.5 text-right">
+            <button type="button" data-row-menu
+                    class="w-8 h-8 rounded-lg hover:bg-slate-100 inline-flex items-center justify-center text-slate-500"
+                    onclick="openRowMenu(this, [
+                      {label:'Modifier', icon:'fa-edit', onclick:function(){ openModalUrl('{% url 'students:edit' r.student.pk %}?modal=1','Modifier'); }},
+                      {label:'Badge / Carte', icon:'fa-id-card', onclick:function(){ openModalUrl('{% url 'students:card_preview' r.student.pk %}?modal=1','Carte scolaire'); }},
+                      {label:'QR Code', icon:'fa-qrcode', onclick:function(){ openModalUrl('{% url 'students:qr' r.student.pk %}?modal=1','QR Code'); }},
+                      {divider:true},
+                      {label:'Profil complet', icon:'fa-user', href:'{% url 'students:detail' r.student.pk %}'}
+                    ])">
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="10" class="px-3 py-12 text-center text-slate-400">
+            <i class="fas fa-user-slash text-3xl block mb-2 opacity-40"></i>
+            Aucun élève trouvé
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if students.has_other_pages %}
+<div class="mt-4 flex gap-3 justify-center items-center text-sm">
+  {% if students.has_previous %}
+  <a href="?page={{ students.previous_page_number }}&q={{ q }}&status={{ status }}&classroom={{ classroom_id }}&gender={{ gender }}" class="text-blue-600 px-3 py-2">← Préc.</a>
+  {% endif %}
+  <span class="text-slate-500">Page {{ students.number }}</span>
+  {% if students.has_next %}
+  <a href="?page={{ students.next_page_number }}&q={{ q }}&status={{ status }}&classroom={{ classroom_id }}&gender={{ gender }}" class="text-blue-600 px-3 py-2">Suiv. →</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

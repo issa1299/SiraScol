@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Finance — {{ classroom.name }}{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'finance:classes' %}" class="text-sm text-slate-500 hover:text-blue-600"><i class="fas fa-arrow-left"></i> Classes</a>
+  <h1 class="text-xl sm:text-2xl font-bold text-slate-800 mt-1">{{ classroom.name }}</h1>
+  <p class="text-sm text-slate-500">Touchez un élève pour payer</p>
+</div>
+
+<form method="get" class="bg-white rounded-xl border border-gray-100 shadow-sm p-3 mb-4 flex gap-2">
+  <input type="text" name="q" value="{{ q }}" placeholder="Nom, matricule..."
+         class="border border-gray-300 rounded-xl px-3 py-3 text-sm flex-1">
+  <button type="submit" class="bg-slate-800 text-white px-4 py-3 rounded-xl text-sm">OK</button>
+</form>
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  {% for row in students_data %}
+  <button type="button"
+          onclick="openModalUrl('{% url 'finance:student_payment' row.student.pk %}?next={% url 'finance:class_students' classroom.pk %}', 'Paiement — {{ row.student.last_name }} {{ row.student.first_name }}')"
+          class="text-left bg-white rounded-2xl border border-gray-100 shadow-sm p-4 hover:border-green-300 active:scale-[0.98] transition w-full">
+    <div class="flex items-center justify-between gap-2">
+      <div class="min-w-0">
+        <p class="font-semibold text-slate-800 truncate">{{ row.student.last_name }} {{ row.student.first_name }}</p>
+        <p class="text-xs font-mono text-slate-400">{{ row.student.matricule }}</p>
+      </div>
+      <span class="text-xs font-bold px-2 py-1 rounded-lg {% if row.balance > 0 %}bg-red-50 text-red-600{% else %}bg-green-50 text-green-700{% endif %}">
+        Reste {{ row.balance|floatformat:0 }}
+      </span>
+    </div>
+    <div class="mt-3 grid grid-cols-3 gap-2 text-center text-[11px]">
+      <div class="bg-slate-50 rounded-lg py-2"><p class="text-slate-400">Dû</p><p class="font-semibold">{{ row.total_due|floatformat:0 }}</p></div>
+      <div class="bg-green-50 rounded-lg py-2"><p class="text-green-600">Payé</p><p class="font-semibold text-green-700">{{ row.total_paid|floatformat:0 }}</p></div>
+      <div class="bg-blue-50 rounded-lg py-2 text-blue-700 font-medium flex items-center justify-center"><i class="fas fa-hand-holding-usd"></i> Payer</div>
+    </div>
+  </button>
+  {% empty %}
+  <p class="text-slate-500 text-sm col-span-full text-center py-10">Aucun élève.</p>
+  {% endfor %}
+</div>
+{% endblock %}

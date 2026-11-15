@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Types d'évaluation{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'core:config_home' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Configuration</a>
+  <h1 class="text-xl font-bold text-slate-800 mt-1">Types d'évaluation</h1>
+</div>
+
+<form method="post" action="{% url 'core:config_assessment_type_save' %}" class="bg-white rounded-2xl border p-4 mb-4 space-y-2">
+  {% csrf_token %}
+  <input name="name" placeholder="Ex: Composition" required class="w-full border rounded-xl px-3 py-2.5 text-sm">
+  <input name="code" placeholder="Code: composition / devoir / interrogation" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+  <button class="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm">Ajouter</button>
+</form>
+<div class="space-y-2">
+{% for t in types %}
+<div class="bg-white rounded-xl border p-3"><p class="font-semibold">{{ t.name }}</p><p class="text-xs text-slate-400">code: {{ t.code }}</p></div>
+{% empty %}<p class="text-slate-500 text-sm">Aucun type.</p>{% endfor %}
+</div>
+
+{% endblock %}

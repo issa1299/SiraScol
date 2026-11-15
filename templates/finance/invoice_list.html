@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Factures - SiraScol{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">Factures</h1>
+        <p class="text-slate-500 text-sm mt-1">{{ invoices.paginator.count }} facture(s)</p>
+    </div>
+    <div class="flex gap-2">
+        <a href="{% url 'finance:dashboard' %}" class="text-sm text-slate-600 hover:text-blue-600">← Finances</a>
+        <button type="button" onclick="openModalUrl('{% url 'finance:invoice_create' %}', 'Nouvelle facture')"
+            class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+            <i class="fas fa-plus"></i> Nouvelle facture
+        </button>
+    </div>
+</div>
+
+<form method="get" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-6 flex flex-wrap gap-3">
+    <input type="text" name="q" value="{{ q }}" placeholder="Élève..."
+           class="border border-gray-300 rounded-lg px-3 py-2 text-sm flex-1 min-w-[200px]">
+    <select name="status" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+        <option value="">Tous les statuts</option>
+        {% for v, l in status_choices %}
+        <option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ l }}</option>
+        {% endfor %}
+    </select>
+    <button type="submit" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm">Filtrer</button>
+</form>
+
+<div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+            <tr>
+                <th class="text-left px-4 py-3 font-medium">Élève</th>
+                <th class="text-left px-4 py-3 font-medium">Type de frais</th>
+                <th class="text-right px-4 py-3 font-medium">Montant</th>
+                <th class="text-right px-4 py-3 font-medium">Payé</th>
+                <th class="text-right px-4 py-3 font-medium">Reste</th>
+                <th class="text-left px-4 py-3 font-medium">Statut</th>
+                <th class="text-left px-4 py-3 font-medium">Échéance</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for inv in invoices %}
+            <tr class="hover:bg-slate-50">
+                <td class="px-4 py-3">
+                    <a href="{% url 'students:detail' inv.student.pk %}" class="font-medium text-slate-800 hover:text-blue-600">
+                        {{ inv.student }}
+                    </a>
+                </td>
+                <td class="px-4 py-3">{{ inv.fee_type }}</td>
+                <td class="px-4 py-3 text-right">{{ inv.amount|floatformat:0 }}</td>
+                <td class="px-4 py-3 text-right text-green-600">{{ inv.amount_paid|floatformat:0 }}</td>
+                <td class="px-4 py-3 text-right font-medium">{{ inv.balance|floatformat:0 }}</td>
+                <td class="px-4 py-3">
+                    <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                        {% if inv.status == 'paye' %}bg-green-100 text-green-700
+                        {% elif inv.status == 'partiel' %}bg-amber-100 text-amber-700
+                        {% elif inv.status == 'annule' %}bg-slate-100 text-slate-600
+                        {% else %}bg-red-100 text-red-700{% endif %}">
+                        {{ inv.get_status_display }}
+                    </span>
+                </td>
+                <td class="px-4 py-3">{{ inv.due_date|date:"d/m/Y" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-slate-500">Aucune facture.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

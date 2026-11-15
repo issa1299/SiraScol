@@ -1,0 +1,13 @@
+{# Usage: {% include "partials/empty_state.html" with icon="fa-users" title="Aucun élève" text="Ajoutez le premier élève." cta_url=url cta_label="Ajouter" %} #}
+<div class="bg-white rounded-2xl border border-dashed p-10 text-center">
+  <div class="w-14 h-14 mx-auto rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center text-xl mb-3">
+    <i class="fas {{ icon|default:'fa-inbox' }}"></i>
+  </div>
+  <p class="font-semibold text-slate-700">{{ title|default:"Aucun résultat" }}</p>
+  {% if text %}<p class="text-sm text-slate-500 mt-1 max-w-sm mx-auto">{{ text }}</p>{% endif %}
+  {% if cta_url %}
+  <a href="{{ cta_url }}" class="inline-flex items-center gap-2 mt-4 bg-blue-600 text-white text-sm font-semibold px-4 py-2.5 rounded-xl">
+    <i class="fas fa-plus"></i> {{ cta_label|default:"Ajouter" }}
+  </a>
+  {% endif %}
+</div>

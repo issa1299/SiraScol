@@ -1,0 +1,24 @@
+<form method="post" action="{% url 'communication:compose' %}" class="space-y-3">
+  {% csrf_token %}
+  <div>
+    <label class="text-xs font-medium">Destinataire *</label>
+    <select name="recipient" required class="w-full border rounded-xl px-3 py-2.5 text-sm">
+      <option value="">— Choisir —</option>
+      {% for u in users %}
+      <option value="{{ u.pk }}">{{ u.get_full_name|default:u.username }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="text-xs font-medium">Sujet *</label>
+    <input name="subject" required class="w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="Sujet">
+  </div>
+  <div>
+    <label class="text-xs font-medium">Message *</label>
+    <textarea name="body" required rows="5" class="w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="Votre message..."></textarea>
+  </div>
+  <div class="form-actions flex gap-2">
+    <button type="submit" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium">Envoyer</button>
+    <button type="button" onclick="closeModal('modal-dynamic')" class="px-4 text-sm">Annuler</button>
+  </div>
+</form>

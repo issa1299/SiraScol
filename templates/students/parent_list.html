@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Gestion des Parents{% endblock %}
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+  <div>
+    <h1 class="text-xl sm:text-2xl font-bold text-slate-800">Gestion des Parents</h1>
+    <p class="text-slate-500 text-xs sm:text-sm">Comptes, liaisons enfants, synchronisation</p>
+  </div>
+</div>
+
+{# KPIs #}
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mb-4">
+  <div class="bg-white rounded-xl border p-3 text-center">
+    <p class="text-2xl font-bold text-slate-800">{{ kpis.total }}</p>
+    <p class="text-[10px] uppercase text-slate-500 font-medium">Total</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center border-emerald-100">
+    <p class="text-2xl font-bold text-emerald-600">{{ kpis.actifs }}</p>
+    <p class="text-[10px] uppercase text-slate-500 font-medium">Actifs</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center">
+    <p class="text-2xl font-bold text-rose-500">{{ kpis.inactifs }}</p>
+    <p class="text-[10px] uppercase text-slate-500 font-medium">Inactifs</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center border-indigo-100">
+    <p class="text-2xl font-bold text-indigo-600">{{ kpis.liaisons }}</p>
+    <p class="text-[10px] uppercase text-slate-500 font-medium">Liaisons</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center border-amber-100">
+    <p class="text-2xl font-bold text-amber-600">{{ kpis.sans_mdp }}</p>
+    <p class="text-[10px] uppercase text-slate-500 font-medium">Sans compte</p>
+  </div>
+</div>
+
+{# Actions #}
+<div class="flex flex-wrap gap-2 mb-4">
+  <button type="button" onclick="openModalUrl('{% url 'students:parent_create' %}', 'Nouveau parent')"
+          class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium">
+    <i class="fas fa-plus"></i> Ajouter un parent
+  </button>
+  <button type="button" onclick="document.getElementById('sync-modal').classList.remove('hidden')"
+          class="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium">
+    <i class="fas fa-sync-alt"></i> Synchroniser
+  </button>
+  <button type="button" onclick="window.print()" class="inline-flex items-center gap-2 border px-4 py-2.5 rounded-xl text-sm">
+    <i class="fas fa-print"></i> Imprimer
+  </button>
+  <a href="{% url 'students:parent_list_pdf' %}?{% if request.GET.urlencode %}{{ request.GET.urlencode }}{% endif %}"
+     class="inline-flex items-center gap-2 bg-rose-600 text-white px-4 py-2.5 rounded-xl text-sm">
+    <i class="fas fa-file-pdf"></i> PDF
+  </a>
+</div>
+
+{# Filtres #}
+<form method="get" class="bg-white rounded-xl border shadow-sm p-3 mb-4 flex flex-wrap gap-2 items-center">
+  <input type="text" name="q" value="{{ q }}" placeholder="Rechercher nom, téléphone..."
+         class="border border-gray-300 rounded-xl px-3 py-2.5 text-sm flex-1 min-w-[140px]">
+  <select name="filtre" class="border rounded-xl px-3 py-2.5 text-sm">
+    <option value="tous" {% if filtre == 'tous' %}selected{% endif %}>Tous</option>
+    <option value="actifs" {% if filtre == 'actifs' %}selected{% endif %}>Actifs</option>
+    <option value="inactifs" {% if filtre == 'inactifs' %}selected{% endif %}>Inactifs</option>
+    <option value="sans_mdp" {% if filtre == 'sans_mdp' %}selected{% endif %}>Sans compte</option>
+  </select>
+  <button type="submit" class="bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm">OK</button>
+</form>
+
+{# Liste tableau style EduNet #}
+<div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+  <div class="px-4 py-3 border-b font-semibold text-sm text-slate-700">Liste des parents</div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-xs uppercase text-slate-500">
+        <tr>
+          <th class="text-left px-4 py-2.5">Parent</th>
+          <th class="text-left px-3 py-2.5">Téléphone</th>
+          <th class="text-left px-3 py-2.5 hidden sm:table-cell">Email</th>
+          <th class="text-center px-3 py-2.5">Enfants</th>
+          <th class="text-center px-3 py-2.5">Compte</th>
+          <th class="text-center px-3 py-2.5">Statut</th>
+          <th class="px-3 py-2.5"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for p in parents %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3">
+            <div class="flex items-center gap-2">
+              <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
+                {{ p.last_name|slice:":1"|upper }}
+              </div>
+              <div>
+                <p class="font-semibold text-slate-800">{{ p.last_name }} {{ p.first_name }}</p>
+                <p class="text-[11px] text-slate-400">{{ p.profession|default:"" }}</p>
+              </div>
+            </div>
+          </td>
+          <td class="px-3 py-3 text-slate-600">{{ p.phone }}</td>
+          <td class="px-3 py-3 text-slate-500 hidden sm:table-cell">{{ p.email|default:"—" }}</td>
+          <td class="px-3 py-3 text-center">
+            <button type="button"
+                    onclick="openModalUrl('{% url 'students:parent_children' p.pk %}', 'Enfants de {{ p.last_name }}')"
+                    class="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded-full text-xs font-medium">
+              <i class="fas fa-child"></i> {{ p.n_children }}
+            </button>
+          </td>
+          <td class="px-3 py-3 text-center">
+            {% if p.user_id %}
+            <span class="text-emerald-600 text-xs" title="Compte actif"><i class="fas fa-check-circle"></i></span>
+            {% else %}
+            <span class="text-amber-500 text-xs" title="Sans compte"><i class="fas fa-key"></i></span>
+            {% endif %}
+          </td>
+          <td class="px-3 py-3 text-center">
+            {% if p.n_children %}
+            <span class="bg-emerald-50 text-emerald-700 text-[11px] px-2 py-0.5 rounded-full">Actif</span>
+            {% else %}
+            <span class="bg-slate-100 text-slate-500 text-[11px] px-2 py-0.5 rounded-full">Inactif</span>
+            {% endif %}
+          </td>
+          <td class="px-3 py-3 text-right">
+            <button type="button" data-row-menu
+                    class="p-2 rounded-lg hover:bg-slate-100 text-slate-500 inline-flex"
+                    onclick="openRowMenu(this, [
+                      {label:'Voir enfants', icon:'fa-users', onclick:function(){ openModalUrl('{% url 'students:parent_children' p.pk %}','Enfants'); }},
+                      {label:'Modifier', icon:'fa-edit', onclick:function(){ openModalUrl('{% url 'students:parent_edit' p.pk %}','Modifier'); }},
+                      {label:'Lier un élève', icon:'fa-link', onclick:function(){ openModalUrl('{% url 'students:parent_link' p.pk %}','Lier un élève'); }}
+                    ])">
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-4 py-12 text-center text-slate-400 text-sm">
+            Aucun parent. Cliquez sur <b>Synchroniser</b> ou <b>Ajouter un parent</b>.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if parents.has_other_pages %}
+  <div class="px-4 py-3 border-t flex justify-center gap-2 text-sm">
+    {% if parents.has_previous %}<a href="?page={{ parents.previous_page_number }}&q={{ q }}&filtre={{ filtre }}" class="px-3 py-1 border rounded-lg">←</a>{% endif %}
+    <span class="px-3 py-1">{{ parents.number }} / {{ parents.paginator.num_pages }}</span>
+    {% if parents.has_next %}<a href="?page={{ parents.next_page_number }}&q={{ q }}&filtre={{ filtre }}" class="px-3 py-1 border rounded-lg">→</a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+
+{# Modal confirmation sync #}
+<div id="sync-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40">
+  <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 text-center">
+    <div class="w-14 h-14 mx-auto rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center text-2xl mb-3">
+      <i class="fas fa-sync-alt"></i>
+    </div>
+    <h3 class="text-lg font-bold text-slate-800 mb-2">Synchronisation</h3>
+    <p class="text-sm text-slate-600 mb-5">
+      Rechercher tous les parents des élèves et les ajouter automatiquement ? Les comptes d’accès seront créés.
+    </p>
+    <div class="flex gap-2 justify-center">
+      <button type="button" onclick="document.getElementById('sync-modal').classList.add('hidden')"
+              class="px-4 py-2.5 border rounded-xl text-sm">Annuler</button>
+      <form method="post" action="{% url 'students:parent_sync' %}">
+        {% csrf_token %}
+        <button type="submit" class="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium">
+          Synchroniser
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

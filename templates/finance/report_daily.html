@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Rapport financier — SiraScol{% endblock %}
+{% block extra_css %}
+<style>
+@media print {
+  aside, header, .no-print, nav, .bottom-nav { display: none !important; }
+  body { background: white !important; }
+  main { padding: 0 !important; margin: 0 !important; }
+}
+.report { font-family: 'Times New Roman', Times, serif; max-width: 800px; margin: 0 auto; }
+.report table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+.report th, .report td { border: 1px solid #333; padding: 4px 8px; font-size: 12px; }
+.report th { background: #f0f0f0; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="no-print mb-4 flex flex-wrap gap-2 items-center justify-between">
+  <a href="{% url 'finance:dashboard' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Centre Financier</a>
+  <div class="flex gap-2">
+    <form method="get" class="flex gap-2 items-center">
+      <input type="date" name="date" value="{{ report_date|date:'Y-m-d' }}" class="border rounded-lg px-2 py-1.5 text-sm">
+      <button class="bg-blue-600 text-white text-sm px-3 py-1.5 rounded-lg">OK</button>
+    </form>
+    <button onclick="window.print()" class="bg-slate-800 text-white text-sm px-3 py-1.5 rounded-lg"><i class="fas fa-print"></i> Imprimer</button>
+    <button type="button" onclick="sirascolExportPdf('.report', 'rapport_finance.pdf')" class="bg-rose-600 text-white text-sm px-3 py-1.5 rounded-lg"><i class="fas fa-file-pdf"></i> PDF</button>
+  </div>
+</div>
+
+<div class="report bg-white p-6 rounded-xl border shadow-sm">
+  <div class="text-center mb-4">
+    {% if school %}
+    <p class="font-bold text-sm">{{ school.name|default:"École" }}</p>
+    {% if school.address %}<p class="text-xs">{{ school.address }}</p>{% endif %}
+    {% if school.phone %}<p class="text-xs">Tél : {{ school.phone }}</p>{% endif %}
+    {% endif %}
+    <p class="font-bold text-base mt-3 underline">RAPPORT FINANCIER JOURNALIER</p>
+    <p class="text-sm">{{ report_date|date:"l d F Y" }}</p>
+    {% if current_year %}<p class="text-xs">Année scolaire : {{ current_year.name }}</p>{% endif %}
+  </div>
+
+  <p class="text-xs mb-2"><strong>Généré par :</strong> {{ agent }}</p>
+
+  <h3 class="font-bold text-sm mt-4 mb-1">I. RÉSUMÉ FINANCIER GLOBAL</h3>
+  <table>
+    <tr><td>Total des recettes encaissées</td><td class="text-right font-bold">{{ total_recettes|floatformat:0 }} FCFA</td></tr>
+    <tr><td>Nombre de paiements effectués</td><td class="text-right">{{ nb_paiements }}</td></tr>
+    <tr><td>Total des dépenses</td><td class="text-right">{{ total_depenses|floatformat:0 }} FCFA</td></tr>
+    <tr><td><strong>SOLDE NET</strong></td><td class="text-right font-bold">{{ solde_net|floatformat:0 }} FCFA</td></tr>
+  </table>
+
+  <h3 class="font-bold text-sm mt-4 mb-1">II. RECETTES PAR TYPE DE FRAIS</h3>
+  <table>
+    <thead><tr><th>N°</th><th>Type de frais</th><th>Nombre</th><th>Montant total</th></tr></thead>
+    <tbody>
+      {% for name, data in by_type.items %}
+      <tr>
+        <td>{{ forloop.counter }}</td>
+        <td>{{ name }}</td>
+        <td class="text-center">{{ data.count }}</td>
+        <td class="text-right">{{ data.amount|floatformat:0 }} FCFA</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center">Aucune recette</td></tr>
+      {% endfor %}
+      <tr class="font-bold"><td colspan="3">TOTAL</td><td class="text-right">{{ total_recettes|floatformat:0 }} FCFA</td></tr>
+    </tbody>
+  </table>
+
+  <h3 class="font-bold text-sm mt-4 mb-1">III. LISTE DÉTAILLÉE DES PAIEMENTS</h3>
+  <table>
+    <thead>
+      <tr><th>Date</th><th>N° reçu</th><th>Élève</th><th>Type</th><th>Mode</th><th>Montant</th><th>Agent</th></tr>
+    </thead>
+    <tbody>
+      {% for p in payments %}
+      <tr>
+        <td>{{ p.payment_date|date:"d/m/Y" }}</td>
+        <td>{{ p.receipt_number }}</td>
+        <td>{{ p.invoice.student.last_name }} {{ p.invoice.student.first_name }}</td>
+        <td>{{ p.invoice.fee_type.name }}</td>
+        <td>{{ p.get_method_display }}</td>
+        <td class="text-right">{{ p.amount|floatformat:0 }}</td>
+        <td>{{ p.received_by|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="text-center">Aucun paiement</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h3 class="font-bold text-sm mt-4 mb-1">IV. LISTE DÉTAILLÉE DES DÉPENSES</h3>
+  <table>
+    <thead><tr><th>Date</th><th>Catégorie</th><th>Motif</th><th>Montant</th></tr></thead>
+    <tbody>
+      {% for e in expenses %}
+      <tr>
+        <td>{{ e.date|date:"d/m/Y" }}</td>
+        <td>{{ e.get_category_display }}</td>
+        <td>{{ e.motif }}</td>
+        <td class="text-right">{{ e.amount|floatformat:0 }} {{ e.currency }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="text-center">Aucune dépense</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

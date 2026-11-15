@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% block title %}Gestion pédagogique{% endblock %}
+{% block extra_css %}
+<style>
+@media print {
+  .bottom-nav, header, aside, .no-print, nav, .mobile-drawer { display: none !important; }
+  main { padding: 0 !important; }
+}
+.tt-cell { min-height: 56px; cursor: pointer; }
+.tt-cell:hover { outline: 2px solid #3b82f6; }
+</style>
+{% endblock %}
+{% block content %}
+{% if read_only %}
+<div class="bg-blue-50 border border-blue-200 text-blue-800 text-sm rounded-xl px-4 py-2 mb-3">
+  <i class="fas fa-eye"></i> Consultation seule — vous ne pouvez pas modifier l’emploi du temps.
+</div>
+{% endif %}
+
+
+<div class="mb-3 flex flex-wrap items-center justify-between gap-2 no-print">
+  <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+    <i class="fas fa-calendar-alt text-blue-600"></i> Gestion pédagogique
+  </h1>
+  <div class="flex items-center gap-2">
+    <p class="text-xs text-slate-400">{{ today|date:"d/m/Y" }}{% if current_year %} · {{ current_year.name }}{% endif %}</p>
+    <button type="button" onclick="window.print()" class="border text-sm px-3 py-1.5 rounded-lg"><i class="fas fa-print"></i> Imprimer</button>
+    <button type="button" onclick="sirascolExportPdf(null, 'gestion_pedagogique.pdf')" class="bg-rose-600 text-white text-sm px-3 py-1.5 rounded-lg"><i class="fas fa-file-pdf"></i> PDF</button>
+  </div>
+</div>
+
+{# Stats #}
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 no-print">
+  <div class="bg-white rounded-xl border p-3 flex items-center gap-3">
+    <span class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center"><i class="fas fa-clock"></i></span>
+    <div>
+      <p class="text-lg font-bold">{{ stats.creneaux }}</p>
+      <p class="text-[10px] uppercase text-slate-400">Créneaux</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border p-3 flex items-center gap-3">
+    <span class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fas fa-school"></i></span>
+    <div>
+      <p class="text-lg font-bold">{{ stats.classes }}</p>
+      <p class="text-[10px] uppercase text-slate-400">Classes</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border p-3 flex items-center gap-3">
+    <span class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><i class="fas fa-book"></i></span>
+    <div>
+      <p class="text-lg font-bold">{{ stats.cours }}</p>
+      <p class="text-[10px] uppercase text-slate-400">Cours planifiés</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border p-3 flex items-center gap-3">
+    <span class="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center"><i class="fas fa-chalkboard-teacher"></i></span>
+    <div>
+      <p class="text-lg font-bold">{{ stats.enseignants }}</p>
+      <p class="text-[10px] uppercase text-slate-400">Enseignants</p>
+    </div>
+  </div>
+</div>
+
+{# Actions #}
+<div class="flex flex-wrap gap-2 mb-3 no-print">
+  <a href="?tab=configuration" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+    <i class="fas fa-clock"></i> Configurer horaire
+  </a>
+  <a href="?tab=horaires" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+    <i class="fas fa-calendar-week"></i> Horaires de classe
+  </a>
+  {% if classroom %}
+  <a href="{% url 'timetable:export_pdf' classroom.id %}"
+     class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+    <i class="fas fa-file-pdf"></i> Télécharger PDF
+  </a>
+  <a href="{% url 'timetable:export_word' classroom.id %}"
+     class="inline-flex items-center gap-2 bg-blue-800 hover:bg-blue-900 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+    <i class="fas fa-file-word"></i> Télécharger Word
+  </a>
+  {% endif %}
+</div>
+
+{# Tabs #}
+<div class="flex flex-wrap gap-1 border-b mb-4 text-sm no-print">
+  <a href="?tab=horaires" class="px-3 py-2 rounded-t-lg {% if tab == 'horaires' %}bg-blue-600 text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+    <i class="fas fa-clock"></i> Horaires
+  </a>
+  <a href="?tab=configuration" class="px-3 py-2 rounded-t-lg {% if tab == 'configuration' %}bg-blue-600 text-white{% else %}text-slate-600 hover:bg-slate-100{% endif %}">
+    <i class="fas fa-cog"></i> Configuration
+  </a>
+</div>
+
+{% if tab == 'configuration' %}
+{# —— CRÉNEAUX —— #}
+<div class="bg-white rounded-xl border p-4 no-print">
+  <p class="text-sm font-semibold mb-3"><i class="fas fa-clock text-blue-600"></i> Créneaux horaires</p>
+  <div class="flex flex-wrap gap-2 mb-4">
+    {% for s in slots %}
+    <span class="inline-block bg-blue-50 text-blue-800 text-xs font-medium px-3 py-1.5 rounded-full border border-blue-100">
+      {{ s.start_time|time:"H:i" }} – {{ s.end_time|time:"H:i" }}
+    </span>
+    {% empty %}
+    <p class="text-sm text-slate-400">Aucun créneau — enregistrez la liste ci-dessous.</p>
+    {% endfor %}
+  </div>
+  <button type="button" onclick="document.getElementById('slots-modal').classList.remove('hidden');document.getElementById('slots-modal').classList.add('flex')"
+          class="bg-blue-600 text-white text-sm px-4 py-2.5 rounded-xl">
+    <i class="fas fa-edit"></i> Modifier
+  </button>
+</div>
+
+{# Modal créneaux #}
+<div id="slots-modal" class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/40 p-4" onclick="if(event.target===this){this.classList.add('hidden');this.classList.remove('flex')}">
+  <div class="bg-white rounded-2xl w-full max-w-md shadow-xl max-h-[90vh] overflow-y-auto">
+    <div class="flex justify-between items-center px-5 py-4 border-b">
+      <h3 class="font-bold text-slate-800"><i class="fas fa-clock text-blue-600"></i> Créneaux</h3>
+      <button type="button" onclick="document.getElementById('slots-modal').classList.add('hidden');document.getElementById('slots-modal').classList.remove('flex')" class="text-slate-400 text-xl">&times;</button>
+    </div>
+    <form method="post" action="{% url 'timetable:slots_save' %}" class="p-5 space-y-3">
+      {% csrf_token %}
+      <label class="text-xs font-medium text-slate-500 uppercase">Créneaux (un par ligne)</label>
+      <textarea name="slots_text" rows="12" class="w-full border rounded-xl px-3 py-2 text-sm font-mono" placeholder="07:30 - 08:20">{{ slots_text }}</textarea>
+      <p class="text-[11px] text-slate-400">Format : <code>07:00 - 10:00</code> — pour une pause, écrivez seule sur une ligne : <code>Récréation</code> ou <code>Soir</code></p>
+      <div class="flex gap-2 pt-2">
+        <button type="submit" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium">Enregistrer</button>
+        <button type="button" onclick="document.getElementById('slots-modal').classList.add('hidden');document.getElementById('slots-modal').classList.remove('flex')" class="px-4 border rounded-xl text-sm">Annuler</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% else %}
+{# —— HORAIRES —— #}
+{% if not classroom %}
+<div class="bg-white rounded-xl border p-4">
+  <p class="text-sm font-semibold mb-3"><i class="fas fa-school text-blue-600"></i> 1. Choisissez une classe</p>
+  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+    {% for c in classrooms %}
+    <a href="?tab=horaires&classroom={{ c.id }}"
+       class="border rounded-xl p-4 text-center hover:border-blue-400 hover:shadow-md transition bg-slate-50/50">
+      <i class="fas fa-door-open text-2xl text-blue-500 mb-2 block"></i>
+      <p class="font-semibold text-slate-800 text-sm">{{ c.name }}</p>
+      <p class="text-[10px] text-slate-400 mt-1">
+        {% if c.level.cycle %}{{ c.level.cycle.name }} · {% endif %}{{ c.level.name }}
+        {% if c.serie %} · {{ c.serie }}{% endif %}
+      </p>
+    </a>
+    {% empty %}
+    <p class="col-span-full text-center text-slate-400 py-8 text-sm">
+      Aucune classe. Créez-en dans <a href="{% url 'academics:classroom_list' %}" class="text-blue-600 underline">Gestion des Classes</a>.
+    </p>
+    {% endfor %}
+  </div>
+</div>
+{% else %}
+
+<div class="bg-blue-600 text-white rounded-2xl px-4 py-3 mb-4 flex flex-wrap items-center justify-between gap-2">
+  <div>
+    <p class="font-bold text-sm sm:text-base">Emploi du temps : {{ classroom.name }}</p>
+    <p class="text-xs text-blue-100">{{ classroom.level.name }}{% if current_year %} · {{ current_year.name }}{% endif %}</p>
+  </div>
+  <div class="flex items-center gap-2">
+    <span class="bg-white/20 px-3 py-1 rounded-full text-sm"><i class="fas fa-school"></i> {{ classroom.name }}</span>
+    <a href="?tab=horaires" class="no-print text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-full">Changer</a>
+  </div>
+</div>
+
+{% if not slots %}
+<div class="bg-amber-50 border border-amber-200 text-amber-900 text-sm rounded-xl p-4 mb-4">
+  Aucun créneau défini.
+  <a href="?tab=configuration" class="underline font-medium">Configurer les horaires</a>
+</div>
+{% else %}
+
+<div class="hidden md:block bg-white rounded-2xl border-2 border-blue-500 overflow-x-auto shadow-sm">
+  <table class="w-full text-xs border-collapse">
+    <thead>
+      <tr class="bg-blue-600 text-white">
+        <th class="px-3 py-3 text-left w-28 border border-blue-500 font-semibold">Heures</th>
+        {% for d, label in days %}
+        <th class="px-2 py-3 text-center border border-blue-500 font-semibold">{{ label }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      {% if row.is_break %}
+      <tr>
+        <td colspan="7" class="px-3 py-3 text-center text-slate-500 italic bg-blue-50 border border-blue-200 text-sm">
+          {{ row.slot.name }}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td class="px-3 py-2 font-medium text-slate-600 bg-slate-50 whitespace-nowrap border border-blue-200">
+          {{ row.slot.start_time|time:"H:i" }} – {{ row.slot.end_time|time:"H:i" }}
+        </td>
+        {% for cell in row.cells %}
+        <td class="p-0 align-middle border border-blue-200">
+          <div class="tt-cell min-h-[52px] p-2 text-center {% if cell.entry %}bg-white{% else %}bg-white{% endif %}"
+               onclick="openSlot({{ cell.day }}, {{ row.slot.id }}, '{{ cell.label }}', '{{ row.slot.start_time|time:'H:i' }}-{{ row.slot.end_time|time:'H:i' }}', {% if cell.entry %}{{ cell.entry.subject_id|default:'null' }}{% else %}null{% endif %}, {% if cell.entry and cell.entry.teacher_id %}{{ cell.entry.teacher_id }}{% else %}null{% endif %}, {% if cell.entry and cell.entry.room_id %}{{ cell.entry.room_id }}{% else %}null{% endif %})">
+            {% if cell.entry %}
+            <p class="font-semibold text-slate-800 text-xs">{{ cell.entry.subject.name }}</p>
+            <p class="text-[10px] text-slate-500">{% if cell.entry.teacher %}Prof : {{ cell.entry.teacher.last_name }}{% endif %}</p>
+            {% else %}
+            <p class="text-slate-300">—</p>
+            {% endif %}
+          </div>
+        </td>
+        {% endfor %}
+      </tr>
+      {% endif %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# Mobile cards #}
+<div class="md:hidden space-y-3">
+  {% for d, label in days %}
+  <div class="bg-white rounded-xl border overflow-hidden">
+    <p class="bg-slate-800 text-white text-sm font-semibold px-3 py-2">{{ label }}</p>
+    {% for row in rows %}
+      {% for cell in row.cells %}
+        {% if cell.day == d %}
+        <div class="px-3 py-2 border-t flex gap-3 items-start"
+             onclick="openSlot({{ cell.day }}, {{ row.slot.id }}, '{{ label }}', '{{ row.slot.start_time|time:'H:i' }}-{{ row.slot.end_time|time:'H:i' }}', {% if cell.entry %}{{ cell.entry.subject_id|default:'null' }}{% else %}null{% endif %}, {% if cell.entry and cell.entry.teacher_id %}{{ cell.entry.teacher_id }}{% else %}null{% endif %}, {% if cell.entry and cell.entry.room_id %}{{ cell.entry.room_id }}{% else %}null{% endif %})">
+          <span class="text-[11px] text-slate-400 w-20 shrink-0">{{ row.slot.start_time|time:"H:i" }}</span>
+          <div class="flex-1">
+            {% if cell.entry %}
+            <p class="font-semibold text-sm">{{ cell.entry.subject.name }}</p>
+            <p class="text-xs text-slate-500">{% if cell.entry.teacher %}{{ cell.entry.teacher }}{% endif %}</p>
+            {% else %}
+            <p class="text-xs text-slate-300 italic">Libre — toucher</p>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+
+{# Modal case #}
+{% if not read_only %}<div id="slot-modal" class="fixed inset-0 z-[120] hidden items-end sm:items-center justify-center bg-black/40 no-print" onclick="if(event.target===this)closeSlotModal()">
+  <div class="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-5 shadow-xl">
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="font-bold text-slate-800" id="slot-modal-title">Créneau</h3>
+      <button type="button" onclick="closeSlotModal()" class="text-slate-400 text-xl">&times;</button>
+    </div>
+    <form method="post" action="{% url 'timetable:save_entry' classroom.pk %}" class="space-y-3">
+      {% csrf_token %}
+      <input type="hidden" name="day" id="f-day">
+      <input type="hidden" name="time_slot" id="f-slot">
+      <div>
+        <label class="text-xs text-slate-500">Matière *</label>
+        <select name="subject" id="f-subject" required class="w-full border rounded-xl px-3 py-2.5 text-sm">
+          <option value="">— Choisir —</option>
+          {% for s in subjects %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500">Enseignant</label>
+        <select name="teacher" id="f-teacher" class="w-full border rounded-xl px-3 py-2.5 text-sm search-person" data-search-person="1" data-placeholder="Rechercher un enseignant…">
+          <option value="">—</option>
+          {% for t in teachers %}<option value="{{ t.id }}">{{ t.last_name }} {{ t.first_name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500">Salle</label>
+        <select name="room" id="f-room" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+          <option value="">—</option>
+          {% for r in rooms %}<option value="{{ r.id }}">{{ r.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-medium">Enregistrer</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<script>
+function openSlot(day, slot, dayLabel, timeLabel, subjectId, teacherId, roomId) {
+  if ({{ read_only|yesno:"true,false" }}) return;
+  document.getElementById('f-day').value = day;
+  document.getElementById('f-slot').value = slot;
+  document.getElementById('slot-modal-title').textContent = dayLabel + ' · ' + timeLabel;
+  document.getElementById('f-subject').value = subjectId || '';
+  document.getElementById('f-teacher').value = teacherId || '';
+  document.getElementById('f-room').value = roomId || '';
+  var m = document.getElementById('slot-modal');
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+  document.body.classList.add('modal-open');
+}
+function closeSlotModal() {
+  var m = document.getElementById('slot-modal');
+  m.classList.add('hidden');
+  m.classList.remove('flex');
+  document.body.classList.remove('modal-open');
+}
+</script>
+{% endif %}{# slots #}
+{% endif %}{# classroom #}
+{% endif %}{# tab #}
+{% endblock %}

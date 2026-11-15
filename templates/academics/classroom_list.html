@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Gestion des Classes{% endblock %}
+{% block content %}
+
+<div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+  <div>
+    <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+      <i class="fas fa-chalkboard text-blue-600"></i> Gestion des Classes
+    </h1>
+    <p class="text-xs text-slate-500 mt-0.5">
+      {% if selected_year or current_year %}Année : {{ selected_year.name|default:current_year.name }}{% endif %}
+      · Cliquez une classe pour les détails
+    </p>
+  </div>
+</div>
+
+{# Bandeau programme Mali #}
+<div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+  <p class="text-sm text-amber-900">
+    <i class="fas fa-info-circle text-amber-600"></i>
+    Programme scolaire <strong>Mali</strong> : Primaire (1ère–6ème), Secondaire (7–9), Lycée (10–12 avec séries)
+  </p>
+  <button type="button"
+          onclick="openModalUrl('{% url 'academics:classroom_bulk' %}?modal=1','Sélectionner les classes à ajouter')"
+          class="inline-flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-3 py-2 rounded-xl whitespace-nowrap">
+    <i class="fas fa-list-check"></i> Ajouter des classes
+  </button>
+</div>
+
+{# Stats #}
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
+  <div class="bg-white rounded-xl border p-3 flex items-center gap-3">
+    <span class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fas fa-school"></i></span>
+    <div>
+      <p class="text-lg font-bold">{{ stats.total|default:0 }}</p>
+      <p class="text-[10px] uppercase text-slate-400">Total classes</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border p-3 flex items-center gap-3">
+    <span class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><i class="fas fa-door-open"></i></span>
+    <div>
+      <p class="text-lg font-bold">{{ stats.total|default:0 }}</p>
+      <p class="text-[10px] uppercase text-slate-400">Classes ouvertes</p>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border p-3 flex items-center gap-3">
+    <span class="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center"><i class="fas fa-users"></i></span>
+    <div>
+      <p class="text-lg font-bold">{{ stats.eleves|default:0 }}</p>
+      <p class="text-[10px] uppercase text-slate-400">Élèves inscrits</p>
+      {% if stats.boys or stats.girls %}
+      <p class="text-[10px] text-slate-400">{{ stats.boys }} G / {{ stats.girls }} F</p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border p-3 flex items-center gap-3">
+    <span class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center"><i class="fas fa-user-tie"></i></span>
+    <div>
+      <p class="text-lg font-bold">{{ stats.with_teacher|default:0 }}</p>
+      <p class="text-[10px] uppercase text-slate-400">Titulaires assignés</p>
+    </div>
+  </div>
+</div>
+
+{# Filtres #}
+<form method="get" class="bg-white rounded-xl border p-3 mb-3 flex flex-col sm:flex-row gap-2 flex-wrap">
+  <select name="cycle" class="border rounded-xl px-3 py-2.5 text-sm">
+    <option value="">Toutes sections</option>
+    {% for c in cycles %}
+    <option value="{{ c.id }}" {% if cycle_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+  <input type="text" name="q" value="{{ q }}" placeholder="Rechercher par niveau, division…"
+         class="border rounded-xl px-3 py-2.5 text-sm flex-1 min-w-[10rem]">
+  <button type="submit" class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium">
+    <i class="fas fa-search"></i> Filtrer
+  </button>
+  <a href="{% url 'academics:classroom_list' %}" class="border px-3 py-2.5 rounded-xl text-sm text-slate-600"><i class="fas fa-redo"></i></a>
+</form>
+
+{# Actions #}
+<div class="flex flex-wrap gap-2 mb-4">
+  <button type="button" onclick="openModalUrl('{% url 'academics:classroom_create' %}?modal=1','Créer une classe')"
+          class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+    <i class="fas fa-plus"></i> Créer une classe
+  </button>
+  <button type="button" onclick="openModalUrl('{% url 'academics:classroom_bulk' %}?modal=1','Sélectionner les classes')"
+          class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+    <i class="fas fa-list-check"></i> Sélectionner des classes
+  </button>
+  <button type="button" onclick="openModalUrl('{% url 'academics:classroom_create' %}?modal=1','Classe personnalisée')"
+          class="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+    <i class="fas fa-globe"></i> Classe personnalisée
+  </button>
+  {% if can_clone and prev_year %}
+  <a href="?auto_clone=1" class="inline-flex items-center gap-2 border text-sm px-4 py-2.5 rounded-xl text-slate-700">
+    Reprendre {{ prev_year.name }}
+  </a>
+  {% endif %}
+</div>
+
+{# Tableau #}
+<div class="bg-white rounded-xl border overflow-hidden">
+  <div class="px-4 py-3 border-b flex justify-between items-center">
+    <p class="text-sm font-semibold">Liste des classes</p>
+    <span class="text-xs text-slate-400">{{ stats.total|default:0 }} classe(s)</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-left text-[10px] uppercase text-slate-500">
+        <tr>
+          <th class="px-3 py-2">Section</th>
+          <th class="px-3 py-2">Classe</th>
+          <th class="px-3 py-2">Option</th>
+          <th class="px-3 py-2">Effectif</th>
+          <th class="px-3 py-2">Frais</th>
+          <th class="px-3 py-2">Titulaire</th>
+          <th class="px-3 py-2"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for c in classrooms %}
+        <tr class="hover:bg-slate-50 cursor-pointer"
+            onclick="openModalUrl('{% url 'academics:classroom_detail' c.pk %}?modal=1','{{ c.name }}')">
+          <td class="px-3 py-2.5 text-xs">{{ c.level.cycle.name }}</td>
+          <td class="px-3 py-2.5 font-medium">{{ c.name }}</td>
+          <td class="px-3 py-2.5 text-xs text-slate-500">{{ c.serie|default:"—" }}</td>
+          <td class="px-3 py-2.5">
+            <span class="text-xs bg-slate-100 px-2 py-0.5 rounded-full">{{ c.nb_eleves }} élève(s)</span>
+          </td>
+          <td class="px-3 py-2.5 text-xs">
+            <span class="block">Insc. {{ c.inscription_fee|floatformat:0 }}</span>
+            <span class="text-slate-400">Scol. {{ c.tuition_fee|floatformat:0 }}</span>
+          </td>
+          <td class="px-3 py-2.5 text-xs">
+            {% if c.main_teacher %}{{ c.main_teacher }}{% else %}<span class="text-slate-400">Non assigné</span>{% endif %}
+          </td>
+          <td class="px-3 py-2.5 text-right" onclick="event.stopPropagation()">
+            <button type="button" class="text-xs text-blue-600 px-2 py-1"
+                    onclick="openModalUrl('{% url 'academics:classroom_edit' c.pk %}?modal=1','Modifier {{ c.name }}')">
+              <i class="fas fa-edit"></i>
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="px-3 py-12 text-center text-slate-400">
+            <i class="fas fa-chalkboard text-3xl block mb-2 opacity-40"></i>
+            Aucune classe trouvée
+            <div class="mt-3 flex flex-wrap gap-2 justify-center">
+              <button type="button" onclick="openModalUrl('{% url 'academics:classroom_bulk' %}?modal=1','Programme Mali')"
+                      class="bg-emerald-600 text-white text-sm px-4 py-2 rounded-xl">
+                Sélectionner des classes
+              </button>
+              <button type="button" onclick="openModalUrl('{% url 'academics:classroom_create' %}?modal=1','Nouvelle classe')"
+                      class="bg-blue-600 text-white text-sm px-4 py-2 rounded-xl">
+                Créer une classe
+              </button>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if classrooms.has_other_pages %}
+<div class="mt-4 flex gap-3 justify-center text-sm">
+  {% if classrooms.has_previous %}
+  <a href="?page={{ classrooms.previous_page_number }}&q={{ q }}&cycle={{ cycle_id }}" class="text-blue-600 px-3 py-2">← Préc.</a>
+  {% endif %}
+  <span class="text-slate-500">Page {{ classrooms.number }}</span>
+  {% if classrooms.has_next %}
+  <a href="?page={{ classrooms.next_page_number }}&q={{ q }}&cycle={{ cycle_id }}" class="text-blue-600 px-3 py-2">Suiv. →</a>
+  {% endif %}
+</div>
+{% endif %}
+{% endblock %}

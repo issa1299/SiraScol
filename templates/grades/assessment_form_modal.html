@@ -1,0 +1,73 @@
+<style>
+.form-input{width:100%;border:1px solid #d1d5db;border-radius:.5rem;padding:.5rem .75rem;font-size:.875rem;outline:none}
+.form-input:focus{border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.25)}
+</style>
+{% if is_primary %}
+<div class="mb-3 rounded-lg bg-emerald-50 border border-emerald-100 p-2 text-xs text-emerald-800">
+  Formulaire <strong>Primaire (1ère–5ème)</strong> : notes <strong>sur 10</strong> · composition mensuelle
+</div>
+{% else %}
+<div class="mb-3 rounded-lg bg-blue-50 border border-blue-100 p-2 text-xs text-blue-800">
+  Formulaire <strong>2ème cycle / Lycée</strong> : devoir (note de classe) ou composition / trimestre
+</div>
+{% endif %}
+{% if form.errors %}<div class="bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-3">{{ form.errors }}</div>{% endif %}
+<form method="post" action="{{ form_action }}" class="space-y-3">
+  {% csrf_token %}
+  {% if classroom %}<input type="hidden" name="classroom" value="{{ classroom.pk }}">{% endif %}
+  {{ form.classroom }}
+  <div>
+    <label class="text-xs font-medium">Titre *</label>
+    {{ form.title }}
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="text-xs font-medium">Type *</label>
+      {{ form.assessment_type }}
+      {% if is_primary %}
+      <p class="text-[10px] text-slate-400 mt-0.5">Composition uniquement</p>
+      {% else %}
+      <p class="text-[10px] text-slate-400 mt-0.5">Devoir · Composition · Trimestre</p>
+      {% endif %}
+    </div>
+    <div>
+      <label class="text-xs font-medium">Date *</label>
+      {{ form.date }}
+    </div>
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="text-xs font-medium">Matière *</label>
+      {{ form.subject }}
+    </div>
+    <div>
+      <label class="text-xs font-medium">Période *</label>
+      {{ form.period }}
+      {% if is_primary %}
+      <p class="text-[10px] text-slate-400 mt-0.5">Mois (Septembre, Octobre…)</p>
+      {% else %}
+      <p class="text-[10px] text-slate-400 mt-0.5">1er / 2e / 3e trimestre</p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="text-xs font-medium">Note max</label>
+      {{ form.max_score }}
+    </div>
+    <div>
+      <label class="text-xs font-medium">Coefficient</label>
+      {{ form.coefficient }}
+    </div>
+  </div>
+  <div>
+    <label class="text-xs font-medium">Enseignant</label>
+    {{ form.teacher }}
+  </div>
+  <div class="form-actions flex gap-2 pt-2 border-t">
+    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg text-sm font-medium">
+      Créer et saisir les notes
+    </button>
+    <button type="button" onclick="closeModal('modal-dynamic')" class="px-4 text-sm text-slate-600">Annuler</button>
+  </div>
+</form>

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Documents personnel{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+  <h1 class="text-xl font-bold">📄 Documents</h1>
+  <button type="button" onclick="openModalUrl('{% url 'teachers:documents' %}?modal=1','Ajouter un document')"
+          class="bg-indigo-600 text-white text-sm px-4 py-2.5 rounded-xl font-semibold">
+    <i class="fas fa-plus"></i> Ajouter un document
+  </button>
+</div>
+<div class="bg-white rounded-2xl border divide-y">
+  {% for d in documents %}
+  <div class="px-4 py-3 flex justify-between items-center text-sm">
+    <div>
+      <p class="font-medium">{{ d.title }}</p>
+      <p class="text-xs text-slate-500">{{ d.staff }} · {{ d.get_doc_type_display }} · {{ d.uploaded_at|date:"d/m/Y" }}</p>
+    </div>
+    {% if d.file %}<a href="{{ d.file.url }}" target="_blank" class="text-indigo-600 text-xs">Ouvrir</a>{% endif %}
+  </div>
+  {% empty %}
+  <p class="p-8 text-center text-slate-400 text-sm">Aucun document. Cliquez sur <b>Ajouter un document</b>.</p>
+  {% endfor %}
+</div>
+{% endblock %}

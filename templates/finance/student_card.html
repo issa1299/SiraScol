@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Carte financière — {{ student }}{% endblock %}
+{% block content %}
+<a href="{% url 'finance:dashboard' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Centre Financier</a>
+
+<div class="mt-4 bg-white rounded-2xl border shadow-sm overflow-hidden max-w-lg mx-auto">
+  <div class="bg-blue-600 text-white px-5 py-4">
+    <p class="font-bold text-lg">{{ student.last_name|upper }} {{ student.first_name }}</p>
+    <p class="text-sm text-blue-100">Matricule : {{ student.matricule }}{% if classroom %} | Classe : {{ classroom.name }}{% endif %}</p>
+  </div>
+  <div class="grid grid-cols-3 gap-2 p-4 text-center">
+    <div class="bg-emerald-50 rounded-xl p-3">
+      <p class="text-lg font-bold text-emerald-700">{{ total_paid|floatformat:0 }}</p>
+      <p class="text-[10px] text-slate-500 uppercase">Total payé</p>
+    </div>
+    <div class="bg-slate-50 rounded-xl p-3">
+      <p class="text-lg font-bold text-slate-700">{{ total_due|floatformat:0 }}</p>
+      <p class="text-[10px] text-slate-500 uppercase">Total dû</p>
+    </div>
+    <div class="bg-red-50 rounded-xl p-3">
+      <p class="text-lg font-bold text-red-600">{{ reste|floatformat:0 }}</p>
+      <p class="text-[10px] text-slate-500 uppercase">Reste à payer</p>
+    </div>
+  </div>
+  <div class="px-4 pb-4">
+    <p class="text-sm font-semibold mb-2">Historique</p>
+    <div class="divide-y text-sm">
+      {% for p in payments %}
+      <div class="py-2 flex justify-between gap-2">
+        <div>
+          <p>{{ p.payment_date|date:"d/m/Y" }} · {{ p.invoice.fee_type.name }}</p>
+          <p class="text-xs text-slate-400">{{ p.receipt_number }}</p>
+        </div>
+        <div class="text-right">
+          <p class="font-semibold text-emerald-700">{{ p.amount|floatformat:0 }}</p>
+          <a href="{% url 'finance:receipt' p.pk %}" class="text-xs text-blue-600">Reçu</a>
+        </div>
+      </div>
+      {% empty %}
+      <p class="text-slate-400 py-6 text-center">Aucun paiement</p>
+      {% endfor %}
+    </div>
+    <a href="{% url 'finance:student_payment' student.id %}" class="mt-3 block text-center bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium">
+      Enregistrer un paiement
+    </a>
+  </div>
+</div>
+{% endblock %}

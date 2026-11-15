@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Cycles & Niveaux{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'core:config_home' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Configuration</a>
+  <h1 class="text-xl font-bold text-slate-800 mt-1">Cycles & niveaux</h1>
+  <p class="text-xs text-slate-500">Primaire, secondaire, lycée et classes (1ère… 12ème)</p>
+</div>
+
+{# Nouveau cycle #}
+<form method="post" action="{% url 'core:config_cycle_save' %}" class="bg-white rounded-2xl border p-4 mb-4 space-y-2">
+  {% csrf_token %}
+  <p class="text-sm font-semibold text-slate-700">Ajouter un cycle</p>
+  <input type="hidden" name="id" value="">
+  <input name="name" required placeholder="Ex: Primaire" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+  <div class="grid grid-cols-2 gap-2">
+    <select name="code" class="border rounded-xl px-3 py-2.5 text-sm">
+      {% for code, label in cycle_codes %}
+      <option value="{{ code }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input type="number" name="order" value="0" placeholder="Ordre" class="border rounded-xl px-3 py-2.5 text-sm">
+  </div>
+  <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium">Ajouter le cycle</button>
+</form>
+
+{# Nouveau niveau #}
+<form method="post" action="{% url 'core:config_level_save' %}" class="bg-white rounded-2xl border p-4 mb-4 space-y-2">
+  {% csrf_token %}
+  <p class="text-sm font-semibold text-slate-700">Ajouter un niveau</p>
+  <input type="hidden" name="id" value="">
+  <input name="name" required placeholder="Ex: 1ère année, 6ème…" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+  <div class="grid grid-cols-2 gap-2">
+    <select name="cycle" required class="border rounded-xl px-3 py-2.5 text-sm">
+      <option value="">— Cycle —</option>
+      {% for c in cycles %}
+      <option value="{{ c.id }}">{{ c.name }}</option>
+      {% endfor %}
+    </select>
+    <input type="number" name="order" value="0" placeholder="Ordre" class="border rounded-xl px-3 py-2.5 text-sm">
+  </div>
+  <button type="submit" class="w-full bg-violet-600 text-white py-2.5 rounded-xl text-sm font-medium">Ajouter le niveau</button>
+</form>
+
+{% for c in cycles %}
+<div class="bg-white rounded-2xl border p-4 mb-3">
+  <div class="flex justify-between items-center mb-2">
+    <p class="font-semibold text-slate-800">{{ c.name }} <span class="text-xs text-slate-400">({{ c.get_code_display }} · ordre {{ c.order }})</span></p>
+  </div>
+  <div class="space-y-1">
+    {% for lv in c.levels.all %}
+    <div class="flex justify-between items-center py-1.5 border-t border-slate-50 text-sm">
+      <span>{{ lv.name }} <span class="text-xs text-slate-400">#{{ lv.order }}</span></span>
+      <form method="post" action="{% url 'core:config_level_delete' lv.pk %}" onsubmit="return confirm('Supprimer ce niveau ?');">
+        {% csrf_token %}
+        <button class="text-xs text-red-500">Suppr.</button>
+      </form>
+    </div>
+    {% empty %}
+    <p class="text-xs text-slate-400">Aucun niveau.</p>
+    {% endfor %}
+  </div>
+</div>
+{% empty %}
+<p class="text-center text-slate-400 text-sm py-6">Aucun cycle. Ajoutez Primaire, Secondaire, Lycée.</p>
+{% endfor %}
+{% endblock %}

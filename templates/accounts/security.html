@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Sécurité — SiraScol{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-6">
+  <div class="mb-6">
+    <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+      <i class="fas fa-fingerprint text-blue-600"></i> Sécurité du compte
+    </h1>
+    <p class="text-sm text-slate-500 mt-1">Connectez-vous en posant votre doigt sur le capteur du téléphone ou de l'ordinateur.</p>
+  </div>
+
+  {% if messages %}
+  {% for m in messages %}
+  <div class="mb-4 px-4 py-3 rounded-xl text-sm {% if m.tags == 'error' %}bg-red-50 text-red-700{% else %}bg-emerald-50 text-emerald-700{% endif %}">{{ m }}</div>
+  {% endfor %}
+  {% endif %}
+
+  <div id="sec-msg" class="hidden mb-4 px-4 py-3 rounded-xl text-sm"></div>
+
+  {% if not webauthn_ok %}
+  <div class="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 text-sm mb-4">
+    <strong>Module manquant.</strong> Sur le serveur, exécutez :
+    <code class="bg-white px-2 py-0.5 rounded">pip install webauthn</code>
+    puis redémarrez.
+  </div>
+  {% endif %}
+
+  <div class="bg-white rounded-2xl border shadow-sm p-5 mb-6">
+    <h2 class="font-semibold text-sm text-slate-800 mb-2">Enregistrer mon empreinte digitale</h2>
+    <p class="text-xs text-slate-500 mb-4">
+      Posez votre <strong>doigt</strong> sur le capteur quand le téléphone le demande.<br>
+      Ouvrez SiraScol en <strong>http://localhost:7000</strong> (pas avec une IP 192.168.x.x).
+    </p>
+    <div class="flex flex-col sm:flex-row gap-3">
+      <input type="text" id="device-name" placeholder="Ex: Empreinte de mon téléphone"
+             class="flex-1 border rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-blue-500">
+      <button type="button" id="btn-register"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-xl text-sm flex items-center justify-center gap-2">
+        <i class="fas fa-fingerprint"></i> Activer avec mon doigt
+      </button>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+    <div class="px-5 py-3 border-b bg-slate-50">
+      <h2 class="font-semibold text-sm text-slate-800">Empreintes enregistrées</h2>
+    </div>
+    <ul class="divide-y">
+      {% for c in credentials %}
+      <li class="px-5 py-4 flex items-center justify-between gap-3">
+        <div>
+          <p class="font-medium text-sm text-slate-800"><i class="fas fa-fingerprint text-blue-500 mr-1"></i> {{ c.device_name }}</p>
+          <p class="text-xs text-slate-400">
+            Ajoutée le {{ c.created_at|date:"d/m/Y H:i" }}
+            {% if c.last_used_at %} · Dernière utilisation {{ c.last_used_at|date:"d/m/Y H:i" }}{% endif %}
+          </p>
+        </div>
+        <form method="post" action="{% url 'accounts:webauthn_delete' c.pk %}" onsubmit="return confirm('Supprimer cette empreinte ?');">
+          {% csrf_token %}
+          <button class="text-xs text-red-600 border border-red-200 hover:bg-red-50 px-3 py-1.5 rounded-lg">Supprimer</button>
+        </form>
+      </li>
+      {% empty %}
+      <li class="px-5 py-8 text-center text-sm text-slate-400">
+        Aucune empreinte enregistrée pour le moment.
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <p class="text-center mt-6">
+    <a href="{% url 'core:dashboard' %}" class="text-sm text-blue-600 hover:underline"><i class="fas fa-arrow-left"></i> Retour au tableau de bord</a>
+  </p>
+</div>
+
+<script>
+(function () {
+  function csrf() {
+    var m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : (document.querySelector('[name=csrfmiddlewaretoken]') || {}).value || '';
+  }
+  function msg(text, ok) {
+    var el = document.getElementById('sec-msg');
+    el.textContent = text;
+    el.className = 'mb-4 px-4 py-3 rounded-xl text-sm ' + (ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700');
+    el.classList.remove('hidden');
+  }
+  function b64urlToBuffer(b64url) {
+    var pad = '='.repeat((4 - b64url.length % 4) % 4);
+    var b64 = (b64url + pad).replace(/-/g, '+').replace(/_/g, '/');
+    var str = atob(b64);
+    var buf = new ArrayBuffer(str.length);
+    var view = new Uint8Array(buf);
+    for (var i = 0; i < str.length; i++) view[i] = str.charCodeAt(i);
+    return buf;
+  }
+  function bufferToB64url(buffer) {
+    var bytes = new Uint8Array(buffer);
+    var str = '';
+    for (var i = 0; i < bytes.length; i++) str += String.fromCharCode(bytes[i]);
+    return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  document.getElementById('btn-register').addEventListener('click', async function () {
+    if (!window.PublicKeyCredential) {
+      msg('Navigateur non compatible avec les Passkeys.', false);
+      return;
+    }
+    try {
+      msg('Préparation…', true);
+      var beginRes = await fetch('{% url "accounts:webauthn_register_begin" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+        body: '{}'
+      });
+      var opts = await beginRes.json();
+      if (!beginRes.ok || opts.error) {
+        msg(opts.error || 'Impossible de démarrer.', false);
+        return;
+      }
+      opts.challenge = b64urlToBuffer(opts.challenge);
+      opts.user.id = b64urlToBuffer(opts.user.id);
+      if (opts.excludeCredentials) {
+        opts.excludeCredentials = opts.excludeCredentials.map(function (c) {
+          return { type: c.type, id: b64urlToBuffer(c.id) };
+        });
+      }
+      msg('👉 Posez votre doigt sur le capteur d\'empreinte…', true);
+      var cred = await navigator.credentials.create({ publicKey: opts });
+      var payload = {
+        id: cred.id,
+        rawId: bufferToB64url(cred.rawId),
+        type: cred.type,
+        device_name: (document.getElementById('device-name').value || '').trim() || 'Empreinte / Passkey',
+        response: {
+          clientDataJSON: bufferToB64url(cred.response.clientDataJSON),
+          attestationObject: bufferToB64url(cred.response.attestationObject)
+        }
+      };
+      var doneRes = await fetch('{% url "accounts:webauthn_register_complete" %}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrf() },
+        body: JSON.stringify(payload)
+      });
+      var result = await doneRes.json();
+      if (result.ok) {
+        msg('✓ Empreinte enregistrée ! Vous pourrez vous connecter avec votre doigt.', true);
+        setTimeout(function () { location.reload(); }, 900);
+      } else {
+        msg(result.error || 'Échec enregistrement.', false);
+      }
+    } catch (e) {
+      if (e.name === 'NotAllowedError') msg('Annulé ou capteur indisponible.', false);
+      else msg(e.message || 'Erreur.', false);
+    }
+  });
+})();
+</script>
+{% endblock %}

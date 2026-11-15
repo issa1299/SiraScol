@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - SiraScol{% endblock %}
+{% block extra_css %}
+<style>
+.form-input { width: 100%; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.625rem 0.75rem; font-size: 0.875rem; outline: none; }
+.form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+</style>
+{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'grades:list' %}" class="text-sm text-slate-500 hover:text-blue-600">
+        <i class="fas fa-arrow-left"></i> Retour aux évaluations
+    </a>
+</div>
+<div class="max-w-xl">
+    <h1 class="text-2xl font-bold text-slate-800 mb-2">{{ title }}</h1>
+    <p class="text-sm text-slate-500 mb-6">Après création, tu seras redirigé vers la saisie des notes.</p>
+    <form method="post" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-5">
+        {% csrf_token %}
+        {% if form.errors %}<div class="bg-red-50 text-red-700 text-sm p-3 rounded-lg">{{ form.errors }}</div>{% endif %}
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Titre *</label>
+            {{ form.title }}
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div><label class="block text-sm font-medium text-slate-700 mb-1">Type *</label>{{ form.assessment_type }}</div>
+            <div><label class="block text-sm font-medium text-slate-700 mb-1">Période *</label>{{ form.period }}</div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div><label class="block text-sm font-medium text-slate-700 mb-1">Matière *</label>{{ form.subject }}</div>
+            <div><label class="block text-sm font-medium text-slate-700 mb-1">Classe *</label>{{ form.classroom }}</div>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Enseignant</label>
+            {{ form.teacher }}
+        </div>
+        <div class="grid grid-cols-3 gap-4">
+            <div><label class="block text-sm font-medium text-slate-700 mb-1">Date *</label>{{ form.date }}</div>
+            <div><label class="block text-sm font-medium text-slate-700 mb-1">Note max</label>{{ form.max_score }}</div>
+            <div><label class="block text-sm font-medium text-slate-700 mb-1">Coefficient</label>{{ form.coefficient }}</div>
+        </div>
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium">
+            <i class="fas fa-arrow-right"></i> Créer et saisir les notes
+        </button>
+    </form>
+</div>
+{% endblock %}

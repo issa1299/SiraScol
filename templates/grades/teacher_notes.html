@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Porter les notes — Enseignant{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  <div class="mb-4">
+    <p class="text-xs font-semibold uppercase tracking-wider text-violet-600">Espace enseignant</p>
+    <h1 class="text-2xl font-bold text-slate-800 mt-1">Porter les notes</h1>
+    <p class="text-sm text-slate-500">Choisissez une classe → mois/trimestre + matière → notes de toute la classe</p>
+  </div>
+
+  {% if not classroom %}
+  <div class="space-y-2">
+    {% for c in classrooms %}
+    <a href="{% url 'grades:saisie_classe' %}?classroom={{ c.id }}"
+       class="flex items-center gap-3 bg-white rounded-2xl border p-4 hover:border-violet-400 shadow-sm transition">
+      <div class="w-11 h-11 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center font-bold">{{ forloop.counter }}</div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-slate-800">{{ c.name }}</p>
+        <p class="text-xs text-slate-500">{% if c.level %}{{ c.level.name }}{% endif %}{% if c.level.cycle %} · {{ c.level.cycle.name }}{% endif %}</p>
+      </div>
+      <i class="fas fa-chevron-right text-slate-300"></i>
+    </a>
+    {% empty %}
+    <div class="bg-white rounded-2xl border border-dashed p-8 text-center text-slate-400">
+      Aucune classe affectée.
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  {# Redirection logique : si classroom dans URL grades:classes, lien vers saisie #}
+  <script>location.replace("{% url 'grades:saisie_classe' %}?classroom={{ classroom.id }}");</script>
+  <p class="text-sm text-slate-500"><a href="{% url 'grades:saisie_classe' %}?classroom={{ classroom.id }}" class="text-violet-600 underline">Continuer la saisie →</a></p>
+  {% endif %}
+
+</div>
+{% endblock %}

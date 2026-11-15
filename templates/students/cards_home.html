@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}Cartes scolaires{% endblock %}
+{% block content %}
+
+<div class="mb-4">
+  <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+    <i class="fas fa-id-card text-violet-600"></i> Cartes scolaires
+  </h1>
+  <p class="text-xs text-slate-500 mt-1">
+    Choisissez un <strong>vrai modèle de carte</strong> pour l’école, puis générez par classe
+    {% if selected_year %}· {{ selected_year.name }}{% endif %}
+  </p>
+</div>
+
+<div class="bg-white rounded-xl border p-4 mb-6">
+  <p class="text-sm font-semibold mb-1">Modèles de carte (aperçu)</p>
+  <p class="text-xs text-slate-400 mb-4">Le modèle sélectionné est utilisé pour tous les téléchargements PDF / Image</p>
+
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="set_template">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+
+      {# —— OFFICIEL —— #}
+      <label class="cursor-pointer block border-2 rounded-xl overflow-hidden transition
+        {% if current_template == 'official' %}border-violet-500 ring-2 ring-violet-200{% else %}border-slate-200 hover:border-violet-300{% endif %}">
+        <input type="radio" name="card_template" value="official" class="sr-only" {% if current_template == 'official' %}checked{% endif %}>
+        <div class="bg-white p-3 text-[9px] leading-tight relative min-h-[160px]">
+          <div class="flex items-center gap-2 border-b border-slate-100 pb-2 mb-2">
+            <div class="w-8 h-8 rounded-full border-2 border-blue-700 flex items-center justify-center text-[8px] font-bold text-blue-700">LOGO</div>
+            <div>
+              <p class="font-bold text-blue-700 text-[10px]">{% if school %}{{ school.name|truncatechars:28 }}{% else %}Nom de l'école{% endif %}</p>
+              <p class="text-blue-500 text-[8px]">{% if school and school.motto %}{{ school.motto|truncatechars:32 }}{% else %}Devise de l'école{% endif %}</p>
+            </div>
+          </div>
+          <div class="text-center my-1">
+            <span class="inline-block border-2 border-red-600 text-red-600 font-bold px-3 py-0.5 rounded-full text-[9px]">CARTE D'ÉLÈVE</span>
+          </div>
+          <div class="flex gap-2 mt-2">
+            <div class="flex-1 space-y-0.5 text-slate-800">
+              <p><span class="font-bold">Nom :</span> Diarra</p>
+              <p><span class="font-bold">Prénom :</span> Awa</p>
+              <p><span class="font-bold">Classe :</span> 6ème A</p>
+              <p><span class="font-bold">N° Mle :</span> 2026-0001</p>
+            </div>
+            <div class="w-12 h-14 border-2 border-blue-600 rounded bg-slate-100 flex-shrink-0"></div>
+          </div>
+          <div class="absolute bottom-0 left-0 right-0 h-4 bg-red-700"></div>
+        </div>
+        <div class="bg-slate-50 px-3 py-2 flex items-center justify-between border-t">
+          <span class="text-sm font-semibold">Officiel (fond blanc)</span>
+          {% if current_template == 'official' %}<span class="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">Actuel</span>{% endif %}
+        </div>
+      </label>
+
+      {# —— MODERNE —— #}
+      <label class="cursor-pointer block border-2 rounded-xl overflow-hidden transition
+        {% if current_template == 'modern' %}border-violet-500 ring-2 ring-violet-200{% else %}border-slate-200 hover:border-violet-300{% endif %}">
+        <input type="radio" name="card_template" value="modern" class="sr-only" {% if current_template == 'modern' %}checked{% endif %}>
+        <div class="p-3 text-[9px] text-white min-h-[160px] relative" style="background:linear-gradient(145deg,#1e3a5f,#1d4ed8)">
+          <div class="h-1 bg-amber-400 absolute top-0 left-0 right-0"></div>
+          <p class="font-bold text-[10px] mt-1">ÉCOLE · CARTE SCOLAIRE</p>
+          <div class="flex gap-2 mt-3">
+            <div class="w-12 h-14 rounded bg-white/20"></div>
+            <div>
+              <p class="font-bold text-[11px]">DIARRA AWA</p>
+              <p class="opacity-80">6ème A · 2026-0001</p>
+            </div>
+          </div>
+          <div class="absolute bottom-2 left-3 right-3 flex justify-between items-end">
+            <span class="bg-emerald-500 text-[8px] px-2 py-0.5 rounded-full">ACTIF</span>
+            <div class="w-8 h-8 bg-white rounded"></div>
+          </div>
+        </div>
+        <div class="bg-slate-50 px-3 py-2 flex items-center justify-between border-t">
+          <span class="text-sm font-semibold">Moderne (bleu nuit)</span>
+          {% if current_template == 'modern' %}<span class="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">Actuel</span>{% endif %}
+        </div>
+      </label>
+
+      {# —— CLASSIQUE —— #}
+      <label class="cursor-pointer block border-2 rounded-xl overflow-hidden transition
+        {% if current_template == 'classic' %}border-violet-500 ring-2 ring-violet-200{% else %}border-slate-200 hover:border-violet-300{% endif %}">
+        <input type="radio" name="card_template" value="classic" class="sr-only" {% if current_template == 'classic' %}checked{% endif %}>
+        <div class="p-3 text-[9px] text-white min-h-[160px]" style="background:linear-gradient(145deg,#1e40af,#1e3a8a)">
+          <p class="font-bold text-[10px]">ÉCOLE · CARTE SCOLAIRE</p>
+          <div class="flex gap-2 mt-3">
+            <div class="w-12 h-14 rounded bg-white/20"></div>
+            <div>
+              <p class="font-bold text-[11px]">DIARRA AWA</p>
+              <p class="opacity-80">Classe · Matricule</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-slate-50 px-3 py-2 flex items-center justify-between border-t">
+          <span class="text-sm font-semibold">Classique (bleu roi)</span>
+          {% if current_template == 'classic' %}<span class="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">Actuel</span>{% endif %}
+        </div>
+      </label>
+
+      {# —— GOLD —— #}
+      <label class="cursor-pointer block border-2 rounded-xl overflow-hidden transition
+        {% if current_template == 'gold' %}border-violet-500 ring-2 ring-violet-200{% else %}border-slate-200 hover:border-violet-300{% endif %}">
+        <input type="radio" name="card_template" value="gold" class="sr-only" {% if current_template == 'gold' %}checked{% endif %}>
+        <div class="p-3 text-[9px] text-amber-200 min-h-[160px]" style="background:linear-gradient(145deg,#1c1917,#0c0a09)">
+          <div class="h-1 bg-amber-500 absolute"></div>
+          <p class="font-bold text-[10px] text-amber-400">ÉCOLE · PRESTIGE</p>
+          <div class="flex gap-2 mt-3">
+            <div class="w-12 h-14 rounded bg-amber-500/20"></div>
+            <div>
+              <p class="font-bold text-[11px] text-white">DIARRA AWA</p>
+              <p class="opacity-70">Carte prestige or & noir</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-slate-50 px-3 py-2 flex items-center justify-between border-t">
+          <span class="text-sm font-semibold">Prestige (or & noir)</span>
+          {% if current_template == 'gold' %}<span class="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">Actuel</span>{% endif %}
+        </div>
+      </label>
+
+      {# —— GREEN —— #}
+      <label class="cursor-pointer block border-2 rounded-xl overflow-hidden transition
+        {% if current_template == 'green' %}border-violet-500 ring-2 ring-violet-200{% else %}border-slate-200 hover:border-violet-300{% endif %}">
+        <input type="radio" name="card_template" value="green" class="sr-only" {% if current_template == 'green' %}checked{% endif %}>
+        <div class="p-3 text-[9px] text-white min-h-[160px]" style="background:linear-gradient(145deg,#047857,#064e3b)">
+          <p class="font-bold text-[10px]">ÉCOLE · CARTE SCOLAIRE</p>
+          <div class="flex gap-2 mt-3">
+            <div class="w-12 h-14 rounded bg-white/20"></div>
+            <div>
+              <p class="font-bold text-[11px]">DIARRA AWA</p>
+              <p class="opacity-80">Modèle émeraude</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-slate-50 px-3 py-2 flex items-center justify-between border-t">
+          <span class="text-sm font-semibold">Émeraude</span>
+          {% if current_template == 'green' %}<span class="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">Actuel</span>{% endif %}
+        </div>
+      </label>
+
+      {# —— BORDEAUX —— #}
+      <label class="cursor-pointer block border-2 rounded-xl overflow-hidden transition
+        {% if current_template == 'burgundy' %}border-violet-500 ring-2 ring-violet-200{% else %}border-slate-200 hover:border-violet-300{% endif %}">
+        <input type="radio" name="card_template" value="burgundy" class="sr-only" {% if current_template == 'burgundy' %}checked{% endif %}>
+        <div class="p-3 text-[9px] text-white min-h-[160px]" style="background:linear-gradient(145deg,#881337,#4c0519)">
+          <p class="font-bold text-[10px]">ÉCOLE · CARTE SCOLAIRE</p>
+          <div class="flex gap-2 mt-3">
+            <div class="w-12 h-14 rounded bg-white/20"></div>
+            <div>
+              <p class="font-bold text-[11px]">DIARRA AWA</p>
+              <p class="opacity-80">Modèle bordeaux</p>
+            </div>
+          </div>
+        </div>
+        <div class="bg-slate-50 px-3 py-2 flex items-center justify-between border-t">
+          <span class="text-sm font-semibold">Bordeaux</span>
+          {% if current_template == 'burgundy' %}<span class="text-[10px] bg-violet-100 text-violet-700 px-2 py-0.5 rounded-full">Actuel</span>{% endif %}
+        </div>
+      </label>
+
+    </div>
+
+    <div class="mt-4 flex flex-wrap items-center gap-3">
+      <button type="submit" class="bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+        <i class="fas fa-save"></i> Enregistrer le modèle
+      </button>
+      <span class="text-xs text-slate-500">
+        Modèle actuel :
+        <strong class="text-slate-800">
+          {% for key, d in designs.items %}{% if key == current_template %}{{ d.label }}{% endif %}{% endfor %}
+        </strong>
+      </span>
+    </div>
+  </form>
+</div>
+
+<div class="bg-white rounded-xl border overflow-hidden">
+  <div class="px-4 py-3 border-b flex justify-between items-center">
+    <p class="text-sm font-semibold">Générer les cartes par classe</p>
+    <span class="text-xs text-slate-400">{{ rows|length }} classe(s)</span>
+  </div>
+  <div class="divide-y">
+    {% for r in rows %}
+    <a href="{% url 'students:cards_class' r.classroom.id %}"
+       class="flex items-center justify-between px-4 py-3 hover:bg-slate-50">
+      <div>
+        <p class="font-medium text-slate-800">{{ r.classroom }}</p>
+        <p class="text-xs text-slate-400">{{ r.classroom.level }} · {{ r.count }} élève(s)</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">{{ r.count }} carte(s)</span>
+        <i class="fas fa-chevron-right text-slate-300"></i>
+      </div>
+    </a>
+    {% empty %}
+    <p class="px-4 py-10 text-center text-slate-400 text-sm">Aucune classe pour cette année</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

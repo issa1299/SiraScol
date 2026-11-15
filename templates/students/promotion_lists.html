@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Admis / Redoublants — {{ year.name }}{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'students:promotion_home' %}?year={{ year.pk }}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Fin d'année</a>
+  <h1 class="text-xl font-bold text-slate-800 mt-1">Admis & redoublants</h1>
+  <p class="text-xs text-slate-500">{{ year.name }}</p>
+</div>
+
+<form method="get" class="mb-4">
+  <select name="classroom" onchange="this.form.submit()" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+    <option value="">Toutes les classes</option>
+    {% for c in classrooms %}
+    <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+{# Onglets #}
+<div class="flex gap-1 mb-4 bg-slate-100 rounded-xl p-1" id="promo-tabs">
+  <button type="button" data-tab="admis" class="tab-btn flex-1 py-2.5 rounded-lg text-sm font-semibold bg-white shadow text-emerald-700">
+    Admis <span class="text-xs opacity-70">({{ promoted|length }})</span>
+  </button>
+  <button type="button" data-tab="redouble" class="tab-btn flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-600">
+    Redoublants <span class="text-xs opacity-70">({{ repeated|length }})</span>
+  </button>
+  <button type="button" data-tab="attente" class="tab-btn flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-600">
+    En attente <span class="text-xs opacity-70">({{ pending|length }})</span>
+  </button>
+</div>
+
+<div id="panel-admis" class="tab-panel space-y-2">
+  {% for e in promoted %}
+  <div class="bg-emerald-50 border border-emerald-100 rounded-xl p-3 flex justify-between items-center gap-2">
+    <div>
+      <p class="font-semibold text-sm">{{ e.student.last_name }} {{ e.student.first_name }}</p>
+      <p class="text-xs text-slate-500 font-mono">{{ e.student.matricule }} · {{ e.classroom.name }}</p>
+    </div>
+    <div class="text-right text-xs">
+      {% if e.end_average %}<p class="font-bold text-emerald-700">{{ e.end_average }}</p>{% endif %}
+      <p class="text-emerald-600">Admis</p>
+    </div>
+  </div>
+  {% empty %}
+  <p class="text-center text-slate-400 text-sm py-8">Aucun admis pour le moment.<br><span class="text-xs">Utilisez « Calculer automatiquement » sur une classe.</span></p>
+  {% endfor %}
+</div>
+
+<div id="panel-redouble" class="tab-panel space-y-2 hidden">
+  {% for e in repeated %}
+  <div class="bg-amber-50 border border-amber-100 rounded-xl p-3 flex justify-between items-center gap-2">
+    <div>
+      <p class="font-semibold text-sm">{{ e.student.last_name }} {{ e.student.first_name }}</p>
+      <p class="text-xs text-slate-500 font-mono">{{ e.student.matricule }} · {{ e.classroom.name }}</p>
+    </div>
+    <div class="text-right text-xs">
+      {% if e.end_average %}<p class="font-bold text-amber-700">{{ e.end_average }}</p>{% endif %}
+      <p class="text-amber-600">Redouble</p>
+    </div>
+  </div>
+  {% empty %}
+  <p class="text-center text-slate-400 text-sm py-8">Aucun redoublant.</p>
+  {% endfor %}
+</div>
+
+<div id="panel-attente" class="tab-panel space-y-2 hidden">
+  {% for e in pending %}
+  <div class="bg-white border rounded-xl p-3 flex justify-between items-center gap-2">
+    <div>
+      <p class="font-semibold text-sm">{{ e.student.last_name }} {{ e.student.first_name }}</p>
+      <p class="text-xs text-slate-500">{{ e.classroom.name }}</p>
+    </div>
+    <a href="{% url 'students:promotion_class' e.classroom_id %}" class="text-xs text-blue-600">Décider →</a>
+  </div>
+  {% empty %}
+  <p class="text-center text-slate-400 text-sm py-8">Tous les élèves ont une décision.</p>
+  {% endfor %}
+</div>
+
+<script>
+document.querySelectorAll('.tab-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tab-btn').forEach(function(b) {
+      b.className = 'tab-btn flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-600';
+    });
+    btn.className = 'tab-btn flex-1 py-2.5 rounded-lg text-sm font-semibold bg-white shadow ' +
+      (btn.dataset.tab === 'admis' ? 'text-emerald-700' : btn.dataset.tab === 'redouble' ? 'text-amber-700' : 'text-slate-700');
+    document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.add('hidden'); });
+    document.getElementById('panel-' + btn.dataset.tab).classList.remove('hidden');
+  });
+});
+</script>
+{% endblock %}

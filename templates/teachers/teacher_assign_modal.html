@@ -1,0 +1,148 @@
+<div class="space-y-4 pb-4">
+  <div class="bg-indigo-50 border border-indigo-100 rounded-xl px-3 py-2 text-sm">
+    <span class="font-semibold text-indigo-800">{{ teacher.last_name }} {{ teacher.first_name }}</span>
+    <span class="text-indigo-600 text-xs"> · {{ teacher.matricule }}</span>
+  </div>
+
+  {% if not cycle %}
+  {# ===== Étape 1 : choisir le cycle ===== #}
+  <p class="text-sm font-semibold text-slate-700">Dans quel cycle enseigne-t-il / elle ?</p>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <button type="button"
+            onclick="openModalUrl('{% url 'teachers:assign' teacher.pk %}?cycle=primaire', 'Affectations — 1er cycle')"
+            class="p-4 rounded-2xl border-2 border-emerald-200 bg-emerald-50 hover:border-emerald-400 text-left transition">
+      <div class="text-2xl mb-1">📗</div>
+      <div class="font-bold text-emerald-800">1er cycle</div>
+      <div class="text-xs text-emerald-700 mt-1">1ère → 6ème · Prof principal (toutes les matières)</div>
+    </button>
+    <button type="button"
+            onclick="openModalUrl('{% url 'teachers:assign' teacher.pk %}?cycle=secondaire', 'Affectations — 2ème cycle')"
+            class="p-4 rounded-2xl border-2 border-blue-200 bg-blue-50 hover:border-blue-400 text-left transition">
+      <div class="text-2xl mb-1">📘</div>
+      <div class="font-bold text-blue-800">2ème cycle</div>
+      <div class="text-xs text-blue-700 mt-1">7ème → 9ème · Classes + matières</div>
+    </button>
+    <button type="button"
+            onclick="openModalUrl('{% url 'teachers:assign' teacher.pk %}?cycle=lycee', 'Affectations — Lycée')"
+            class="p-4 rounded-2xl border-2 border-violet-200 bg-violet-50 hover:border-violet-400 text-left transition">
+      <div class="text-2xl mb-1">📙</div>
+      <div class="font-bold text-violet-800">Lycée</div>
+      <div class="text-xs text-violet-700 mt-1">10ème → 12ème · Classes + matières</div>
+    </button>
+  </div>
+  <div class="flex gap-2 pt-2">
+    <button type="button" onclick="closeModal('modal-dynamic')" class="flex-1 border rounded-xl py-2.5 text-sm">Passer (plus tard)</button>
+  </div>
+
+  {% elif cycle == 'primaire' %}
+  {# ===== Primaire : prof principal ===== #}
+  <form method="post" action="{% url 'teachers:assign' teacher.pk %}" id="assign-form" class="space-y-3">
+    {% csrf_token %}
+    <input type="hidden" name="cycle" value="primaire">
+    <input type="hidden" name="mode" value="principal">
+    <p class="text-sm text-slate-600">
+      <span class="inline-block px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-xs font-semibold">1er cycle</span>
+      Sélectionnez la ou les classes dont il sera <b>professeur principal</b> (toutes les matières).
+    </p>
+    {% if classrooms %}
+    <div class="max-h-56 overflow-y-auto border rounded-xl divide-y">
+      {% for c in classrooms %}
+      <label class="flex items-center gap-3 px-3 py-2.5 hover:bg-slate-50 cursor-pointer">
+        <input type="checkbox" name="classrooms" value="{{ c.pk }}" class="rounded border-slate-300 text-indigo-600">
+        <span class="text-sm font-medium text-slate-800">{{ c.name }}</span>
+        <span class="text-xs text-slate-400 ml-auto">{{ c.level.name }}</span>
+      </label>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3">Aucune classe du 1er cycle pour l’année en cours. Créez d’abord les classes.</p>
+    {% endif %}
+    <div class="sticky bottom-0 bg-white border-t pt-3 flex gap-2">
+      <button type="button" onclick="openModalUrl('{% url 'teachers:assign' teacher.pk %}', 'Affectations')"
+              class="px-4 border rounded-xl text-sm">← Retour</button>
+      <button type="submit" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl text-sm font-semibold">Confirmer prof principal</button>
+    </div>
+  </form>
+
+  {% else %}
+  {# ===== Secondaire / Lycée : classes + matières ===== #}
+  <form method="post" action="{% url 'teachers:assign' teacher.pk %}" id="assign-form" class="space-y-3">
+    {% csrf_token %}
+    <input type="hidden" name="cycle" value="{{ cycle }}">
+    <input type="hidden" name="mode" value="subjects">
+    <p class="text-sm text-slate-600">
+      <span class="inline-block px-2 py-0.5 rounded-full {% if cycle == 'lycee' %}bg-violet-100 text-violet-800{% else %}bg-blue-100 text-blue-800{% endif %} text-xs font-semibold">
+        {% if cycle == 'lycee' %}Lycée{% else %}2ème cycle{% endif %}
+      </span>
+      Choisissez les <b>classes</b> et les <b>matières</b> enseignées.
+    </p>
+
+    <div>
+      <p class="text-xs font-semibold uppercase text-slate-500 mb-1">Classes</p>
+      {% if classrooms %}
+      <div class="max-h-40 overflow-y-auto border rounded-xl divide-y">
+        {% for c in classrooms %}
+        <label class="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 cursor-pointer">
+          <input type="checkbox" name="classrooms" value="{{ c.pk }}" class="rounded border-slate-300 text-indigo-600">
+          <span class="text-sm font-medium">{{ c.name }}</span>
+          <span class="text-xs text-slate-400 ml-auto">{{ c.level.name }}{% if c.serie %} · {{ c.serie }}{% endif %}</span>
+        </label>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-sm text-amber-700 bg-amber-50 rounded-xl p-3">Aucune classe pour ce cycle.</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <p class="text-xs font-semibold uppercase text-slate-500 mb-1">Matières</p>
+      {% if subjects %}
+      <div class="max-h-40 overflow-y-auto border rounded-xl divide-y">
+        {% for s in subjects %}
+        <label class="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 cursor-pointer">
+          <input type="checkbox" name="subjects" value="{{ s.pk }}" class="rounded border-slate-300 text-indigo-600">
+          <span class="text-sm">{{ s.name }}</span>
+          {% if s.coefficient %}<span class="text-xs text-slate-400 ml-auto">coef. {{ s.coefficient }}</span>{% endif %}
+        </label>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-sm text-amber-700 bg-amber-50 rounded-xl p-3">Aucune matière. Ajoutez-les dans Configuration.</p>
+      {% endif %}
+    </div>
+
+    <div class="sticky bottom-0 bg-white border-t pt-3 flex gap-2">
+      <button type="button" onclick="openModalUrl('{% url 'teachers:assign' teacher.pk %}', 'Affectations')"
+              class="px-4 border rounded-xl text-sm">← Retour</button>
+      <button type="submit" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl text-sm font-semibold">Enregistrer les affectations</button>
+    </div>
+  </form>
+  {% endif %}
+</div>
+
+<script>
+(function(){
+  var form = document.getElementById('assign-form');
+  if (!form) return;
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var fd = new FormData(form);
+    var body = document.getElementById('modal-dynamic-body');
+    body.innerHTML = '<p class="text-center py-8 text-slate-500"><i class="fas fa-spinner fa-spin"></i> Enregistrement…</p>';
+    fetch(form.action + (form.action.indexOf('?')>=0?'&':'?') + 'modal=1', {
+      method: 'POST', body: fd,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin'
+    }).then(function(r){ return r.text(); }).then(function(html){
+      body.innerHTML = html;
+      body.querySelectorAll('script').forEach(function(old){
+        var s = document.createElement('script');
+        s.textContent = old.textContent;
+        old.parentNode.replaceChild(s, old);
+      });
+    }).catch(function(){
+      body.innerHTML = '<p class="text-red-600 text-sm">Erreur. Réessayez.</p>';
+    });
+  });
+})();
+</script>

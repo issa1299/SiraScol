@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Espace comptable — SiraScol{% endblock %}
+{% block content %}
+
+<div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl text-white p-4 sm:p-5 mb-4">
+  <p class="text-emerald-100 text-xs uppercase tracking-wide">Espace comptable</p>
+  <h1 class="text-xl font-bold mt-0.5">{{ user_display }}</h1>
+  <p class="text-emerald-100 text-sm mt-1">
+    {% if school %}{{ school.name }} · {% endif %}{% if selected_year %}{{ selected_year.name }} · {% endif %}{{ today|date:"d/m/Y" }}
+  </p>
+</div>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+  <div class="bg-white rounded-xl border p-4 shadow-sm">
+    <p class="text-[10px] uppercase text-slate-400">Caisse (mois)</p>
+    <p class="text-xl font-bold text-emerald-700">{{ caisse|floatformat:0 }} <span class="text-xs font-normal">FCFA</span></p>
+  </div>
+  <div class="bg-white rounded-xl border p-4 shadow-sm">
+    <p class="text-[10px] uppercase text-slate-400">Encaissé aujourd’hui</p>
+    <p class="text-xl font-bold text-blue-700">{{ paid_today|floatformat:0 }}</p>
+  </div>
+  <div class="bg-white rounded-xl border p-4 shadow-sm">
+    <p class="text-[10px] uppercase text-slate-400">Impayés</p>
+    <p class="text-xl font-bold text-amber-600">{{ unpaid|floatformat:0 }}</p>
+    <p class="text-[10px] text-slate-400">{{ n_unpaid }} facture(s)</p>
+  </div>
+  <div class="bg-white rounded-xl border p-4 shadow-sm">
+    <p class="text-[10px] uppercase text-slate-400">Dépenses (mois)</p>
+    <p class="text-xl font-bold text-rose-600">{{ expense_month|floatformat:0 }}</p>
+  </div>
+</div>
+
+<p class="text-xs font-semibold uppercase text-slate-400 mb-2">Accès rapide</p>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+  <a href="{% url 'finance:dashboard' %}" class="bg-white border rounded-xl p-3 text-center hover:border-emerald-400">
+    <i class="fas fa-wallet text-emerald-600 text-lg"></i>
+    <p class="text-sm font-semibold mt-1">Finances</p>
+  </a>
+  <a href="{% url 'finance:report' %}" class="bg-white border rounded-xl p-3 text-center hover:border-blue-400">
+    <i class="fas fa-chart-line text-blue-600 text-lg"></i>
+    <p class="text-sm font-semibold mt-1">Rapports</p>
+  </a>
+  <a href="{% url 'teachers:list' %}" class="bg-white border rounded-xl p-3 text-center hover:border-violet-400">
+    <i class="fas fa-money-check-alt text-violet-600 text-lg"></i>
+    <p class="text-sm font-semibold mt-1">Salaires</p>
+  </a>
+  <a href="{% url 'core:reports' %}" class="bg-white border rounded-xl p-3 text-center hover:border-slate-400">
+    <i class="fas fa-file-alt text-slate-600 text-lg"></i>
+    <p class="text-sm font-semibold mt-1">Statistiques</p>
+  </a>
+</div>
+
+{% if salaries_pending %}
+<div class="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-sm text-amber-800">
+  <i class="fas fa-exclamation-triangle"></i> {{ salaries_pending }} salaire(s) en attente de paiement
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+  <div class="bg-white rounded-xl border overflow-hidden">
+    <div class="px-4 py-3 border-b font-semibold text-sm">Derniers paiements</div>
+    <div class="divide-y max-h-64 overflow-y-auto">
+      {% for p in recent_payments %}
+      <div class="px-4 py-2 text-sm flex justify-between gap-2">
+        <span class="truncate">{% if p.invoice.student %}{{ p.invoice.student.last_name }} {{ p.invoice.student.first_name }}{% else %}—{% endif %}</span>
+        <span class="font-semibold text-emerald-700 shrink-0">{{ p.amount|floatformat:0 }}</span>
+      </div>
+      {% empty %}
+      <p class="p-4 text-sm text-slate-400">Aucun paiement récent</p>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border overflow-hidden">
+    <div class="px-4 py-3 border-b font-semibold text-sm">Dernières dépenses</div>
+    <div class="divide-y max-h-64 overflow-y-auto">
+      {% for e in recent_expenses %}
+      <div class="px-4 py-2 text-sm flex justify-between gap-2">
+        <span class="truncate">{{ e.description|default:e.category|default:"Dépense" }}</span>
+        <span class="font-semibold text-rose-600 shrink-0">{{ e.amount|floatformat:0 }}</span>
+      </div>
+      {% empty %}
+      <p class="p-4 text-sm text-slate-400">Aucune dépense récente</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

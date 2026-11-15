@@ -1,0 +1,30 @@
+{% extends "grades/base_cotes.html" %}
+{% block title %}Modifier les cotes{% endblock %}
+{% block header_title %}Modifier les cotes{% endblock %}
+{% block header_sub %}Évaluations existantes — cliquez pour modifier les notes{% endblock %}
+{% block content %}
+<form method="get" class="bg-white rounded-2xl border p-4 mb-4 flex gap-2">
+  <select name="classroom" class="border rounded-xl px-3 py-2.5 text-sm flex-1" onchange="this.form.submit()">
+    <option value="">Toutes les classes</option>
+    {% for c in classrooms %}
+    <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+</form>
+<div class="bg-white rounded-2xl border overflow-hidden divide-y">
+  {% for a in page %}
+  <a href="{% url 'grades:entry' a.pk %}" class="flex items-center justify-between px-4 py-3 hover:bg-amber-50">
+    <div>
+      <p class="font-medium text-sm">{{ a.title }}</p>
+      <p class="text-xs text-slate-400">{{ a.classroom.name }} · {{ a.subject.name }} · {{ a.period.name }} · {{ a.date|date:"d/m/Y" }}</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <span class="text-xs bg-slate-100 px-2 py-1 rounded-full">{{ a.nb_notes }} note(s)</span>
+      <i class="fas fa-edit text-amber-600"></i>
+    </div>
+  </a>
+  {% empty %}
+  <p class="px-4 py-12 text-center text-slate-400 text-sm">Aucune évaluation à modifier. Commencez par la <a href="{% url 'grades:classes' %}" class="text-emerald-600 underline">Saisie des cotes</a>.</p>
+  {% endfor %}
+</div>
+{% endblock %}

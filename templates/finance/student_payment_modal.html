@@ -1,0 +1,67 @@
+<style>
+.form-input{width:100%;border:1px solid #d1d5db;border-radius:.5rem;padding:.5rem .75rem;font-size:.875rem;outline:none}
+.form-input:focus{border-color:#3b82f6;box-shadow:0 0 0 2px rgba(59,130,246,.25)}
+</style>
+<div class="space-y-3 text-sm">
+  <div class="rounded-lg bg-slate-50 border border-slate-100 p-3">
+    <p class="font-semibold text-slate-800">{{ student.last_name }} {{ student.first_name }}</p>
+    <p class="text-xs text-slate-500 font-mono">{{ student.matricule }}</p>
+    <div class="grid grid-cols-2 gap-2 mt-2 text-xs">
+      <p>Reste total : <strong class="{% if total_balance > 0 %}text-red-600{% else %}text-green-700{% endif %}">{{ total_balance|floatformat:0 }}</strong></p>
+      <p>Factures ouvertes : <strong>{{ invoices|length }}</strong></p>
+    </div>
+  </div>
+
+  {% if invoices %}
+  <form method="post" action="{{ form_action }}" class="space-y-3">
+    {% csrf_token %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    <div>
+      <label class="text-xs font-medium text-slate-600">Facture (ou laisser vide = répartition auto)</label>
+      <select name="invoice" class="form-input">
+        <option value="">— Répartir automatiquement —</option>
+        {% for inv in invoices %}
+        <option value="{{ inv.id }}">
+          {{ inv.fee_type.name }} — dû {{ inv.amount|floatformat:0 }} / reste {{ inv.balance|floatformat:0 }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-xs font-medium text-slate-600">Montant *</label>
+        <input type="number" name="amount" min="1" step="1" required class="form-input" placeholder="Ex: 25000">
+      </div>
+      <div>
+        <label class="text-xs font-medium text-slate-600">Date *</label>
+        <input type="date" name="payment_date" value="{{ today }}" required class="form-input">
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div>
+        <label class="text-xs font-medium text-slate-600">Mode</label>
+        <select name="method" class="form-input">
+          {% for v,l in method_choices %}<option value="{{ v }}">{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="text-xs font-medium text-slate-600">Référence</label>
+        <input type="text" name="reference" class="form-input" placeholder="N° transaction…">
+      </div>
+    </div>
+    <div>
+      <label class="text-xs font-medium text-slate-600">Notes</label>
+      <input type="text" name="notes" class="form-input">
+    </div>
+    <div class="form-actions flex gap-2 pt-2 border-t">
+      <button type="submit" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2.5 rounded-lg text-sm font-medium">
+        <i class="fas fa-check"></i> Enregistrer le paiement
+      </button>
+      <button type="button" onclick="closeModal('modal-dynamic')" class="px-4 text-sm text-slate-600">Annuler</button>
+    </div>
+  </form>
+  {% else %}
+  <p class="text-slate-500 text-sm py-4 text-center">Aucune facture en attente pour cet élève.</p>
+  <button type="button" onclick="closeModal('modal-dynamic')" class="w-full text-sm text-slate-600 py-2">Fermer</button>
+  {% endif %}
+</div>

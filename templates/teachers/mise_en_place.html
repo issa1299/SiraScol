@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}Mise en place — {{ year.name|default:"" }}{% endblock %}
+{% block content %}
+<div class="mb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+  <div>
+    <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+      <i class="fas fa-file-alt text-indigo-600"></i> Mise en place {{ year.name|default:"" }}
+    </h1>
+    <p class="text-xs text-slate-500">Générée automatiquement à partir du personnel et des inscriptions.</p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'teachers:mise_en_place' %}?pdf=1{% if cycle_code %}&cycle={{ cycle_code }}{% endif %}"
+       class="bg-indigo-600 text-white text-sm px-4 py-2.5 rounded-xl font-medium">
+      <i class="fas fa-download"></i> Télécharger PDF
+    </a>
+    <button type="button" onclick="window.print()" class="border text-sm px-4 py-2.5 rounded-xl">
+      <i class="fas fa-print"></i> Imprimer
+    </button>
+    <button type="button" onclick="sirascolExportPdf('#mise-doc', 'mise_en_place.pdf')" class="bg-rose-600 text-white text-sm px-4 py-2.5 rounded-xl">
+      <i class="fas fa-file-pdf"></i> PDF
+    </button>
+  </div>
+</div>
+
+{# Onglets cycles #}
+<div class="flex flex-wrap gap-2 mb-4">
+  <a href="{% url 'teachers:mise_en_place' %}"
+     class="px-3 py-1.5 rounded-full text-xs font-medium {% if not cycle_code %}bg-indigo-600 text-white{% else %}bg-white border{% endif %}">Tous</a>
+  {% for c in cycles %}
+  <a href="{% url 'teachers:mise_en_place' %}?cycle={{ c.code }}"
+     class="px-3 py-1.5 rounded-full text-xs font-medium {% if cycle_code == c.code %}bg-indigo-600 text-white{% else %}bg-white border{% endif %}">
+    {{ c.name }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="bg-white rounded-2xl border shadow-sm p-4 sm:p-6 print:shadow-none print:border-0 max-w-4xl mx-auto" id="mise-doc">
+  <div class="text-center text-xs text-slate-500 mb-1">{{ school.header_left|default:"" }}</div>
+  <h2 class="text-center text-lg font-bold text-slate-900">{{ school.name }}</h2>
+  {% if school.address %}<p class="text-center text-xs text-slate-500">{{ school.address }}{% if school.city %} — {{ school.city }}{% endif %}</p>{% endif %}
+  <p class="text-center text-sm font-semibold mt-3 uppercase tracking-wide">
+    Mise en place du personnel — Exercice {{ year.name|default:"" }}
+  </p>
+
+  <h3 class="text-sm font-bold mt-6 mb-2 border-b pb-1">Structure du personnel</h3>
+  <div class="overflow-x-auto">
+    <table class="w-full text-xs border-collapse">
+      <thead>
+        <tr class="bg-slate-100">
+          <th class="border px-2 py-1.5 text-left">Catégorie</th>
+          <th class="border px-2 py-1.5">Hommes</th>
+          <th class="border px-2 py-1.5">%</th>
+          <th class="border px-2 py-1.5">Femmes</th>
+          <th class="border px-2 py-1.5">%</th>
+          <th class="border px-2 py-1.5">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in structure_personnel %}
+        <tr>
+          <td class="border px-2 py-1.5 font-medium">{{ row.label }}</td>
+          <td class="border px-2 py-1.5 text-center">{{ row.h }}</td>
+          <td class="border px-2 py-1.5 text-center">{{ row.h_pct }}%</td>
+          <td class="border px-2 py-1.5 text-center">{{ row.f }}</td>
+          <td class="border px-2 py-1.5 text-center">{{ row.f_pct }}%</td>
+          <td class="border px-2 py-1.5 text-center font-semibold">{{ row.t }}</td>
+        </tr>
+        {% endfor %}
+        <tr class="bg-slate-50 font-bold">
+          <td class="border px-2 py-1.5">TOTAL GÉNÉRAL</td>
+          <td class="border px-2 py-1.5 text-center">{{ total_staff.h }}</td>
+          <td class="border px-2 py-1.5 text-center">{{ total_staff.h_pct }}%</td>
+          <td class="border px-2 py-1.5 text-center">{{ total_staff.f }}</td>
+          <td class="border px-2 py-1.5 text-center">{{ total_staff.f_pct }}%</td>
+          <td class="border px-2 py-1.5 text-center">{{ total_staff.t }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="text-sm font-bold mt-6 mb-2 border-b pb-1">Structure et statistique scolaire</h3>
+  {% if class_stats %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-xs border-collapse">
+      <thead>
+        <tr class="bg-slate-100">
+          <th class="border px-2 py-1.5 text-left">Classe</th>
+          <th class="border px-2 py-1.5">Cycle</th>
+          <th class="border px-2 py-1.5">Option / Série</th>
+          <th class="border px-2 py-1.5">G</th>
+          <th class="border px-2 py-1.5">F</th>
+          <th class="border px-2 py-1.5">Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in class_stats %}
+        <tr>
+          <td class="border px-2 py-1.5">{{ r.classroom.name }}</td>
+          <td class="border px-2 py-1.5 text-center">{{ r.cycle.name }}</td>
+          <td class="border px-2 py-1.5 text-center">{{ r.option|default:"—" }}</td>
+          <td class="border px-2 py-1.5 text-center">{{ r.garcons }}</td>
+          <td class="border px-2 py-1.5 text-center">{{ r.filles }}</td>
+          <td class="border px-2 py-1.5 text-center font-semibold">{{ r.total }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-xs text-slate-400">Aucun effectif pour cette année / ce cycle.</p>
+  {% endif %}
+
+  <h3 class="text-sm font-bold mt-6 mb-2 border-b pb-1">Mise en place du personnel — détail nominatif</h3>
+  {% for block in structure_personnel %}
+  {% if block.rows %}
+  <p class="text-xs font-bold mt-4 mb-1 uppercase">{{ block.label }}</p>
+  <div class="overflow-x-auto">
+    <table class="w-full text-xs border-collapse">
+      <thead>
+        <tr class="bg-slate-100">
+          <th class="border px-2 py-1">N°</th>
+          <th class="border px-2 py-1 text-left">Nom et prénom</th>
+          <th class="border px-2 py-1">Sexe</th>
+          <th class="border px-2 py-1">Date naiss.</th>
+          <th class="border px-2 py-1">Diplôme</th>
+          <th class="border px-2 py-1">Fonction</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in block.rows %}
+        <tr>
+          <td class="border px-2 py-1 text-center">{{ forloop.counter|stringformat:"02d" }}</td>
+          <td class="border px-2 py-1">{{ p.last_name }} {{ p.first_name }}</td>
+          <td class="border px-2 py-1 text-center">{{ p.gender }}</td>
+          <td class="border px-2 py-1 text-center">{{ p.date_of_birth|date:"d/m/Y"|default:"—" }}</td>
+          <td class="border px-2 py-1">{{ p.diploma|default:"—" }}</td>
+          <td class="border px-2 py-1">{{ p.function|default:p.get_category_display }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+  {% endfor %}
+
+  <div class="mt-8 text-right text-xs text-slate-600">
+    <p>Fait à {{ school.city|default:"" }}, le {{ today|date:"d/m/Y" }}</p>
+    {% if school.director_name %}
+    <p class="mt-4 font-semibold">Le Chef d'établissement</p>
+    <p class="mt-6">{{ school.director_name }}</p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Cartes — {{ classroom }}{% endblock %}
+{% block content %}
+
+<div class="mb-3">
+  <a href="{% url 'students:cards_home' %}" class="text-sm text-slate-500 hover:text-violet-600">
+    <i class="fas fa-arrow-left"></i> Cartes scolaires
+  </a>
+</div>
+
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+  <div>
+    <h1 class="text-xl font-bold text-slate-800">{{ classroom }}</h1>
+    <p class="text-xs text-slate-500">{{ enrollments|length }} élève(s) · Modèle :
+      {% for key, d in designs.items %}{% if key == current_template %}{{ d.label }}{% endif %}{% endfor %}
+    </p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'students:cards_class_pdf' classroom.id %}?template={{ current_template }}"
+       class="inline-flex items-center gap-2 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+      <i class="fas fa-file-pdf"></i> PDF toute la classe
+    </a>
+  </div>
+</div>
+
+{# Aperçu couleurs modèle #}
+<div class="flex flex-wrap gap-2 mb-4">
+  {% for key, d in designs.items %}
+  <a href="?template={{ key }}"
+     class="text-xs px-3 py-1.5 rounded-full border
+       {% if current_template == key %}bg-violet-600 text-white border-violet-600{% else %}bg-white text-slate-600{% endif %}">
+    {{ d.label }}
+  </a>
+  {% endfor %}
+</div>
+
+<div class="bg-white rounded-xl border overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left text-[10px] uppercase text-slate-500">
+      <tr>
+        <th class="px-3 py-2">Élève</th>
+        <th class="px-3 py-2">Matricule</th>
+        <th class="px-3 py-2">Statut</th>
+        <th class="px-3 py-2 text-right">Télécharger</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for enr in enrollments %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-3 py-2.5">
+          <div class="flex items-center gap-2">
+            {% if enr.student.photo %}
+            <img src="{{ enr.student.photo.url }}" class="w-9 h-9 rounded-lg object-cover" alt="">
+            {% else %}
+            <span class="w-9 h-9 rounded-lg bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-bold">
+              {{ enr.student.last_name|first|upper }}
+            </span>
+            {% endif %}
+            <span class="font-medium">{{ enr.student.last_name }} {{ enr.student.first_name }}</span>
+          </div>
+        </td>
+        <td class="px-3 py-2.5 font-mono text-xs">{{ enr.student.matricule }}</td>
+        <td class="px-3 py-2.5">
+          <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+            {{ enr.student.get_status_display }}
+          </span>
+        </td>
+        <td class="px-3 py-2.5 text-right">
+          <div class="inline-flex gap-1">
+            <button type="button" class="text-xs border px-2 py-1.5 rounded-lg hover:bg-slate-50"
+                    title="Aperçu"
+                    onclick="openModalUrl('{% url 'students:card_preview' enr.student.pk %}?template={{ current_template }}&modal=1','Carte — {{ enr.student.last_name }} {{ enr.student.first_name }}')">
+              <i class="fas fa-eye"></i>
+            </button>
+            <a href="{% url 'students:card_pdf' enr.student.pk %}" class="text-xs bg-blue-600 text-white px-2 py-1.5 rounded-lg" title="PDF">
+              PDF
+            </a>
+            <a href="{% url 'students:card_image' enr.student.pk %}?template={{ current_template }}" class="text-xs bg-teal-600 text-white px-2 py-1.5 rounded-lg" title="Image">
+              Image
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="px-3 py-10 text-center text-slate-400">Aucun élève dans cette classe</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

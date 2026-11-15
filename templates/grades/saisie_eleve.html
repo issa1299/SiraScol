@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}Notes — {{ student.last_name }}{% endblock %}
+{% block content %}
+
+{% if is_teacher_ui %}
+<a href="{% url 'grades:classes' %}?classroom={{ classroom.id }}" class="inline-flex items-center gap-1 text-sm text-violet-600 mb-3">
+  <i class="fas fa-arrow-left"></i> Retour classe
+</a>
+{% else %}
+<a href="{% url 'grades:classes' %}?classroom={{ classroom.id }}" class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-emerald-600 mb-3">
+  <i class="fas fa-arrow-left"></i> Retour
+</a>
+{% endif %}
+
+<div class="bg-gradient-to-r from-blue-700 to-blue-600 text-white rounded-2xl px-4 py-4 mb-4 flex flex-wrap items-center justify-between gap-3">
+  <div class="flex items-center gap-3 min-w-0">
+    <div class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-lg font-bold shrink-0 overflow-hidden">
+      {% if student.photo %}
+      <img src="{{ student.photo.url }}" class="w-full h-full object-cover" alt="">
+      {% else %}
+      {{ student.last_name|slice:":1" }}{{ student.first_name|slice:":1" }}
+      {% endif %}
+    </div>
+    <div class="min-w-0">
+      <p class="font-bold text-base sm:text-lg truncate">{{ student.last_name|upper }} {{ student.first_name }}</p>
+      <p class="text-xs text-blue-100 truncate">Matricule : {{ student.matricule }} · Classe : {{ classroom.name }}</p>
+    </div>
+  </div>
+  <a href="{% url 'grades:bulletin' student.id %}?period={{ period.id }}"
+     class="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-sm px-4 py-2 rounded-xl shrink-0">
+    <i class="fas fa-file-pdf"></i> Bulletin
+  </a>
+</div>
+
+<div class="flex flex-wrap gap-2 mb-4">
+  {% for p in periods %}
+  <a href="?classroom={{ classroom.id }}&student={{ student.id }}&period={{ p.id }}"
+     class="px-4 py-2 rounded-full text-sm font-medium {% if p.id == period.id %}bg-blue-600 text-white{% else %}bg-white border text-slate-600 hover:border-blue-300{% endif %}">
+    {{ p.name }}
+  </a>
+  {% endfor %}
+</div>
+
+{% if not is_primary %}
+<div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 mb-4 text-xs text-amber-900">
+  <strong>Note de classe</strong> = moyenne des <strong>devoirs</strong> (D1, D2, D3).<br>
+  <strong>Moyenne matière</strong> = (Note de classe + 2 × Composition) ÷ 3
+</div>
+{% endif %}
+
+<form method="post" id="form-notes" class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+  {% csrf_token %}
+  <input type="hidden" name="classroom" value="{{ classroom.id }}">
+  <input type="hidden" name="student" value="{{ student.id }}">
+  <input type="hidden" name="period" value="{{ period.id }}">
+
+  <div class="px-4 py-3 border-b bg-slate-50 text-xs uppercase text-slate-500 font-semibold overflow-x-auto">
+    <div class="flex justify-between items-center gap-2 min-w-[520px]">
+      <span>Matières</span>
+      {% if is_primary %}
+      <span class="w-20 text-center">Note /{{ max_score }}</span>
+      {% else %}
+      <span class="flex gap-2 text-center">
+        <span class="w-14">D1</span>
+        <span class="w-14">D2</span>
+        <span class="w-14">D3</span>
+        <span class="w-14 text-emerald-700">Classe</span>
+        <span class="w-14 text-blue-700">Compo</span>
+        <span class="w-14 text-slate-700">Moy.</span>
+      </span>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="divide-y">
+    {% for row in rows %}
+    <div class="px-4 py-3 overflow-x-auto" data-subject="{{ row.subject.id }}">
+      <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 min-w-[520px]">
+        <div class="flex-1 min-w-0">
+          <p class="text-sm font-medium text-slate-800">{{ row.subject.name }}</p>
+          <p class="text-[10px] text-blue-600">coef. {{ row.coef }}</p>
+        </div>
+        {% if is_primary %}
+        <div class="w-24">
+          <input type="number" name="score_{{ row.subject.id }}" step="0.25" min="0" max="{{ max_score }}"
+                 value="{{ row.score }}" inputmode="decimal"
+                 class="w-full border rounded-lg px-2 py-2 text-center text-sm font-semibold bg-emerald-50 border-emerald-200">
+        </div>
+        {% else %}
+        <div class="flex gap-2 items-center">
+          <input type="number" name="score_{{ row.subject.id }}_devoir1" step="0.25" min="0" max="{{ max_score }}"
+                 value="{{ row.devoir1 }}" inputmode="decimal" placeholder="D1"
+                 class="w-14 border rounded-lg px-1 py-2 text-center text-sm bg-violet-50 border-violet-200 devoir-input"
+                 data-sid="{{ row.subject.id }}">
+          <input type="number" name="score_{{ row.subject.id }}_devoir2" step="0.25" min="0" max="{{ max_score }}"
+                 value="{{ row.devoir2 }}" inputmode="decimal" placeholder="D2"
+                 class="w-14 border rounded-lg px-1 py-2 text-center text-sm bg-violet-50 border-violet-200 devoir-input"
+                 data-sid="{{ row.subject.id }}">
+          <input type="number" name="score_{{ row.subject.id }}_devoir3" step="0.25" min="0" max="{{ max_score }}"
+                 value="{{ row.devoir3 }}" inputmode="decimal" placeholder="D3"
+                 class="w-14 border rounded-lg px-1 py-2 text-center text-sm bg-violet-50 border-violet-200 devoir-input"
+                 data-sid="{{ row.subject.id }}">
+          <span class="w-14 text-center text-sm font-bold text-emerald-700 note-classe" id="nc-{{ row.subject.id }}">
+            {% if row.note_classe != '' %}{{ row.note_classe }}{% else %}—{% endif %}
+          </span>
+          <input type="number" name="score_{{ row.subject.id }}_compo" step="0.25" min="0" max="{{ max_score }}"
+                 value="{{ row.composition }}" inputmode="decimal" placeholder="Comp"
+                 class="w-14 border rounded-lg px-1 py-2 text-center text-sm bg-blue-50 border-blue-200 compo-input"
+                 data-sid="{{ row.subject.id }}">
+          <span class="w-14 text-center text-sm font-bold text-slate-800 moy-cell" id="moy-{{ row.subject.id }}">
+            {% if row.moyenne != None %}{{ row.moyenne }}{% else %}—{% endif %}
+          </span>
+        </div>
+        {% endif %}
+      </div>
+      {% if not is_primary %}
+      <p class="sm:hidden text-[10px] text-slate-400 mt-1">D1 D2 D3 = devoirs → Note de classe · Compo · Moyenne</p>
+      {% endif %}
+    </div>
+    {% empty %}
+    <p class="px-4 py-10 text-center text-slate-400 text-sm">
+      Aucune matière liée à cette classe. Affectez les matières dans Gestion des Classes.
+    </p>
+    {% endfor %}
+  </div>
+
+  {% if rows %}
+  <div class="p-4 border-t bg-slate-50 sticky bottom-0">
+    <button type="submit" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-6 py-3 rounded-xl text-sm">
+      <i class="fas fa-save"></i> Enregistrer les notes
+    </button>
+    {% if not is_primary %}
+    <p class="text-[11px] text-slate-500 mt-2">
+      Note de classe = moyenne des devoirs · Moyenne = (Note de classe + 2 × Composition) / 3
+    </p>
+    {% endif %}
+  </div>
+  {% endif %}
+</form>
+
+{% if not is_primary %}
+<script>
+(function() {
+  function avgDevoirs(sid) {
+    var vals = [];
+    document.querySelectorAll('.devoir-input[data-sid="'+sid+'"]').forEach(function(inp) {
+      var v = parseFloat(String(inp.value).replace(',', '.'));
+      if (!isNaN(v)) vals.push(v);
+    });
+    if (!vals.length) return null;
+    return Math.round((vals.reduce(function(a,b){return a+b;},0) / vals.length) * 100) / 100;
+  }
+  function updateRow(sid) {
+    var nc = avgDevoirs(sid);
+    var ncEl = document.getElementById('nc-' + sid);
+    if (ncEl) ncEl.textContent = nc !== null ? nc : '—';
+    var compoInp = document.querySelector('.compo-input[data-sid="'+sid+'"]');
+    var nx = compoInp ? parseFloat(String(compoInp.value).replace(',', '.')) : NaN;
+    var moy = null;
+    if (nc !== null && !isNaN(nx)) moy = Math.round(((nc + 2 * nx) / 3) * 100) / 100;
+    else if (!isNaN(nx)) moy = nx;
+    else if (nc !== null) moy = nc;
+    var moyEl = document.getElementById('moy-' + sid);
+    if (moyEl) moyEl.textContent = moy !== null ? moy : '—';
+  }
+  document.querySelectorAll('.devoir-input, .compo-input').forEach(function(inp) {
+    inp.addEventListener('input', function() { updateRow(inp.getAttribute('data-sid')); });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

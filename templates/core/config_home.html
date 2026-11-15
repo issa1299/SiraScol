@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block title %}Configuration{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h1 class="text-xl sm:text-2xl font-bold text-slate-800">Configuration</h1>
+  <p class="text-xs text-slate-500 mt-0.5">Structure de l'école — sans passer par l'admin technique</p>
+</div>
+
+{# Identité école #}
+<a href="{% url 'core:settings' %}" class="block bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl p-4 mb-4 shadow">
+  <div class="flex items-center gap-3">
+    <div class="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+      <i class="fas fa-school text-xl"></i>
+    </div>
+    <div class="flex-1 min-w-0">
+      <p class="font-bold">Paramètres de l'école</p>
+      <p class="text-xs text-blue-100 truncate">Logo, cachet, nom, en-têtes bulletin…</p>
+    </div>
+    <i class="fas fa-chevron-right text-blue-200"></i>
+  </div>
+</a>
+
+<p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 px-1">Scolarité</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+  <a href="{% url 'core:config_years' %}" class="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:border-blue-300 active:bg-slate-50">
+    <span class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fas fa-calendar-alt"></i></span>
+    <div>
+      <p class="font-semibold text-sm text-slate-800">Années scolaires</p>
+      <p class="text-[11px] text-slate-400">Créer / activer une année</p>
+    </div>
+  </a>
+  <a href="{% url 'core:config_cycles' %}" class="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:border-blue-300 active:bg-slate-50">
+    <span class="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center"><i class="fas fa-layer-group"></i></span>
+    <div>
+      <p class="font-semibold text-sm text-slate-800">Cycles & niveaux</p>
+      <p class="text-[11px] text-slate-400">Primaire, 1ère…12ème</p>
+    </div>
+  </a>
+  <a href="{% url 'core:config_assignments' %}" class="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:border-blue-300 active:bg-slate-50">
+    <span class="w-10 h-10 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center"><i class="fas fa-link"></i></span>
+    <div>
+      <p class="font-semibold text-sm text-slate-800">Affectations matières</p>
+      <p class="text-[11px] text-slate-400">Prof + matière + classe</p>
+    </div>
+  </a>
+  <a href="{% url 'core:config_periods' %}" class="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:border-blue-300 active:bg-slate-50">
+    <span class="w-10 h-10 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center"><i class="fas fa-clock"></i></span>
+    <div>
+      <p class="font-semibold text-sm text-slate-800">Périodes</p>
+      <p class="text-[11px] text-slate-400">Trimestres, mois, compositions</p>
+    </div>
+  </a>
+  <a href="{% url 'core:config_subjects' %}" class="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:border-blue-300 active:bg-slate-50">
+    <span class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center"><i class="fas fa-book"></i></span>
+    <div>
+      <p class="font-semibold text-sm text-slate-800">Matières</p>
+      <p class="text-[11px] text-slate-400">Coefficients, cycles</p>
+    </div>
+  </a>
+  <a href="{% url 'core:config_assessment_types' %}" class="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:border-blue-300 active:bg-slate-50">
+    <span class="w-10 h-10 rounded-xl bg-fuchsia-50 text-fuchsia-600 flex items-center justify-center"><i class="fas fa-tasks"></i></span>
+    <div>
+      <p class="font-semibold text-sm text-slate-800">Types d'évaluation</p>
+      <p class="text-[11px] text-slate-400">Devoir, composition…</p>
+    </div>
+  </a>
+</div>
+
+<p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 px-1">Finance & locaux</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+  <a href="{% url 'core:config_fee_types' %}" class="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:border-blue-300 active:bg-slate-50">
+    <span class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center"><i class="fas fa-coins"></i></span>
+    <div>
+      <p class="font-semibold text-sm text-slate-800">Types de frais</p>
+      <p class="text-[11px] text-slate-400">Inscription, scolarité…</p>
+    </div>
+  </a>
+  <a href="{% url 'core:config_rooms' %}" class="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:border-blue-300 active:bg-slate-50">
+    <span class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center"><i class="fas fa-door-open"></i></span>
+    <div>
+      <p class="font-semibold text-sm text-slate-800">Salles & créneaux</p>
+      <p class="text-[11px] text-slate-400">Emploi du temps</p>
+    </div>
+  </a>
+</div>
+
+<p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 px-1">Accès</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+  <a href="{% url 'core:config_users' %}" class="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:border-blue-300 active:bg-slate-50">
+    <span class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center"><i class="fas fa-user-shield"></i></span>
+    <div>
+      <p class="font-semibold text-sm text-slate-800">Utilisateurs & rôles</p>
+      <p class="text-[11px] text-slate-400">Créer comptes, rôles</p>
+    </div>
+  </a>
+  <a href="{% url 'core:config_liaisons' %}" class="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:border-blue-300 active:bg-slate-50">
+    <span class="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center"><i class="fas fa-project-diagram"></i></span>
+    <div>
+      <p class="font-semibold text-sm text-slate-800">Liaisons</p>
+      <p class="text-[11px] text-slate-400">Comptes, classes, matières…</p>
+    </div>
+  </a>
+  <a href="{% url 'core:config_permissions' %}" class="bg-white rounded-2xl border p-4 flex items-center gap-3 hover:border-blue-300 active:bg-slate-50">
+    <span class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center"><i class="fas fa-key"></i></span>
+    <div>
+      <p class="font-semibold text-sm text-slate-800">Permissions par rôle</p>
+      <p class="text-[11px] text-slate-400">Qui voit / fait quoi</p>
+    </div>
+  </a>
+</div>
+
+<p class="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2 px-1">Exports & sauvegarde</p>
+<div class="bg-white rounded-2xl border p-4 space-y-2">
+  <a href="{% url 'core:export_students' %}" class="flex items-center gap-3 py-2 text-sm text-slate-700">
+    <i class="fas fa-file-excel text-emerald-600 w-5 text-center"></i> Export élèves (Excel)
+  </a>
+  <a href="{% url 'core:export_grades' %}" class="flex items-center gap-3 py-2 text-sm text-slate-700 border-t border-slate-50">
+    <i class="fas fa-file-excel text-emerald-600 w-5 text-center"></i> Export notes (Excel)
+  </a>
+  <a href="{% url 'core:export_payments' %}" class="flex items-center gap-3 py-2 text-sm text-slate-700 border-t border-slate-50">
+    <i class="fas fa-file-excel text-emerald-600 w-5 text-center"></i> Export paiements (Excel)
+  </a>
+  <a href="{% url 'core:backup' %}" class="flex items-center gap-3 py-2 text-sm text-slate-700 border-t border-slate-50">
+    <i class="fas fa-database text-blue-600 w-5 text-center"></i> Sauvegarde (ZIP base + médias)
+  </a>
+</div>
+{% endblock %}

@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Enregistrer un paiement - SiraScol{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'finance:classes' %}" class="text-sm text-slate-500 hover:text-blue-600">
+        <i class="fas fa-arrow-left"></i> Retour aux finances
+    </a>
+</div>
+
+<div class="max-w-xl">
+    <h1 class="text-2xl font-bold text-slate-800 mb-6">Enregistrer un paiement</h1>
+
+    <form method="post" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-5">
+        {% csrf_token %}
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Facture *</label>
+            <select name="invoice" required class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                <option value="">— Choisir une facture —</option>
+                {% for inv in open_invoices %}
+                <option value="{{ inv.id }}">
+                    {{ inv.student }} — {{ inv.fee_type }} (reste {{ inv.balance|floatformat:0 }})
+                </option>
+                {% endfor %}
+            </select>
+            {% if not open_invoices %}
+            <p class="text-xs text-amber-600 mt-1">Aucune facture en attente. Crée d’abord une facture dans l’admin.</p>
+            {% endif %}
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Montant *</label>
+                <input type="number" name="amount" step="0.01" min="0.01" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                       placeholder="0">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Date *</label>
+                <input type="date" name="payment_date" value="{{ today }}" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Mode de paiement</label>
+                <select name="method" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                    {% for v, l in method_choices %}
+                    <option value="{{ v }}">{{ l }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Référence</label>
+                <input type="text" name="reference" placeholder="N° chèque, transaction..."
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Reçu par</label>
+            <input type="text" name="received_by" placeholder="Nom de la personne"
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+            <textarea name="notes" rows="2" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium">
+                <i class="fas fa-check"></i> Enregistrer le paiement
+            </button>
+            <a href="{% url 'finance:classes' %}" class="px-5 py-2.5 text-sm text-slate-600">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

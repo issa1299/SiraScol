@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Connexion - SiraScol{% endblock %}
+
+{% block auth_content %}
+<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-800 via-slate-900 to-blue-900 px-4">
+    <div class="w-full max-w-md">
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-500 text-white text-3xl mb-4 shadow-lg">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-white">SiraScol</h1>
+            <p class="text-slate-400 mt-1">Le chemin de votre école · Connectez-vous</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-2xl p-8">
+            {% if form.errors %}
+            <div class="mb-4 px-4 py-3 rounded-lg bg-red-50 text-red-700 text-sm border border-red-200">
+                Identifiants incorrects. Veuillez réessayer.
+            </div>
+            {% endif %}
+
+            <form method="post" class="space-y-5" id="login-form">
+                {% csrf_token %}
+                <div>
+                    <label for="id_username" class="block text-sm font-medium text-gray-700 mb-1">Nom d'utilisateur</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                            <i class="fas fa-user"></i>
+                        </span>
+                        <input type="text" name="username" id="id_username" autofocus required
+                               class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                               placeholder="Votre identifiant">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="id_password" class="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        <input type="password" name="password" id="id_password" required
+                               class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
+                               placeholder="••••••••">
+                    </div>
+                </div>
+
+                <button type="submit"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition shadow-md hover:shadow-lg flex items-center justify-center gap-2">
+                    <i class="fas fa-sign-in-alt"></i> Se connecter
+                </button>
+            </form>
+        </div>
+
+        <p class="text-center text-slate-500 text-sm mt-6">
+            &copy; {% now "Y" %} SiraScol — Le chemin de votre école
+        </p>
+    </div>
+</div>
+{% endblock %}

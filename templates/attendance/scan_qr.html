@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+{% block title %}Scan QR Code{% endblock %}
+{% block content %}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+  <h1 class="text-xl font-bold text-slate-800">Scan QR Code</h1>
+  <p class="text-xs text-slate-500">{{ today|date:"d/m/Y" }}</p>
+</div>
+
+{# Stats #}
+<div class="bg-gradient-to-r from-blue-700 to-blue-600 text-white rounded-2xl p-4 mb-4">
+  <p class="text-xs text-blue-100 mb-2">Présences du {{ today|date:"d/m/Y" }}</p>
+  <div class="grid grid-cols-4 gap-2 text-center">
+    <div class="bg-white/10 rounded-xl py-2">
+      <p class="text-lg font-bold">{{ stats.total }}</p>
+      <p class="text-[10px] text-blue-100">Total pointés</p>
+    </div>
+    <div class="bg-white/10 rounded-xl py-2">
+      <p class="text-lg font-bold">{{ stats.presents }}</p>
+      <p class="text-[10px] text-blue-100">Présents</p>
+    </div>
+    <div class="bg-white/10 rounded-xl py-2">
+      <p class="text-lg font-bold">{{ stats.arrivees }}</p>
+      <p class="text-[10px] text-blue-100">Arrivées</p>
+    </div>
+    <div class="bg-white/10 rounded-xl py-2">
+      <p class="text-lg font-bold">{{ stats.departs }}</p>
+      <p class="text-[10px] text-blue-100">Départs</p>
+    </div>
+  </div>
+</div>
+
+{# Onglets #}
+<div class="flex gap-4 border-b mb-4 text-sm">
+  <a href="?tab=personnel"
+     class="pb-2 px-1 {% if tab == 'personnel' %}border-b-2 border-blue-600 text-blue-700 font-semibold{% else %}text-slate-500{% endif %}">
+    <i class="fas fa-user-tie"></i> Personnel (Pointeuse)
+  </a>
+  <a href="?tab=eleves"
+     class="pb-2 px-1 {% if tab == 'eleves' %}border-b-2 border-blue-600 text-blue-700 font-semibold{% else %}text-slate-500{% endif %}">
+    <i class="fas fa-user-graduate"></i> Élèves
+  </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  {# Zone scan #}
+  <div class="bg-slate-900 rounded-2xl overflow-hidden shadow">
+    <div class="bg-blue-700 text-white px-4 py-3 flex items-center justify-between">
+      <span class="font-semibold text-sm"><i class="fas fa-qrcode"></i> Scanner un QR Code</span>
+      <button type="button" id="btn-fs" class="text-white/80 hover:text-white text-sm" title="Plein écran">
+        <i class="fas fa-expand"></i>
+      </button>
+    </div>
+    <div class="p-4">
+      <div class="flex justify-center gap-2 mb-3">
+        <button type="button" id="btn-arrivee"
+                class="px-4 py-1.5 rounded-full text-sm font-medium bg-emerald-500 text-white">
+          <i class="fas fa-sign-in-alt"></i> Arrivée
+        </button>
+        <button type="button" id="btn-depart"
+                class="px-4 py-1.5 rounded-full text-sm font-medium bg-slate-600 text-white">
+          <i class="fas fa-sign-out-alt"></i> Départ
+        </button>
+      </div>
+      <div id="reader" class="rounded-xl overflow-hidden bg-black min-h-[220px] flex items-center justify-center">
+        <p class="text-slate-400 text-sm px-4 text-center">Appuyez sur Démarrer pour activer la caméra</p>
+      </div>
+      <button type="button" id="btn-start"
+              class="mt-4 w-full bg-emerald-500 hover:bg-emerald-600 text-white py-3 rounded-xl font-semibold text-sm">
+        <i class="fas fa-play"></i> Démarrer
+      </button>
+      <button type="button" id="btn-stop" class="mt-2 w-full hidden border border-slate-600 text-slate-300 py-2 rounded-xl text-sm">
+        Arrêter la caméra
+      </button>
+      <div class="mt-3">
+        <label class="text-[11px] text-slate-400">Ou saisir le matricule</label>
+        <div class="flex gap-2 mt-1">
+          <input type="text" id="manual-code" placeholder="Ex: 2026-0001"
+                 class="flex-1 rounded-xl px-3 py-2 text-sm bg-slate-800 text-white border border-slate-600">
+          <button type="button" id="btn-manual" class="bg-blue-600 text-white px-4 rounded-xl text-sm">OK</button>
+        </div>
+      </div>
+      <p id="scan-toast" class="hidden mt-3 text-center text-sm py-2 rounded-xl bg-emerald-500/20 text-emerald-300"></p>
+      <div id="cam-help" class="hidden mt-3 text-xs text-amber-100 bg-amber-500/15 border border-amber-500/40 rounded-xl p-3 space-y-2">
+        <p class="font-semibold text-amber-50 text-sm"><i class="fas fa-exclamation-triangle"></i> Caméra indisponible</p>
+        <ul class="list-disc pl-4 space-y-1 text-amber-100/90">
+          <li><strong>Téléphone</strong> : autorisez la caméra dans les paramètres du navigateur pour ce site.</li>
+          <li><strong>HTTP local</strong> (ex. <code class="bg-black/30 px-1 rounded">192.168.x.x:7000</code>) : beaucoup de navigateurs <em>bloquent</em> la caméra hors HTTPS. Utilisez la saisie matricule, ou ouvrez en HTTPS.</li>
+          <li>Chrome mobile : icône 🔒 dans la barre d’adresse → Autorisations → Caméra → Autoriser → recharger.</li>
+        </ul>
+        <p class="text-amber-50">En attendant : tapez le <strong>matricule</strong> (ex. 2026-0001) puis <strong>OK</strong>.</p>
+      </div>
+      <p id="secure-warn" class="hidden mt-2 text-[11px] text-red-200 bg-red-500/20 border border-red-400/30 rounded-lg px-3 py-2"></p>
+    </div>
+  </div>
+
+  {# Résultat #}
+  <div class="bg-white rounded-2xl border p-4">
+    <p class="text-sm font-semibold text-slate-800 mb-4"><i class="fas fa-id-card text-blue-600"></i> Résultat du scan</p>
+    <div id="result-empty" class="text-center py-12 text-slate-400">
+      <i class="fas fa-qrcode text-4xl mb-3 block opacity-40"></i>
+      <p class="text-sm">En attente de scan</p>
+      <p class="text-xs mt-1">Scannez un QR code</p>
+    </div>
+    <div id="result-card" class="hidden text-center">
+      <div class="w-24 h-24 rounded-full overflow-hidden mx-auto bg-slate-100 border-2 border-slate-200 mb-3">
+        <img id="res-photo" src="" alt="" class="w-full h-full object-cover hidden">
+        <div id="res-photo-ph" class="w-full h-full flex items-center justify-center text-3xl text-slate-300">
+          <i class="fas fa-user"></i>
+        </div>
+      </div>
+      <p id="res-name" class="text-lg font-bold text-slate-800"></p>
+      <p id="res-role" class="text-xs text-slate-500"></p>
+      <p id="res-code" class="text-xs font-mono text-slate-400 mt-1"></p>
+      <div class="grid grid-cols-2 gap-2 mt-4 text-left text-xs bg-slate-50 rounded-xl p-3">
+        <div>
+          <p class="text-slate-400">Téléphone</p>
+          <p id="res-phone" class="font-medium"></p>
+        </div>
+        <div>
+          <p class="text-slate-400">Type</p>
+          <p id="res-type" class="font-medium"></p>
+        </div>
+      </div>
+      <p id="res-badge" class="mt-4 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium bg-emerald-100 text-emerald-800"></p>
+      <button type="button" id="btn-ok" class="mt-4 w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm font-semibold">
+        <i class="fas fa-check"></i> OK
+      </button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script>
+(function() {
+  var action = 'arrivee';
+  var kind = '{{ tab }}' === 'eleves' ? 'eleve' : 'personnel';
+  var scanning = false;
+  var html5QrCode = null;
+  var lastCode = '';
+  var lastAt = 0;
+  var csrf = '{{ csrf_token }}';
+
+  function setAction(a) {
+    action = a;
+    var ba = document.getElementById('btn-arrivee');
+    var bd = document.getElementById('btn-depart');
+    if (a === 'arrivee') {
+      ba.className = 'px-4 py-1.5 rounded-full text-sm font-medium bg-emerald-500 text-white';
+      bd.className = 'px-4 py-1.5 rounded-full text-sm font-medium bg-slate-600 text-white';
+    } else {
+      bd.className = 'px-4 py-1.5 rounded-full text-sm font-medium bg-amber-500 text-white';
+      ba.className = 'px-4 py-1.5 rounded-full text-sm font-medium bg-slate-600 text-white';
+    }
+  }
+  var elA = document.getElementById('btn-arrivee');
+  var elD = document.getElementById('btn-depart');
+  if (elA) elA.onclick = function() { setAction('arrivee'); };
+  if (elD) elD.onclick = function() { setAction('depart'); };
+
+  function showResult(data) {
+    var empty = document.getElementById('result-empty');
+    var card = document.getElementById('result-card');
+    if (empty) empty.classList.add('hidden');
+    if (card) card.classList.remove('hidden');
+    var set = function(id, v) { var e = document.getElementById(id); if (e) e.textContent = v || ''; };
+    set('res-name', data.name);
+    set('res-role', data.role);
+    set('res-code', data.code);
+    set('res-phone', data.phone || '—');
+    set('res-type', data.type);
+    var badge = document.getElementById('res-badge');
+    if (badge) {
+      badge.textContent = (data.action_label || '') + ' à ' + (data.time || '');
+      badge.className = 'mt-4 inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ' +
+        (data.action === 'depart' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800');
+    }
+    var img = document.getElementById('res-photo');
+    var ph = document.getElementById('res-photo-ph');
+    if (img && ph) {
+      if (data.photo) {
+        img.src = data.photo;
+        img.classList.remove('hidden');
+        ph.classList.add('hidden');
+      } else {
+        img.classList.add('hidden');
+        ph.classList.remove('hidden');
+      }
+    }
+    var toast = document.getElementById('scan-toast');
+    if (toast) {
+      toast.textContent = (data.action_label || 'Pointage') + ' enregistré';
+      toast.className = 'mt-3 text-center text-sm py-2 rounded-xl bg-emerald-500/20 text-emerald-300';
+      toast.classList.remove('hidden');
+      setTimeout(function() { toast.classList.add('hidden'); }, 2500);
+    }
+  }
+
+  function postCode(code) {
+    code = (code || '').toString().trim();
+    if (!code) return;
+    var now = Date.now();
+    if (code === lastCode && now - lastAt < 2500) return;
+    lastCode = code;
+    lastAt = now;
+    var fd = new FormData();
+    fd.append('code', code);
+    fd.append('action', action);
+    fd.append('kind', kind);
+    fd.append('csrfmiddlewaretoken', csrf);
+    fetch('{% url "attendance:scan_api" %}', {
+      method: 'POST',
+      body: fd,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin'
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.ok) {
+        showResult(data);
+      } else {
+        var toast = document.getElementById('scan-toast');
+        if (toast) {
+          toast.textContent = data.error || 'Code inconnu';
+          toast.className = 'mt-3 text-center text-sm py-2 rounded-xl bg-red-500/20 text-red-200';
+          toast.classList.remove('hidden');
+          setTimeout(function() { toast.classList.add('hidden'); }, 3000);
+        }
+      }
+    })
+    .catch(function(e) {
+      alert('Erreur réseau : ' + e);
+    });
+  }
+
+  var btnManual = document.getElementById('btn-manual');
+  if (btnManual) btnManual.onclick = function() {
+    var c = document.getElementById('manual-code').value.trim();
+    if (c) postCode(c);
+  };
+  var man = document.getElementById('manual-code');
+  if (man) man.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (btnManual) btnManual.click();
+    }
+  });
+  var btnOk = document.getElementById('btn-ok');
+  if (btnOk) btnOk.onclick = function() {
+    var card = document.getElementById('result-card');
+    var empty = document.getElementById('result-empty');
+    if (card) card.classList.add('hidden');
+    if (empty) empty.classList.remove('hidden');
+  };
+
+  function showCamError(msg) {
+    var help = document.getElementById('cam-help');
+    if (help) help.classList.remove('hidden');
+    var toast = document.getElementById('scan-toast');
+    if (toast) {
+      toast.textContent = msg || 'Caméra refusée — utilisez le matricule';
+      toast.className = 'mt-3 text-center text-sm py-2 rounded-xl bg-amber-500/20 text-amber-200';
+      toast.classList.remove('hidden');
+    }
+    if (man) { man.focus(); }
+    console.warn('Camera error', msg);
+  }
+
+  function startWithConfig(cameraConfig) {
+    var boxSize = Math.min(280, Math.floor(window.innerWidth * 0.7));
+    return html5QrCode.start(
+      cameraConfig,
+      {
+        fps: 10,
+        qrbox: function(viewW, viewH) {
+          var s = Math.min(250, Math.floor(Math.min(viewW, viewH) * 0.7));
+          return { width: s, height: s };
+        },
+        aspectRatio: 1.0,
+        disableFlip: false
+      },
+      function(decoded) { postCode(decoded); },
+      function() {}
+    );
+  }
+
+  function onStarted() {
+    scanning = true;
+    var bs = document.getElementById('btn-start');
+    var bp = document.getElementById('btn-stop');
+    if (bs) bs.classList.add('hidden');
+    if (bp) bp.classList.remove('hidden');
+    var help = document.getElementById('cam-help');
+    if (help) help.classList.add('hidden');
+  }
+
+  document.getElementById('btn-start').onclick = function() {
+    if (scanning) return;
+
+    // Avertissement contexte non sécurisé (HTTP sur IP LAN)
+    var isSecure = window.isSecureContext || location.protocol === 'https:' ||
+      location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    var sw = document.getElementById('secure-warn');
+    if (!isSecure && sw) {
+      sw.classList.remove('hidden');
+      sw.innerHTML = '⚠️ Ce site est en <strong>HTTP</strong> (' + location.host + '). ' +
+        'Sur téléphone, la caméra est souvent <strong>bloquée</strong>. ' +
+        'Utilisez la saisie du matricule, ou accédez via HTTPS / localhost.';
+    }
+
+    if (typeof Html5Qrcode === 'undefined') {
+      alert('Bibliothèque QR non chargée. Vérifiez Internet (CDN).');
+      return;
+    }
+
+    html5QrCode = new Html5Qrcode('reader');
+
+    // 1) Lister les caméras et préférer l’arrière
+    Html5Qrcode.getCameras().then(function(cameras) {
+      var cameraId = null;
+      if (cameras && cameras.length) {
+        // Prefer back / environment
+        for (var i = 0; i < cameras.length; i++) {
+          var label = (cameras[i].label || '').toLowerCase();
+          if (label.indexOf('back') >= 0 || label.indexOf('rear') >= 0 ||
+              label.indexOf('environment') >= 0 || label.indexOf('arrière') >= 0) {
+            cameraId = cameras[i].id;
+            break;
+          }
+        }
+        if (!cameraId) cameraId = cameras[cameras.length - 1].id;
+      }
+
+      var tryStart = function(cfg) {
+        return startWithConfig(cfg).then(onStarted);
+      };
+
+      var chain;
+      if (cameraId) {
+        chain = tryStart(cameraId);
+      } else {
+        chain = tryStart({ facingMode: 'environment' });
+      }
+
+      chain.catch(function() {
+        // Fallback front camera
+        return tryStart({ facingMode: 'user' });
+      }).catch(function() {
+        // Last resort: any device
+        return tryStart({ facingMode: { ideal: 'environment' } });
+      }).catch(function(err) {
+        var msg = (err && (err.name || err.message)) ? (err.name + ': ' + (err.message || '')) : String(err);
+        if (/NotAllowed|Permission|denied/i.test(msg)) {
+          showCamError('Permission caméra refusée');
+        } else if (/NotFound|DevicesNotFound/i.test(msg)) {
+          showCamError('Aucune caméra détectée');
+        } else if (/NotReadable|TrackStart|in use/i.test(msg)) {
+          showCamError('Caméra déjà utilisée par une autre app — fermez-la');
+        } else if (!isSecure) {
+          showCamError('Caméra bloquée en HTTP — saisissez le matricule');
+        } else {
+          showCamError('Caméra impossible : ' + msg.slice(0, 80));
+        }
+      });
+    }).catch(function(err) {
+      // getCameras failed — try facingMode directly
+      startWithConfig({ facingMode: 'environment' })
+        .then(onStarted)
+        .catch(function() {
+          return startWithConfig({ facingMode: 'user' }).then(onStarted);
+        })
+        .catch(function(e2) {
+          showCamError('Impossible d’accéder à la caméra');
+          console.warn(err, e2);
+        });
+    });
+  };
+
+  document.getElementById('btn-stop').onclick = function() {
+    if (html5QrCode && scanning) {
+      html5QrCode.stop().then(function() {
+        scanning = false;
+        try { html5QrCode.clear(); } catch (e) {}
+        document.getElementById('btn-start').classList.remove('hidden');
+        document.getElementById('btn-stop').classList.add('hidden');
+      }).catch(function() {
+        scanning = false;
+        document.getElementById('btn-start').classList.remove('hidden');
+        document.getElementById('btn-stop').classList.add('hidden');
+      });
+    }
+  };
+
+  // Auto-hint if not secure on load
+  (function() {
+    var isSecure = window.isSecureContext || location.protocol === 'https:' ||
+      location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    if (!isSecure) {
+      var sw = document.getElementById('secure-warn');
+      if (sw) {
+        sw.classList.remove('hidden');
+        sw.innerHTML = '📱 Sur téléphone en HTTP, la caméra est souvent bloquée. Préparez la saisie du <strong>matricule</strong>.';
+      }
+    }
+  })();
+})();
+</script>
+{% endblock %}

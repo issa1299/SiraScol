@@ -1,0 +1,29 @@
+<div class="bg-white rounded-2xl border p-4 mb-3">
+  <p class="text-sm font-semibold text-slate-800 mb-2">{{ title }}
+    <span class="text-xs font-normal text-slate-400">({{ items|length }})</span>
+  </p>
+  {% if items %}
+  <ul class="space-y-1.5">
+    {% for obj in items %}
+    <li class="text-sm flex justify-between items-center gap-2 py-1 border-b border-slate-50 last:border-0">
+      <span class="truncate">{{ obj }}</span>
+      {% if type == "teacher_assign" %}
+      <a href="{% url 'teachers:assign' obj.pk %}" class="text-xs text-blue-600 shrink-0">Affecter</a>
+      {% elif type == "teacher_user" %}
+      <a href="{% url 'teachers:edit' obj.pk %}" class="text-xs text-blue-600 shrink-0">Fiche</a>
+      {% elif type == "student_enroll" or type == "student_user" %}
+      <a href="{% url 'students:detail' obj.pk %}" class="text-xs text-blue-600 shrink-0">Fiche</a>
+      {% elif type == "parent_user" or type == "parent_child" %}
+      <a href="{% url 'students:parent_detail' obj.pk %}" class="text-xs text-blue-600 shrink-0">Fiche</a>
+      {% elif type == "room_subj" %}
+      <a href="{% url 'academics:classroom_subjects' obj.pk %}" class="text-xs text-blue-600 shrink-0">Matières</a>
+      {% elif type == "room_main" %}
+      <a href="{% url 'academics:classroom_edit' obj.pk %}" class="text-xs text-blue-600 shrink-0">Classe</a>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="text-xs text-emerald-600"><i class="fas fa-check"></i> {{ empty }} — OK</p>
+  {% endif %}
+</div>

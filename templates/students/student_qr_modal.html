@@ -1,0 +1,14 @@
+<div class="text-center py-2">
+  <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ student.matricule|urlencode }}"
+       alt="QR {{ student.matricule }}" class="mx-auto rounded-lg border">
+  <p class="text-sm font-semibold mt-3">{{ student.last_name }} {{ student.first_name }}</p>
+  <p class="text-xs font-mono text-slate-500">{{ student.matricule }}</p>
+  <p class="text-[11px] text-slate-400 mt-1">QR Code généré — à scanner dans Scan QR Code</p>
+  <div class="flex gap-2 mt-4 justify-center">
+    <a href="https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={{ student.matricule|urlencode }}"
+       target="_blank" download class="bg-blue-600 text-white text-sm px-4 py-2 rounded-xl">
+      <i class="fas fa-download"></i> Télécharger
+    </a>
+    <button type="button" onclick="closeModal('modal-dynamic')" class="border text-sm px-4 py-2 rounded-xl">Fermer</button>
+  </div>
+</div>

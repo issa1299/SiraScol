@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ msg.subject }}{% endblock %}
+{% block content %}
+<a href="{% url 'communication:inbox' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Messages</a>
+<div class="bg-white rounded-2xl border p-5 mt-3 max-w-lg">
+  <h1 class="text-lg font-bold">{{ msg.subject }}</h1>
+  <p class="text-xs text-slate-400 mt-1">De {{ msg.sender }} → {{ msg.recipient }} · {{ msg.sent_at|date:"d/m/Y H:i" }}</p>
+  <div class="mt-4 text-sm whitespace-pre-wrap">{{ msg.body }}</div>
+</div>
+{% endblock %}

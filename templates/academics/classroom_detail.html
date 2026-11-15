@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}{{ classroom.name }} - SiraScol{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'academics:classroom_list' %}" class="text-sm text-slate-500 hover:text-blue-600">
+        <i class="fas fa-arrow-left"></i> Retour aux classes
+    </a>
+</div>
+
+<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800">{{ classroom.name }}</h1>
+  <a href="{% url 'academics:classroom_subjects' classroom.pk %}" class="inline-block mt-2 text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg">Matières de la classe</a>
+            <p class="text-slate-500 mt-1">
+                {{ classroom.level.name }} · {{ classroom.level.cycle.name }}
+                {% if classroom.serie %} · Série <strong>{{ classroom.serie }}</strong>{% endif %}
+                · {{ classroom.academic_year }}
+            </p>
+            <p class="text-sm text-slate-500 mt-1">
+                {{ student_count }} élève(s) / {{ classroom.capacity }} places
+                · Inscription: <strong>{{ classroom.inscription_fee|floatformat:0 }}</strong>
+                · Scolarité: <strong>{{ classroom.tuition_fee|floatformat:0 }}</strong>
+                {% if classroom.main_teacher %}
+                · Prof. principal :
+                <a href="{% url 'teachers:detail' classroom.main_teacher.pk %}" class="text-blue-600 hover:underline">
+                    {{ classroom.main_teacher }}
+                </a>
+                {% endif %}
+            </p>
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'grades:bulletin_list' %}?classroom={{ classroom.pk }}"
+               class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-sm">
+                <i class="fas fa-file-alt"></i> Bulletins
+            </a>
+            <button type="button" onclick="openModalUrl('{% url 'academics:classroom_edit' classroom.pk %}', 'Modifier classe')" class="text-sm text-blue-600 self-center">
+                <i class="fas fa-edit"></i> Modifier
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div class="lg:col-span-2 bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="px-5 py-3 border-b border-gray-100 font-semibold text-slate-800">
+            Élèves inscrits ({{ student_count }})
+        </div>
+        {% if enrollments %}
+        <table class="w-full text-sm">
+            <thead class="bg-slate-50 text-slate-600">
+                <tr>
+                    <th class="text-left px-4 py-2 font-medium">#</th>
+                    <th class="text-left px-4 py-2 font-medium">Matricule</th>
+                    <th class="text-left px-4 py-2 font-medium">Nom & Prénom</th>
+                    <th class="text-right px-4 py-2 font-medium">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for e in enrollments %}
+                <tr class="hover:bg-slate-50">
+                    <td class="px-4 py-2 text-slate-400">{{ forloop.counter }}</td>
+                    <td class="px-4 py-2 font-mono">{{ e.student.matricule }}</td>
+                    <td class="px-4 py-2 font-medium">
+                        <a href="{% url 'students:detail' e.student.pk %}" class="hover:text-blue-600">
+                            {{ e.student.last_name }} {{ e.student.first_name }}
+                        </a>
+                    </td>
+                    <td class="px-4 py-2 text-right">
+                        <a href="{% url 'grades:bulletin' e.student.pk %}" class="text-blue-600 text-xs hover:underline">Bulletin</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="px-5 py-8 text-center text-slate-500 text-sm">Aucun élève inscrit.</p>
+        {% endif %}
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+        <h2 class="font-semibold text-slate-800 mb-3">Matières & enseignants</h2>
+        {% if assignments %}
+        <ul class="space-y-2 text-sm">
+            {% for a in assignments %}
+            <li class="py-2 border-b border-gray-50 last:border-0">
+                <p class="font-medium text-slate-800">{{ a.subject.name }}</p>
+                <p class="text-slate-500">
+                    {% if a.teacher %}
+                    <a href="{% url 'teachers:detail' a.teacher.pk %}" class="text-blue-600 hover:underline">{{ a.teacher }}</a>
+                    {% else %}—{% endif %}
+                    · {{ a.hours_per_week }}h/sem
+                </p>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-sm text-slate-500">Aucune affectation. À définir dans l'admin (Affectations).</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

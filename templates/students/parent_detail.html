@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ parent }} - Parents{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'students:parent_list' %}" class="text-sm text-slate-500 hover:text-blue-600"><i class="fas fa-arrow-left"></i> Retour</a>
+</div>
+<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 mb-6 flex justify-between items-start">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">{{ parent.last_name }} {{ parent.first_name }}</h1>
+        <p class="text-slate-500 mt-1">{{ parent.phone }}{% if parent.phone2 %} · {{ parent.phone2 }}{% endif %}</p>
+        {% if parent.email %}<p class="text-sm text-slate-500">{{ parent.email }}</p>{% endif %}
+        {% if parent.profession %}<p class="text-sm text-slate-500">{{ parent.profession }}</p>{% endif %}
+        {% if parent.address %}<p class="text-sm text-slate-500 mt-1">{{ parent.address }}</p>{% endif %}
+    </div>
+    <a href="{% url 'students:parent_edit' parent.pk %}" class="text-sm text-blue-600 hover:underline"><i class="fas fa-edit"></i> Modifier</a>
+</div>
+<div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+    <h2 class="font-semibold text-slate-800 mb-3">Enfants liés</h2>
+    {% if links %}
+    <ul class="space-y-2 text-sm">
+        {% for l in links %}
+        <li class="flex justify-between py-2 border-b border-gray-50">
+            <a href="{% url 'students:detail' l.student.pk %}" class="font-medium text-blue-600 hover:underline">{{ l.student }}</a>
+            <span class="text-slate-500">{{ l.get_relation_display }}{% if l.is_primary %} · Contact principal{% endif %}</span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-sm text-slate-500">Aucun élève lié.</p>
+    {% endif %}
+</div>
+{% endblock %}

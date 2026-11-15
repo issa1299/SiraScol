@@ -1,0 +1,27 @@
+<div class="space-y-3">
+  <p class="text-sm text-slate-500">Enfants de <b>{{ parent.last_name }} {{ parent.first_name }}</b></p>
+  {% for item in link_data %}
+  <div class="border rounded-xl p-3 flex items-start justify-between gap-2">
+    <div>
+      <p class="font-semibold text-slate-800">{{ item.student.last_name }} {{ item.student.first_name }}
+        <span class="text-xs text-slate-400">({{ item.student.matricule }})</span>
+      </p>
+      <p class="text-xs text-slate-500">
+        {% if item.classroom %}{{ item.classroom.name }} — {% endif %}{{ item.relation }}
+      </p>
+    </div>
+    <form method="post" action="{% url 'students:parent_unlink' parent.pk item.student.pk %}">
+      {% csrf_token %}
+      <button type="submit" class="text-xs bg-rose-50 text-rose-600 px-2 py-1 rounded-lg" onclick="return confirm('Délier cet élève ?')">
+        Délier
+      </button>
+    </form>
+  </div>
+  {% empty %}
+  <p class="text-sm text-slate-400 text-center py-6">Aucun enfant lié.</p>
+  {% endfor %}
+  <button type="button" onclick="openModalUrl('{% url 'students:parent_link' parent.pk %}', 'Lier un élève')"
+          class="w-full border border-dashed border-indigo-300 text-indigo-600 py-2.5 rounded-xl text-sm">
+    + Lier un élève
+  </button>
+</div>

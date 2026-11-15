@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}{{ classroom.name }} — Enseignant{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  <a href="{% url 'teachers:portal_classes' %}" class="inline-flex items-center gap-1 text-sm text-violet-600 mb-3">
+    <i class="fas fa-arrow-left"></i> Mes classes
+  </a>
+
+  <div class="bg-gradient-to-r from-violet-600 to-indigo-700 rounded-3xl text-white p-5 mb-4 shadow-lg">
+    <h1 class="text-2xl font-bold">{{ classroom.name }}</h1>
+    <p class="text-violet-100 text-sm mt-1">
+      {% if classroom.level %}{{ classroom.level.name }}{% endif %}
+      {% if classroom.level.cycle %} · {{ classroom.level.cycle.name }}{% endif %}
+      · {{ n_students }} élève(s)
+      {% if is_main %} · Prof principal{% endif %}
+    </p>
+    {% if subjects %}
+    <p class="text-xs text-violet-200 mt-2">
+      Matières :
+      {% for a in subjects %}{{ a.subject.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+    </p>
+    {% endif %}
+  </div>
+
+  {# Actions #}
+  <div class="grid grid-cols-2 gap-3 mb-5">
+    <a href="{% url 'grades:saisie_classe' %}?classroom={{ classroom.id }}"
+       class="bg-white rounded-2xl border-2 border-violet-200 p-4 text-center hover:bg-violet-50 transition shadow-sm">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center text-xl mb-2">
+        <i class="fas fa-pen"></i>
+      </div>
+      <p class="font-bold text-slate-800">Porter les notes</p>
+      <p class="text-xs text-slate-500 mt-0.5">Devoirs & compositions</p>
+    </a>
+    <a href="{% url 'attendance:class_attendance' classroom.id %}"
+       class="bg-white rounded-2xl border-2 border-rose-200 p-4 text-center hover:bg-rose-50 transition shadow-sm">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center text-xl mb-2">
+        <i class="fas fa-clipboard-check"></i>
+      </div>
+      <p class="font-bold text-slate-800">Faire l’appel</p>
+      <p class="text-xs text-slate-500 mt-0.5">Absences & retards</p>
+    </a>
+    <a href="{% url 'grades:bulletin_list' %}?classroom={{ classroom.id }}"
+       class="bg-white rounded-2xl border-2 border-indigo-200 p-4 text-center hover:bg-indigo-50 transition shadow-sm">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl mb-2">
+        <i class="fas fa-file-alt"></i>
+      </div>
+      <p class="font-bold text-slate-800">Bulletins</p>
+      <p class="text-xs text-slate-500 mt-0.5">Voir / télécharger</p>
+    </a>
+    <a href="{% url 'timetable:home' %}?classroom={{ classroom.id }}"
+       class="bg-white rounded-2xl border-2 border-blue-200 p-4 text-center hover:bg-blue-50 transition shadow-sm">
+      <div class="w-12 h-12 mx-auto rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl mb-2">
+        <i class="fas fa-calendar-alt"></i>
+      </div>
+      <p class="font-bold text-slate-800">Emploi du temps</p>
+      <p class="text-xs text-slate-500 mt-0.5">Planning de la classe</p>
+    </a>
+  </div>
+
+  {# Liste élèves #}
+  <div class="bg-white rounded-2xl border overflow-hidden shadow-sm">
+    <div class="px-4 py-3 border-b flex justify-between items-center bg-slate-50">
+      <p class="text-sm font-bold text-slate-700">Élèves de la classe</p>
+      <span class="text-xs text-slate-400">{{ n_students }}</span>
+    </div>
+    <div class="divide-y max-h-[28rem] overflow-y-auto">
+      {% for e in enrollments %}
+      <div class="px-4 py-3 flex items-center gap-3">
+        {% if e.student.photo %}
+        <img src="{{ e.student.photo.url }}" class="w-10 h-10 rounded-full object-cover" alt="">
+        {% else %}
+        <div class="w-10 h-10 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center text-xs font-bold">
+          {{ e.student.first_name|first }}{{ e.student.last_name|first }}
+        </div>
+        {% endif %}
+        <div class="flex-1 min-w-0">
+          <p class="font-medium text-slate-800 truncate">{{ e.student.last_name }} {{ e.student.first_name }}</p>
+          <p class="text-xs text-slate-400">{{ e.student.matricule }}</p>
+        </div>
+        <a href="{% url 'grades:saisie_classe' %}?classroom={{ classroom.id }}&student={{ e.student_id }}"
+           class="text-xs bg-violet-50 text-violet-700 px-3 py-1.5 rounded-lg font-semibold">Notes</a>
+      </div>
+      {% empty %}
+      <p class="p-6 text-center text-sm text-slate-400">Aucun élève inscrit dans cette classe.</p>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

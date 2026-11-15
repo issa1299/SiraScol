@@ -1,0 +1,11 @@
+<div class="space-y-3 text-sm">
+  <p class="text-lg font-bold">{{ classroom.name }}</p>
+  <p class="text-slate-500">{{ classroom.level.name }} · {{ classroom.academic_year }}</p>
+  {% if classroom.serie %}<p>Série : {{ classroom.serie }}</p>{% endif %}
+  <p>{{ student_count }} élève(s) / {{ classroom.capacity }} places</p>
+  <p class="text-xs">Inscription : {{ classroom.inscription_fee|floatformat:0 }} · Scolarité : {{ classroom.tuition_fee|floatformat:0 }}</p>
+  <div class="form-actions flex gap-2 pt-2 border-t">
+    <a href="{% url 'academics:classroom_detail' classroom.pk %}" class="flex-1 text-center bg-slate-100 py-2 rounded-lg text-sm">Fiche complète</a>
+    <button type="button" onclick="openModalUrl('{% url 'academics:classroom_edit' classroom.pk %}', 'Modifier classe')" class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm">Modifier</button>
+  </div>
+</div>

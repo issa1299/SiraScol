@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Bulletins — Enseignant{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  <div class="mb-4">
+    <p class="text-xs font-semibold uppercase tracking-wider text-indigo-600">Espace enseignant</p>
+    <h1 class="text-2xl font-bold text-slate-800 mt-1">Bulletins</h1>
+    <p class="text-sm text-slate-500">Consulter et télécharger les bulletins de vos classes</p>
+  </div>
+
+  {% if not classroom %}
+  <div class="space-y-2">
+    {% for c in classrooms %}
+    <a href="?classroom={{ c.id }}{% if cycle_filter and cycle_filter != 'all' %}&cycle={{ cycle_filter }}{% endif %}"
+       class="flex items-center gap-3 bg-white rounded-2xl border p-4 hover:border-indigo-400 shadow-sm transition">
+      <div class="w-11 h-11 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center">
+        <i class="fas fa-file-alt"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-slate-800">{{ c.name }}</p>
+        <p class="text-xs text-slate-500">{% if c.level %}{{ c.level.name }}{% endif %}{% if c.level.cycle %} · {{ c.level.cycle.name }}{% endif %}</p>
+      </div>
+      <i class="fas fa-chevron-right text-slate-300"></i>
+    </a>
+    {% empty %}
+    <div class="bg-white rounded-2xl border border-dashed p-8 text-center text-slate-400">
+      Aucune classe affectée.
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <a href="{% url 'grades:bulletin_list' %}" class="text-sm text-indigo-600 inline-flex items-center gap-1 mb-3">
+    <i class="fas fa-arrow-left"></i> Classes
+  </a>
+  <div class="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-2xl text-white p-4 mb-4">
+    <h2 class="text-xl font-bold">{{ classroom.name }}</h2>
+    <p class="text-indigo-100 text-sm">{{ students|length }} élève(s)</p>
+  </div>
+
+  {% if periods %}
+  <div class="bg-white rounded-xl border p-3 mb-3">
+    <p class="text-xs text-slate-500 mb-2">Période</p>
+    <div class="flex flex-wrap gap-2">
+      {% for p in periods %}
+      <a href="?classroom={{ classroom.id }}&period={{ p.id }}"
+         class="text-sm px-3 py-1.5 rounded-full border {% if period and p.id == period.id %}bg-indigo-600 text-white border-indigo-600{% else %}bg-white text-slate-600{% endif %}">
+        {{ p.name }}
+      </a>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% if period %}
+  <div class="bg-white rounded-2xl border overflow-hidden mb-3">
+    <div class="px-4 py-3 border-b bg-slate-50 flex justify-between items-center">
+      <p class="text-sm font-bold">Élèves · {{ period.name }}</p>
+      <a href="{% url 'grades:bulletin_class_pdf' %}?classroom={{ classroom.id }}&period={{ period.id }}"
+         class="text-xs bg-rose-600 text-white px-3 py-1.5 rounded-lg font-semibold">
+        <i class="fas fa-file-pdf"></i> PDF classe
+      </a>
+    </div>
+    <div class="divide-y max-h-[28rem] overflow-y-auto">
+      {% for s in students %}
+      <div class="px-4 py-3 flex items-center gap-3">
+        <div class="w-9 h-9 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-xs font-bold">
+          {{ s.first_name|first }}{{ s.last_name|first }}
+        </div>
+        <div class="flex-1 min-w-0">
+          <p class="font-medium truncate">{{ s.last_name }} {{ s.first_name }}</p>
+          <p class="text-xs text-slate-400">{{ s.matricule }}</p>
+        </div>
+        <a href="{% url 'grades:bulletin' s.id %}?period={{ period.id }}"
+           class="text-xs border px-2.5 py-1.5 rounded-lg text-slate-600">Voir</a>
+        <a href="{% url 'grades:bulletin_pdf' s.id %}?period={{ period.id }}"
+           class="text-xs bg-rose-50 text-rose-700 px-2.5 py-1.5 rounded-lg font-semibold">
+          <i class="fas fa-file-pdf"></i> PDF
+        </a>
+      </div>
+      {% empty %}
+      <p class="p-6 text-center text-slate-400 text-sm">Aucun élève</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% else %}
+  <p class="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl p-3">
+    Sélectionnez une période pour afficher les bulletins.
+  </p>
+  {% endif %}
+  {% endif %}
+
+</div>
+{% endblock %}

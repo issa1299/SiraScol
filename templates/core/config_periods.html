@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Périodes{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'core:config_home' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Configuration</a>
+  <h1 class="text-xl font-bold text-slate-800 mt-1">Périodes</h1>
+</div>
+
+{% if current_year %}<p class="text-xs text-slate-500 mb-2">Année : {{ current_year.name }}</p>{% endif %}
+<form method="post" action="{% url 'core:config_period_save' %}" class="bg-white rounded-2xl border p-4 mb-4 space-y-2">
+  {% csrf_token %}
+  <input name="name" placeholder="Ex: 1er Trimestre / Mars" required class="w-full border rounded-xl px-3 py-2.5 text-sm">
+  <select name="period_type" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+    {% for v,l in period_types %}<option value="{{ v }}">{{ l }}</option>{% endfor %}
+  </select>
+  <div class="grid grid-cols-2 gap-2">
+    <input type="date" name="start_date" required class="border rounded-xl px-3 py-2.5 text-sm">
+    <input type="date" name="end_date" required class="border rounded-xl px-3 py-2.5 text-sm">
+  </div>
+  <button class="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm">Ajouter</button>
+</form>
+<div class="space-y-2">
+{% for p in periods %}
+<div class="bg-white rounded-xl border p-3">
+  <p class="font-semibold">{{ p.name }}</p>
+  <p class="text-xs text-slate-400">{{ p.get_period_type_display }} · {{ p.start_date }} → {{ p.end_date }}</p>
+</div>
+{% empty %}<p class="text-slate-500 text-sm">Aucune période.</p>{% endfor %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "grades/base_cotes.html" %}
+{% block title %}Palmarès{% endblock %}
+{% block header_title %}Palmarès{% endblock %}
+{% block header_sub %}Classement des élèves par moyenne{% endblock %}
+{% block content %}
+<form method="get" class="bg-white rounded-2xl border p-4 mb-4 flex flex-col sm:flex-row gap-2">
+  <select name="classroom" class="border rounded-xl px-3 py-2.5 text-sm flex-1" required>
+    <option value="">— Choisir une classe —</option>
+    {% for c in classrooms %}
+    <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+  <select name="period" class="border rounded-xl px-3 py-2.5 text-sm flex-1">
+    <option value="">Toutes périodes</option>
+    {% for p in periods %}
+    <option value="{{ p.id }}" {% if period_id == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
+    {% endfor %}
+  </select>
+  <button class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2.5 rounded-xl text-sm font-medium">Classer</button>
+</form>
+{% if classroom %}
+<div class="bg-white rounded-2xl border overflow-hidden">
+  <div class="px-4 py-3 border-b bg-amber-50 font-semibold text-sm">{{ classroom.name }} — {{ ranking|length }} élève(s) classé(s)</div>
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-[10px] uppercase text-slate-500 text-left">
+      <tr><th class="px-3 py-2">Rang</th><th class="px-3 py-2">Élève</th><th class="px-3 py-2">Moyenne</th><th class="px-3 py-2">Notes</th></tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for r in ranking %}
+      <tr class="{% if r.rang <= 3 %}bg-amber-50/50{% endif %}">
+        <td class="px-3 py-2.5 font-bold {% if r.rang == 1 %}text-amber-600{% elif r.rang == 2 %}text-slate-500{% elif r.rang == 3 %}text-orange-700{% endif %}">
+          {% if r.rang == 1 %}🥇{% elif r.rang == 2 %}🥈{% elif r.rang == 3 %}🥉{% else %}{{ r.rang }}{% endif %}
+        </td>
+        <td class="px-3 py-2.5 font-medium">{{ r.student.last_name }} {{ r.student.first_name }}</td>
+        <td class="px-3 py-2.5 font-bold text-blue-700">{{ r.moyenne }}</td>
+        <td class="px-3 py-2.5 text-xs text-slate-400">{{ r.nb }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="px-3 py-10 text-center text-slate-400">Pas encore de notes pour cette classe</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="text-center text-slate-400 py-12 text-sm">Choisissez une classe pour afficher le classement.</p>
+{% endif %}
+{% endblock %}

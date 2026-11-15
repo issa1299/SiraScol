@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Messages{% endblock %}
+{% block content %}
+<div class="mb-4 flex justify-between items-center gap-2">
+  <h1 class="text-xl font-bold">Messages</h1>
+  <a href="#" onclick="openModalUrl('{% url 'communication:compose' %}', 'Nouveau message'); return false;" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm"><i class="fas fa-pen"></i> Nouveau</a>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div>
+    <h2 class="font-semibold text-sm mb-2">Boîte de réception</h2>
+    {% for m in inbox %}
+    <a href="{% url 'communication:message_detail' m.pk %}" class="block bg-white border rounded-xl p-3 mb-2 {% if not m.is_read %}border-blue-300{% endif %}">
+      <p class="font-medium text-sm">{{ m.subject }}</p>
+      <p class="text-xs text-slate-400">De {{ m.sender }} · {{ m.sent_at|date:"d/m/Y H:i" }}</p>
+    </a>
+    {% empty %}<p class="text-sm text-slate-500">Aucun message.</p>{% endfor %}
+  </div>
+  <div>
+    <h2 class="font-semibold text-sm mb-2">Envoyés</h2>
+    {% for m in sent %}
+    <a href="{% url 'communication:message_detail' m.pk %}" class="block bg-white border rounded-xl p-3 mb-2">
+      <p class="font-medium text-sm">{{ m.subject }}</p>
+      <p class="text-xs text-slate-400">À {{ m.recipient }} · {{ m.sent_at|date:"d/m/Y H:i" }}</p>
+    </a>
+    {% empty %}<p class="text-sm text-slate-500">Aucun.</p>{% endfor %}
+  </div>
+</div>
+{% endblock %}

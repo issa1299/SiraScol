@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+{% block title %}Emploi du temps{% endblock %}
+{% block extra_css %}
+<style>
+@media print {
+  .bottom-nav, header, aside, .no-print, nav, .mobile-drawer { display: none !important; }
+  main { padding: 0 !important; margin: 0 !important; }
+  .print-only { display: block !important; }
+}
+.print-only { display: none; }
+.tt-cell { min-height: 64px; cursor: pointer; }
+.tt-cell:hover { outline: 2px solid #3b82f6; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 no-print">
+  <div>
+    <h1 class="text-xl sm:text-2xl font-bold text-slate-800">Emploi du temps</h1>
+    <p class="text-xs text-slate-500">{% if current_year %}{{ current_year.name }}{% endif %} · Cliquez une case pour ajouter / modifier</p>
+  </div>
+  <div class="flex gap-2">
+    <button type="button" onclick="window.print()" class="bg-slate-800 text-white px-4 py-2 rounded-xl text-sm">
+      <i class="fas fa-print"></i> Imprimer
+    </button>
+    <button type="button" onclick="sirascolExportPdf(null, 'emploi_du_temps.pdf')" class="bg-rose-600 text-white px-4 py-2 rounded-xl text-sm">
+      <i class="fas fa-file-pdf"></i> PDF
+    </button>
+  </div>
+</div>
+
+<form method="get" class="bg-white rounded-2xl border p-3 mb-4 no-print flex flex-col sm:flex-row gap-2">
+  <select name="classroom" class="flex-1 border rounded-xl px-3 py-2.5 text-sm" onchange="this.form.submit()">
+    <option value="">— Choisir une classe —</option>
+    {% for c in classrooms %}
+    <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>
+      {{ c.name }} — {{ c.level.name }}
+    </option>
+    {% endfor %}
+  </select>
+</form>
+
+{% if classroom %}
+<div class="print-only text-center mb-3">
+  <p class="font-bold text-lg">Emploi du temps — {{ classroom.name }}</p>
+  <p class="text-sm">{{ classroom.level.name }}{% if current_year %} · {{ current_year.name }}{% endif %}</p>
+</div>
+
+{# Desktop grid #}
+<div class="hidden md:block bg-white rounded-2xl border overflow-x-auto">
+  <table class="w-full text-xs">
+    <thead class="bg-slate-800 text-white">
+      <tr>
+        <th class="px-2 py-3 text-left w-24">Horaire</th>
+        {% for d, label in days %}
+        <th class="px-1 py-3 text-center">{{ label }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for row in rows %}
+      <tr>
+        <td class="px-2 py-2 font-medium text-slate-600 bg-slate-50 whitespace-nowrap">
+          {{ row.slot.name }}<br>
+          <span class="text-[10px] text-slate-400">{{ row.slot.start_time|time:"H:i" }}-{{ row.slot.end_time|time:"H:i" }}</span>
+        </td>
+        {% for cell in row.cells %}
+        <td class="px-1 py-1 align-top">
+          {% if cell.entry %}
+          <div class="tt-cell rounded-lg border p-1.5 {{ cell.color.0 }} {{ cell.color.1 }}"
+               onclick="openSlotModal({{ cell.day }}, {{ row.slot.id }}, {{ cell.entry.subject_id }}, {% if cell.entry.teacher_id %}{{ cell.entry.teacher_id }}{% else %}''{% endif %}, {% if cell.entry.room_id %}{{ cell.entry.room_id }}{% else %}''{% endif %}, {{ cell.entry.id }})">
+            <p class="font-semibold {{ cell.color.2 }} leading-tight">{{ cell.entry.subject.name }}</p>
+            {% if cell.entry.teacher %}<p class="text-slate-500 text-[10px]">{{ cell.entry.teacher }}</p>{% endif %}
+            {% if cell.entry.room %}<p class="text-slate-400 text-[10px]">{{ cell.entry.room.name }}</p>{% endif %}
+          </div>
+          {% else %}
+          <div class="tt-cell min-h-[64px] rounded-lg border border-dashed border-gray-200"
+               onclick="openSlotModal({{ cell.day }}, {{ row.slot.id }}, '', '', '', null)"></div>
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% empty %}
+      <tr><td colspan="7" class="p-6 text-center text-slate-500">
+        Aucun créneau horaire. Ajoutez-en dans <a href="{% url 'core:config_rooms' %}" class="text-blue-600 underline">Configuration → Salles & créneaux</a>.
+      </td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# Mobile: par jour #}
+<div class="md:hidden space-y-3 no-print">
+  {% for d, label in days %}
+  <div class="bg-white rounded-2xl border overflow-hidden">
+    <div class="bg-slate-800 text-white px-3 py-2 font-semibold text-sm">{{ label }}</div>
+    {% for row in rows %}
+      {% for cell in row.cells %}
+        {% if cell.day == d %}
+        <div class="px-3 py-2 border-t flex gap-3 items-start"
+             onclick="openSlotModal({{ cell.day }}, {{ row.slot.id }}, {% if cell.entry %}{{ cell.entry.subject_id }}{% else %}''{% endif %}, {% if cell.entry and cell.entry.teacher_id %}{{ cell.entry.teacher_id }}{% else %}''{% endif %}, {% if cell.entry and cell.entry.room_id %}{{ cell.entry.room_id }}{% else %}''{% endif %}, {% if cell.entry %}{{ cell.entry.id }}{% else %}null{% endif %})">
+          <div class="text-[11px] text-slate-400 w-16 flex-shrink-0">
+            {{ row.slot.start_time|time:"H:i" }}<br>{{ row.slot.end_time|time:"H:i" }}
+          </div>
+          <div class="flex-1">
+            {% if cell.entry %}
+            <p class="font-semibold text-sm">{{ cell.entry.subject.name }}</p>
+            <p class="text-xs text-slate-500">{% if cell.entry.teacher %}{{ cell.entry.teacher }}{% endif %}{% if cell.entry.room %} · {{ cell.entry.room.name }}{% endif %}</p>
+            {% else %}
+            <p class="text-xs text-slate-300 italic">Libre — toucher pour ajouter</p>
+            {% endif %}
+          </div>
+        </div>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+
+{# Modal ajout/modif #}
+<div id="slot-modal" class="fixed inset-0 z-50 hidden items-end sm:items-center justify-center bg-black/40" onclick="if(event.target===this)closeSlotModal()">
+  <div class="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md p-5 shadow-xl">
+    <div class="flex justify-between items-center mb-3">
+      <h3 class="font-bold text-slate-800" id="slot-modal-title">Créneau</h3>
+      <button type="button" onclick="closeSlotModal()" class="text-slate-400"><i class="fas fa-times"></i></button>
+    </div>
+    <form method="post" action="{% url 'timetable:save_entry' classroom.pk %}" class="space-y-3">
+      {% csrf_token %}
+      <input type="hidden" name="day" id="f-day">
+      <input type="hidden" name="time_slot" id="f-slot">
+      <div>
+        <label class="text-xs text-slate-500">Matière *</label>
+        <select name="subject" id="f-subject" required class="w-full border rounded-xl px-3 py-2.5 text-sm">
+          <option value="">— Choisir —</option>
+          {% for s in subjects %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500">Enseignant</label>
+        <select name="teacher" id="f-teacher" class="w-full border rounded-xl px-3 py-2.5 text-sm search-person" data-search-person="1" data-placeholder="Rechercher un enseignant…">
+          <option value="">—</option>
+          {% for t in teachers %}<option value="{{ t.id }}">{{ t.last_name }} {{ t.first_name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="text-xs text-slate-500">Salle</label>
+        <select name="room" id="f-room" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+          <option value="">—</option>
+          {% for r in rooms %}<option value="{{ r.id }}">{{ r.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-medium">Enregistrer</button>
+    </form>
+    <form method="post" id="delete-form" class="mt-2 hidden">
+      {% csrf_token %}
+      <button type="submit" class="w-full text-red-600 text-sm py-2">Supprimer ce créneau</button>
+    </form>
+  </div>
+</div>
+
+<script>
+function openSlotModal(day, slotId, subjectId, teacherId, roomId, entryId) {
+  document.getElementById('f-day').value = day;
+  document.getElementById('f-slot').value = slotId;
+  document.getElementById('f-subject').value = subjectId || '';
+  document.getElementById('f-teacher').value = teacherId || '';
+  document.getElementById('f-room').value = roomId || '';
+  var del = document.getElementById('delete-form');
+  if (entryId) {
+    del.action = '/emploi-du-temps/entree/' + entryId + '/supprimer/';
+    del.classList.remove('hidden');
+  } else {
+    del.classList.add('hidden');
+  }
+  var m = document.getElementById('slot-modal');
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+}
+function closeSlotModal() {
+  var m = document.getElementById('slot-modal');
+  m.classList.add('hidden');
+  m.classList.remove('flex');
+}
+</script>
+
+{% else %}
+<div class="rounded-2xl border border-dashed border-slate-200 p-10 text-center text-slate-500 text-sm">
+  <i class="fas fa-calendar-alt text-3xl text-slate-300 mb-3"></i>
+  <p>Choisissez une classe pour voir et remplir son emploi du temps.</p>
+  <p class="text-xs mt-2">Astuce : créez d'abord les <a href="{% url 'core:config_rooms' %}" class="text-blue-600 underline">créneaux horaires</a> (8h-9h, 9h-10h…).</p>
+</div>
+{% endif %}
+{% endblock %}

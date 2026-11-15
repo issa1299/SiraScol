@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} - SiraScol{% endblock %}
+{% block extra_css %}
+<style>
+.form-input { width: 100%; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.625rem 0.75rem; font-size: 0.875rem; outline: none; }
+.form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% if is_edit %}{% url 'students:detail' student.pk %}{% else %}{% url 'students:list' %}{% endif %}"
+       class="text-sm text-slate-500 hover:text-blue-600">
+        <i class="fas fa-arrow-left"></i> Retour
+    </a>
+</div>
+
+<div class="max-w-2xl">
+    <h1 class="text-2xl font-bold text-slate-800 mb-6">{{ title }}</h1>
+    {% if not is_edit %}
+    <p class="text-sm text-slate-500 mb-4">Le matricule sera généré automatiquement. Les frais de la classe choisie créeront des factures.</p>
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-5">
+        {% csrf_token %}
+        {% if form.errors %}
+        <div class="bg-red-50 text-red-700 text-sm p-3 rounded-lg border border-red-200">{{ form.errors }}</div>
+        {% endif %}
+
+        <div class="flex items-start gap-4">
+            <div class="w-24 h-24 rounded-xl bg-slate-100 overflow-hidden flex-shrink-0 border border-gray-200 flex items-center justify-center">
+                {% if is_edit and student.photo %}
+                <img src="{{ student.photo.url }}" alt="" class="w-full h-full object-cover" id="photo-preview">
+                {% else %}
+                <i class="fas fa-user text-3xl text-slate-300" id="photo-placeholder"></i>
+                <img src="" alt="" class="w-full h-full object-cover hidden" id="photo-preview">
+                {% endif %}
+            </div>
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-slate-700 mb-1">Photo de l'élève</label>
+                <div class="photo-btns mt-2">
+                    <button type="button" class="btn-camera" onclick="openStudentCamera('id_photo')"><i class="fas fa-camera"></i> Caméra</button>
+                    <button type="button" class="btn-gallery" onclick="openStudentGallery('id_photo')"><i class="fas fa-images"></i> Galerie</button>
+                </div>
+                <input type="file" name="photo" id="id_photo" accept="image/*" capture="environment" class="hidden"
+                       onchange="previewStudentPhoto(this, 'photo-preview', 'photo-placeholder')">
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Nom *</label>
+                {{ form.last_name }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Prénom *</label>
+                {{ form.first_name }}
+            </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Sexe *</label>
+                {{ form.gender }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Date de naissance *</label>
+                {{ form.date_of_birth }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Lieu de naissance</label>
+                {{ form.place_of_birth }}
+            </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Téléphone</label>
+                {{ form.phone }}
+            </div>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+            {{ form.email }}
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Adresse</label>
+            {{ form.address }}
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Date d'inscription *</label>
+                {{ form.enrollment_date }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Statut</label>
+                {{ form.status }}
+            </div>
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Observations</label>
+            {{ form.notes }}
+        </div>
+
+        {% if enr_form %}
+        <hr class="border-gray-100">
+        <p class="text-sm font-medium text-slate-700">Inscription en classe</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Année scolaire</label>
+                {{ enr_form.academic_year }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Classe</label>
+                <select name="classroom" id="id_classroom" class="form-input">
+                    <option value="">— Choisir une classe —</option>
+                    {% for c in classrooms_fees %}
+                    <option value="{{ c.id }}"
+                            data-inscription="{{ c.inscription_fee }}"
+                            data-scolarite="{{ c.tuition_fee }}">
+                        {{ c.name }} — Insc. {{ c.inscription_fee }} / Scol. {{ c.tuition_fee }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Affichage des frais -->
+        <div id="fees-box" class="hidden rounded-xl border border-blue-100 bg-blue-50 p-4 space-y-3">
+            <p class="text-sm font-semibold text-blue-900">
+                <i class="fas fa-money-bill-wave"></i> Frais de cette classe
+            </p>
+            <div class="grid grid-cols-3 gap-3 text-sm">
+                <div class="bg-white rounded-lg p-3 border border-blue-100">
+                    <p class="text-slate-500 text-xs mb-1">Inscription</p>
+                    <p class="text-lg font-bold text-slate-800" id="fee-inscription">0</p>
+                </div>
+                <div class="bg-white rounded-lg p-3 border border-blue-100">
+                    <p class="text-slate-500 text-xs mb-1">Scolarité</p>
+                    <p class="text-lg font-bold text-slate-800" id="fee-scolarite">0</p>
+                </div>
+                <div class="bg-white rounded-lg p-3 border border-blue-100">
+                    <p class="text-slate-500 text-xs mb-1">Total dû</p>
+                    <p class="text-lg font-bold text-blue-700" id="fee-total">0</p>
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Montant payé maintenant (optionnel)</label>
+                <input type="number" name="amount_paid" id="amount_paid" min="0" step="1" class="form-input bg-white" placeholder="Ex: 25000">
+                <p class="text-xs text-slate-500 mt-1">Reste à payer : <strong id="fee-reste">0</strong> — le paiement est réparti inscription puis scolarité.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="flex gap-3 pt-2">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium">
+                <i class="fas fa-save"></i> Enregistrer
+            </button>
+            <a href="{% if is_edit %}{% url 'students:detail' student.pk %}{% else %}{% url 'students:list' %}{% endif %}"
+               class="px-5 py-2.5 text-sm text-slate-600">Annuler</a>
+        </div>
+    </form>
+</div>
+
+<script>
+(function() {
+    const sel = document.getElementById('id_classroom');
+    const box = document.getElementById('fees-box');
+    if (!sel || !box) return;
+
+    function formatMoney(v) {
+        const n = parseFloat(v) || 0;
+        return n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    }
+
+    function updateFees() {
+        const opt = sel.options[sel.selectedIndex];
+        if (!opt || !opt.value) {
+            box.classList.add('hidden');
+            return;
+        }
+        const ins = parseFloat(opt.getAttribute('data-inscription') || 0) || 0;
+        const sco = parseFloat(opt.getAttribute('data-scolarite') || 0) || 0;
+        const total = ins + sco;
+        document.getElementById('fee-inscription').textContent = formatMoney(ins);
+        document.getElementById('fee-scolarite').textContent = formatMoney(sco);
+        document.getElementById('fee-total').textContent = formatMoney(total);
+        const paid = parseFloat((document.getElementById('amount_paid') || {}).value || 0) || 0;
+        document.getElementById('fee-reste').textContent = formatMoney(Math.max(0, total - paid));
+        box.classList.remove('hidden');
+    }
+
+    sel.addEventListener('change', updateFees);
+    document.getElementById('amount_paid')?.addEventListener('input', updateFees);
+    updateFees();
+
+    document.querySelector('input[type=file]')?.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const preview = document.getElementById('photo-preview');
+        const placeholder = document.getElementById('photo-placeholder');
+        preview.src = URL.createObjectURL(file);
+        preview.classList.remove('hidden');
+        if (placeholder) placeholder.classList.add('hidden');
+    });
+})();
+</script>
+{% endblock %}

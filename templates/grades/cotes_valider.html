@@ -1,0 +1,43 @@
+{% extends "grades/base_cotes.html" %}
+{% block title %}Valider les cotes{% endblock %}
+{% block header_title %}Valider les cotes{% endblock %}
+{% block header_sub %}Évaluations avec notes saisies — contrôle avant bulletin{% endblock %}
+{% block content %}
+<form method="get" class="bg-white rounded-2xl border p-4 mb-4">
+  <select name="classroom" class="border rounded-xl px-3 py-2.5 text-sm w-full sm:w-64" onchange="this.form.submit()">
+    <option value="">Toutes les classes</option>
+    {% for c in classrooms %}
+    <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+</form>
+<div class="bg-white rounded-2xl border overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-[10px] uppercase text-slate-500 text-left">
+      <tr>
+        <th class="px-3 py-2">Évaluation</th>
+        <th class="px-3 py-2">Classe</th>
+        <th class="px-3 py-2">Notes</th>
+        <th class="px-3 py-2">Statut</th>
+        <th class="px-3 py-2"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for a in page %}
+      <tr>
+        <td class="px-3 py-2.5">
+          <p class="font-medium">{{ a.subject.name }}</p>
+          <p class="text-xs text-slate-400">{{ a.period.name }} · {{ a.date|date:"d/m/Y" }}</p>
+        </td>
+        <td class="px-3 py-2.5 text-xs">{{ a.classroom.name }}</td>
+        <td class="px-3 py-2.5"><span class="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full">{{ a.nb_notes }}</span></td>
+        <td class="px-3 py-2.5"><span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full"><i class="fas fa-check"></i> Saisi</span></td>
+        <td class="px-3 py-2.5 text-right"><a href="{% url 'grades:entry' a.pk %}" class="text-xs text-blue-600">Voir</a></td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="px-3 py-12 text-center text-slate-400">Aucune note à valider</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

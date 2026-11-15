@@ -1,0 +1,54 @@
+<style>.form-input{width:100%;border:1px solid #d1d5db;border-radius:.5rem;padding:.5rem .75rem;font-size:.875rem}</style>
+{% if form.errors %}<div class="bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-3">{{ form.errors }}</div>{% endif %}
+<form method="post" action="{{ form_action }}" class="space-y-3">
+  {% csrf_token %}
+  <p class="text-xs bg-violet-50 text-violet-800 rounded-lg px-3 py-2">
+    <i class="fas fa-info-circle"></i> Créez une classe selon votre organisation (division A/B, série Sci/Litt…).
+  </p>
+  <div>
+    <label class="text-xs font-medium">Nom de la classe *</label>
+    {{ form.name }}
+    <p class="text-[10px] text-slate-400 mt-0.5">Ex : 1ère A, 6ème B, 12ème Sci A…</p>
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="text-xs font-medium">Niveau / Section *</label>
+      {{ form.level }}
+    </div>
+    <div>
+      <label class="text-xs font-medium">Année académique *</label>
+      {{ form.academic_year }}
+    </div>
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="text-xs font-medium">Capacité max</label>
+      {{ form.capacity }}
+    </div>
+    <div>
+      <label class="text-xs font-medium">Option / Série</label>
+      {{ form.serie }}
+      <p class="text-[10px] text-slate-400">Ex : Scientifique, Littéraire…</p>
+    </div>
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="text-xs font-medium">Frais d'inscription</label>
+      {{ form.inscription_fee }}
+    </div>
+    <div>
+      <label class="text-xs font-medium">Scolarité annuelle</label>
+      {{ form.tuition_fee }}
+    </div>
+  </div>
+  <div>
+    <label class="text-xs font-medium">Titulaire / Prof. principal</label>
+    {{ form.main_teacher }}
+  </div>
+  <div class="form-actions flex gap-2 pt-2 border-t">
+    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-medium">
+      Ajouter la classe
+    </button>
+    <button type="button" onclick="closeModal('modal-dynamic')" class="px-4 text-sm border rounded-xl">Annuler</button>
+  </div>
+</form>

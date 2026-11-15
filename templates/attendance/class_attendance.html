@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Appel — {{ classroom.name }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <a href="{% url 'attendance:classes' %}" class="text-sm text-rose-600 inline-flex items-center gap-1 mb-2">
+    <i class="fas fa-arrow-left"></i> Classes
+  </a>
+  <div class="bg-gradient-to-r from-rose-600 to-orange-500 rounded-2xl text-white p-4 mb-4 shadow">
+    <h1 class="text-xl font-bold">Faire l’appel</h1>
+    <p class="text-rose-100 text-sm">{{ classroom.name }} · cochez les absents / retards</p>
+  </div>
+
+  <form method="get" class="bg-white rounded-xl border p-3 mb-3 flex gap-2 items-center">
+    <label class="text-xs text-slate-500 shrink-0">Date</label>
+    <input type="date" name="date" value="{{ selected_date }}" class="border rounded-xl px-3 py-2.5 text-sm flex-1">
+    <button type="submit" class="bg-slate-800 text-white px-4 py-2.5 rounded-xl text-sm">OK</button>
+  </form>
+
+  <form method="post" class="space-y-3" id="appel-form">
+    {% csrf_token %}
+    <input type="hidden" name="date" value="{{ selected_date }}">
+    <div class="grid grid-cols-2 gap-2">
+      <div>
+        <label class="text-[10px] uppercase text-slate-400">Type</label>
+        <select name="type" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+          {% for v,l in type_choices %}<option value="{{ v }}">{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+      <div>
+        <label class="text-[10px] uppercase text-slate-400">Statut</label>
+        <select name="status" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+          {% for v,l in status_choices %}<option value="{{ v }}">{{ l }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="flex gap-2 text-xs mb-1">
+      <button type="button" onclick="document.querySelectorAll('#appel-form input[type=checkbox]').forEach(c=>c.checked=false)" class="border px-3 py-1.5 rounded-lg">Tout présent</button>
+      <button type="button" onclick="document.querySelectorAll('#appel-form input[type=checkbox]').forEach(c=>c.checked=true)" class="border px-3 py-1.5 rounded-lg">Tout absents</button>
+    </div>
+
+    <div class="space-y-2">
+      {% for row in rows %}
+      <label class="flex items-center gap-3 bg-white rounded-2xl border p-3.5 cursor-pointer {% if row.is_absent %}border-amber-400 bg-amber-50{% else %}hover:border-rose-200{% endif %}">
+        <input type="checkbox" name="absent_{{ row.student.id }}" class="w-5 h-5 rounded text-rose-600" {% if row.is_absent %}checked{% endif %}>
+        <div class="w-9 h-9 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-600">
+          {{ row.student.first_name|first }}{{ row.student.last_name|first }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="font-medium text-slate-800 truncate">{{ row.student.last_name }} {{ row.student.first_name }}</p>
+          <p class="text-xs text-slate-400">{{ row.student.matricule }}</p>
+        </div>
+        {% if row.is_absent %}<span class="text-[10px] font-semibold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">Noté</span>{% endif %}
+      </label>
+      {% empty %}
+      <p class="text-center text-slate-400 py-8">Aucun élève.</p>
+      {% endfor %}
+    </div>
+
+    <div class="sticky bottom-16 md:bottom-4 bg-white/95 border-t pt-3 pb-1 flex gap-2 z-10">
+      <button type="submit" class="flex-1 bg-rose-600 text-white py-3.5 rounded-2xl text-sm font-bold shadow">
+        <i class="fas fa-save"></i> Enregistrer l’appel
+      </button>
+    </div>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Années scolaires{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'core:config_home' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Configuration</a>
+  <h1 class="text-xl font-bold text-slate-800 mt-1">Années scolaires</h1>
+  <p class="text-xs text-slate-500">L'année « en cours » est marquée ★ dans le sélecteur</p>
+</div>
+
+<form method="post" action="{% url 'core:config_year_save' %}" class="bg-white rounded-2xl border p-4 mb-4 space-y-3">
+  {% csrf_token %}
+  <input type="hidden" name="id" value="">
+  <div>
+    <label class="text-xs font-medium text-slate-600">Nom *</label>
+    <input name="name" placeholder="Ex: 2027-2028" required class="w-full border rounded-xl px-3 py-2.5 text-sm mt-0.5">
+  </div>
+  <div class="grid grid-cols-2 gap-2">
+    <div>
+      <label class="text-xs font-medium text-slate-600">Début</label>
+      <input type="date" name="start_date" class="w-full border rounded-xl px-3 py-2.5 text-sm mt-0.5">
+    </div>
+    <div>
+      <label class="text-xs font-medium text-slate-600">Fin</label>
+      <input type="date" name="end_date" class="w-full border rounded-xl px-3 py-2.5 text-sm mt-0.5">
+    </div>
+  </div>
+  <label class="text-sm flex items-center gap-2"><input type="checkbox" name="is_current" class="rounded"> Définir comme année en cours</label>
+  <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold">Ajouter l'année</button>
+</form>
+
+<div class="space-y-2">
+{% for y in years %}
+<div class="bg-white rounded-xl border p-3 flex justify-between items-center gap-2">
+  <div class="min-w-0">
+    <p class="font-semibold text-sm">
+      {{ y.name }}
+      {% if y.is_current %}<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-1">En cours ★</span>{% endif %}
+    </p>
+    <p class="text-xs text-slate-400">{{ y.start_date|date:"d/m/Y" }} → {{ y.end_date|date:"d/m/Y" }}</p>
+  </div>
+  {% if not y.is_current %}
+  <form method="post" action="{% url 'core:config_year_current' y.pk %}">
+    {% csrf_token %}
+    <button class="text-xs bg-blue-50 text-blue-700 px-3 py-2 rounded-lg whitespace-nowrap">Activer</button>
+  </form>
+  {% endif %}
+</div>
+{% empty %}
+<p class="text-center text-slate-400 text-sm py-8">Aucune année. Ajoutez-en une ci-dessus.</p>
+{% endfor %}
+</div>
+{% endblock %}

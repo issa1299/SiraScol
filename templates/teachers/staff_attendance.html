@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Présences personnel{% endblock %}
+{% block content %}
+<div class="mb-3"><h1 class="text-xl font-bold">🕐 Présences du personnel</h1></div>
+
+<form method="get" class="mb-3 flex gap-2 items-center">
+  <input type="date" name="date" value="{{ day|date:'Y-m-d' }}" class="border rounded-xl px-3 py-2 text-sm">
+  <button class="bg-slate-800 text-white px-3 py-2 rounded-xl text-sm">OK</button>
+</form>
+<div class="bg-white rounded-2xl border overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-[10px] uppercase text-slate-500 text-left">
+      <tr><th class="px-3 py-2">Personnel</th><th class="px-3 py-2">Arrivée</th><th class="px-3 py-2">Départ</th><th class="px-3 py-2">Statut</th><th class="px-3 py-2"></th></tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for row in rows %}
+      <tr>
+        <form method="post">{% csrf_token %}
+        <input type="hidden" name="staff" value="{{ row.staff.id }}">
+        <td class="px-3 py-2 font-medium">{{ row.staff.last_name }} {{ row.staff.first_name }}</td>
+        <td class="px-3 py-2"><input type="time" name="time_in" value="{% if row.att.time_in %}{{ row.att.time_in|time:'H:i' }}{% endif %}" class="border rounded-lg px-2 py-1 text-xs w-24"></td>
+        <td class="px-3 py-2"><input type="time" name="time_out" value="{% if row.att.time_out %}{{ row.att.time_out|time:'H:i' }}{% endif %}" class="border rounded-lg px-2 py-1 text-xs w-24"></td>
+        <td class="px-3 py-2">
+          <select name="status" class="border rounded-lg px-2 py-1 text-xs">
+            {% for v,l in status_choices %}
+            <option value="{{ v }}" {% if row.att.status == v or not row.att and v == 'present' %}selected{% endif %}>{{ l }}</option>
+            {% endfor %}
+          </select>
+        </td>
+        <td class="px-3 py-2"><button class="text-xs bg-indigo-600 text-white px-2 py-1 rounded-lg">OK</button></td>
+        </form>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="px-3 py-8 text-center text-slate-400">Aucun personnel actif</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

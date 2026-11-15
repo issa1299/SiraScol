@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Rapports personnel{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+  <div>
+    <h1 class="text-xl font-bold text-slate-800">📊 Rapports personnel</h1>
+    <p class="text-xs text-slate-500">Statistiques du staff de l’école</p>
+  </div>
+  <a href="{% url 'core:reports' %}" class="text-sm text-indigo-600 underline">← Rapports globaux</a>
+</div>
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+  <div class="bg-white rounded-xl border p-4 text-center"><p class="text-2xl font-bold">{{ stats.total }}</p><p class="text-xs text-slate-500">Total actif</p></div>
+  <div class="bg-white rounded-xl border p-4 text-center"><p class="text-2xl font-bold text-indigo-600">{{ stats.enseignants }}</p><p class="text-xs text-slate-500">Enseignants</p></div>
+  <div class="bg-white rounded-xl border p-4 text-center"><p class="text-2xl font-bold text-amber-600">{{ stats.admin }}</p><p class="text-xs text-slate-500">Admin</p></div>
+  <div class="bg-white rounded-xl border p-4 text-center"><p class="text-2xl font-bold text-slate-600">{{ stats.service }}</p><p class="text-xs text-slate-500">Service</p></div>
+</div>
+
+<div class="bg-white rounded-xl border p-4 mb-4">
+  <h2 class="text-sm font-bold mb-3">Répartition par catégorie</h2>
+  <div class="space-y-2">
+    {% for row in by_cat %}
+    <div class="flex items-center gap-3 text-sm">
+      <span class="w-32 capitalize">{{ row.category }}</span>
+      <div class="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div class="h-full bg-indigo-500 rounded-full" style="width:{% if stats.total %}{% widthratio row.n stats.total 100 %}{% else %}0{% endif %}%"></div>
+      </div>
+      <span class="font-semibold w-8 text-right">{{ row.n }}</span>
+    </div>
+    {% empty %}
+    <p class="text-slate-400 text-sm">Aucune donnée</p>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+  <a href="{% url 'teachers:presences' %}" class="border rounded-xl p-3 text-sm hover:bg-slate-50"><i class="fas fa-clock text-blue-600"></i> Présences personnel</a>
+  <a href="{% url 'teachers:contracts' %}" class="border rounded-xl p-3 text-sm hover:bg-slate-50"><i class="fas fa-file-contract text-indigo-600"></i> Contrats</a>
+  <a href="{% url 'teachers:salaries' %}" class="border rounded-xl p-3 text-sm hover:bg-slate-50"><i class="fas fa-money-bill text-emerald-600"></i> Salaires</a>
+</div>
+{% endblock %}

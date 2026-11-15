@@ -1,0 +1,44 @@
+<style>.form-input{width:100%;border:1px solid #d1d5db;border-radius:.5rem;padding:.5rem .75rem;font-size:.875rem}</style>
+<form method="post" action="{% url 'finance:payment_create' %}" class="space-y-3">
+  {% csrf_token %}
+  <input type="hidden" name="next" value="{% url 'core:dashboard' %}">
+  <div>
+    <label class="text-xs font-medium">Facture *</label>
+    <select name="invoice" required class="form-input">
+      <option value="">— Choisir —</option>
+      {% for inv in open_invoices %}
+      <option value="{{ inv.id }}">{{ inv.student }} — {{ inv.fee_type }} (reste {{ inv.balance|floatformat:0 }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="text-xs font-medium">Montant *</label>
+      <input type="number" name="amount" step="0.01" min="0" required class="form-input">
+    </div>
+    <div>
+      <label class="text-xs font-medium">Date *</label>
+      <input type="date" name="payment_date" value="{{ today }}" required class="form-input">
+    </div>
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div>
+      <label class="text-xs font-medium">Mode</label>
+      <select name="method" class="form-input">
+        {% for v,l in method_choices %}<option value="{{ v }}">{{ l }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="text-xs font-medium">Référence</label>
+      <input type="text" name="reference" class="form-input">
+    </div>
+  </div>
+  <div>
+    <label class="text-xs font-medium">Reçu par</label>
+    <input type="text" name="received_by" class="form-input">
+  </div>
+  <div class="form-actions flex gap-2 pt-2 border-t">
+    <button type="submit" class="flex-1 bg-green-600 text-white py-2.5 rounded-lg text-sm font-medium">Enregistrer</button>
+    <button type="button" onclick="closeModal('modal-dynamic')" class="px-4 text-sm">Annuler</button>
+  </div>
+</form>

@@ -1,0 +1,134 @@
+{% extends is_teacher_ui|yesno:"base.html,grades/base_cotes.html" %}
+{% block title %}Notes — {{ classroom.name }}{% endblock %}
+{% block header_title %}Saisie des cotes{% endblock %}
+{% block header_sub %}{{ classroom.name }} · collective{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+
+  <a href="{% url 'grades:classes' %}{% if is_primary %}?cycle=primaire{% else %}?cycle=secondaire{% endif %}"
+     class="text-sm text-emerald-700 inline-flex items-center gap-1 mb-2">
+    <i class="fas fa-arrow-left"></i> Retour aux classes
+  </a>
+
+  <div class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl text-white p-4 mb-4 shadow">
+    <h1 class="text-xl font-bold">{{ classroom.name }}</h1>
+    <p class="text-emerald-100 text-sm">
+      {% if is_primary %}Notes sur {{ max_score }} · composition du mois
+      {% else %}Notes sur {{ max_score }} · devoirs + composition{% endif %}
+      {% if year %} · {{ year.name }}{% endif %}
+    </p>
+  </div>
+
+  <form method="get" id="filtre-notes" class="bg-white rounded-2xl border p-4 mb-4 space-y-3 shadow-sm">
+    <input type="hidden" name="classroom" value="{{ classroom.id }}">
+    <div>
+      <label class="text-xs font-semibold uppercase text-slate-500">
+        {% if is_primary %}Mois{% else %}Trimestre{% endif %}
+        <span class="text-slate-400 font-normal normal-case">({{ nb_periods }} dispo.)</span>
+      </label>
+      <select name="period" id="sel-period" class="w-full mt-1 border-2 border-slate-200 rounded-xl px-3 py-3 text-sm bg-white"
+              onchange="document.getElementById('filtre-notes').submit()">
+        <option value="">— Choisir —</option>
+        {% for id, name in period_choices %}
+        <option value="{{ id }}" {% if period_id == id|stringformat:"s" %}selected{% endif %}>{{ name }}</option>
+        {% empty %}
+        <option value="" disabled>Aucune période — Configuration → Périodes</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="text-xs font-semibold uppercase text-slate-500">
+        Matière
+        <span class="text-slate-400 font-normal normal-case">({{ nb_subjects }} dispo.)</span>
+      </label>
+      <select name="subject" id="sel-subject" class="w-full mt-1 border-2 border-slate-200 rounded-xl px-3 py-3 text-sm bg-white"
+              onchange="if(document.getElementById('sel-period').value) document.getElementById('filtre-notes').submit()">
+        <option value="">— Choisir —</option>
+        {% for id, name in subject_choices %}
+        <option value="{{ id }}" {% if subject_id == id|stringformat:"s" %}selected{% endif %}>{{ name }}</option>
+        {% empty %}
+        <option value="" disabled>Aucune matière — Configuration → Matières</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if nb_periods == 0 %}
+    <p class="text-xs text-red-700 bg-red-50 rounded-lg px-3 py-2">
+      Aucune période pour {{ year.name|default:"cette année" }}.
+      Allez dans <strong>Configuration → Périodes</strong> ou lancez
+      <code>python manage.py init_school_data</code>
+    </p>
+    {% elif nb_subjects == 0 %}
+    <p class="text-xs text-red-700 bg-red-50 rounded-lg px-3 py-2">
+      Aucune matière. <strong>Configuration → Matières</strong> puis
+      <strong>Classes → Matières</strong> pour cette classe.
+    </p>
+    {% elif not period or not subject %}
+    <p class="text-xs text-amber-800 bg-amber-50 rounded-lg px-3 py-2">
+      Sélectionnez le {% if is_primary %}mois{% else %}trimestre{% endif %} <strong>et</strong> la matière pour afficher tous les élèves.
+    </p>
+    {% endif %}
+  </form>
+
+  {% if period and subject %}
+  <form method="post" class="space-y-3">
+    {% csrf_token %}
+    <input type="hidden" name="classroom" value="{{ classroom.id }}">
+    <input type="hidden" name="period" value="{{ period.id }}">
+    <input type="hidden" name="subject" value="{{ subject.id }}">
+
+    <div class="flex items-center justify-between mb-1">
+      <p class="text-sm font-bold text-slate-700">{{ subject.name }} · {{ period.name }}</p>
+      <span class="text-xs text-slate-400">{{ rows|length }} élève(s) · /{{ max_score }}</span>
+    </div>
+
+    {% if not is_primary %}
+    <p class="text-[11px] text-slate-500 bg-slate-50 rounded-lg px-3 py-2">
+      <strong>D1 · D2 · D3</strong> = devoirs → note de classe · <strong>Compo</strong> · Moy. = (classe + 2×compo)/3
+    </p>
+    {% endif %}
+
+    <div class="bg-white rounded-2xl border overflow-hidden shadow-sm">
+      {% if not is_primary %}
+      <div class="grid grid-cols-[1fr_3.2rem_3.2rem_3.2rem_3.2rem] gap-1.5 px-2 py-2 bg-slate-50 border-b text-[10px] uppercase text-slate-500 font-semibold">
+        <span>Élève</span><span class="text-center">D1</span><span class="text-center">D2</span><span class="text-center">D3</span><span class="text-center text-blue-700">Compo</span>
+      </div>
+      {% endif %}
+      <div class="divide-y">
+        {% for row in rows %}
+        <div class="px-2 py-2.5 {% if is_primary %}flex items-center gap-3{% else %}grid grid-cols-[1fr_3.2rem_3.2rem_3.2rem_3.2rem] gap-1.5 items-center{% endif %}">
+          <div class="min-w-0 flex items-center gap-2">
+            <div class="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+              {{ row.student.first_name|first }}{{ row.student.last_name|first }}
+            </div>
+            <div class="min-w-0">
+              <p class="text-sm font-medium truncate">{{ row.student.last_name }} {{ row.student.first_name }}</p>
+              <p class="text-[10px] text-slate-400">{{ row.student.matricule }}</p>
+            </div>
+          </div>
+          {% if is_primary %}
+          <input type="number" name="score_{{ row.student.id }}" step="0.25" min="0" max="{{ max_score }}"
+                 value="{{ row.score }}" inputmode="decimal" placeholder="/{{ max_score }}"
+                 class="w-20 border rounded-xl px-2 py-2 text-center text-sm font-semibold bg-emerald-50 border-emerald-200 shrink-0">
+          {% else %}
+          <input type="number" name="devoir1_{{ row.student.id }}" step="0.25" min="0" max="{{ max_score }}" value="{{ row.devoir1 }}" placeholder="D1" class="w-full border rounded-lg px-0.5 py-2 text-center text-xs bg-violet-50">
+          <input type="number" name="devoir2_{{ row.student.id }}" step="0.25" min="0" max="{{ max_score }}" value="{{ row.devoir2 }}" placeholder="D2" class="w-full border rounded-lg px-0.5 py-2 text-center text-xs bg-violet-50">
+          <input type="number" name="devoir3_{{ row.student.id }}" step="0.25" min="0" max="{{ max_score }}" value="{{ row.devoir3 }}" placeholder="D3" class="w-full border rounded-lg px-0.5 py-2 text-center text-xs bg-violet-50">
+          <input type="number" name="compo_{{ row.student.id }}" step="0.25" min="0" max="{{ max_score }}" value="{{ row.composition }}" placeholder="C" class="w-full border rounded-lg px-0.5 py-2 text-center text-xs font-semibold bg-blue-50">
+          {% endif %}
+        </div>
+        {% empty %}
+        <p class="p-6 text-center text-slate-400 text-sm">Aucun élève dans cette classe.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <div class="sticky bottom-4 bg-white/95 border-t pt-3 pb-1 z-10">
+      <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-3.5 rounded-2xl text-sm font-bold shadow">
+        <i class="fas fa-save"></i> Enregistrer les notes
+      </button>
+    </div>
+  </form>
+  {% endif %}
+
+</div>
+{% endblock %}

@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Finance par classe{% endblock %}
+{% block content %}
+<div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-800">Finance — Classes</h1>
+    <p class="text-sm text-slate-500 mt-1">
+      Cliquez sur une classe pour voir les élèves et enregistrer un paiement.
+      {% if current_year %}<span class="text-slate-400">· {{ current_year.name }}</span>{% endif %}
+    </p>
+  </div>
+  <div class="flex gap-2">
+    <a href="{% url 'finance:dashboard' %}" class="text-sm text-slate-600 hover:text-blue-600">Tableau de bord</a>
+    <a href="{% url 'finance:invoices' %}" class="text-sm text-slate-600 hover:text-blue-600">Toutes les factures</a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  {% for row in classes_data %}
+  <a href="{% url 'finance:class_students' row.classroom.pk %}"
+     class="block bg-white rounded-xl border border-gray-100 shadow-sm p-5 hover:border-blue-300 hover:shadow-md transition">
+    <div class="flex items-start justify-between gap-2">
+      <div>
+        <h2 class="font-semibold text-slate-800">{{ row.classroom.name }}</h2>
+        <p class="text-xs text-slate-500">{{ row.classroom.level.name }}{% if row.classroom.serie %} · {{ row.classroom.serie }}{% endif %}</p>
+      </div>
+      <span class="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">{{ row.nb_eleves }} élève(s)</span>
+    </div>
+    <div class="mt-4 grid grid-cols-3 gap-2 text-center text-xs">
+      <div>
+        <p class="text-slate-400">Dû</p>
+        <p class="font-semibold text-slate-700">{{ row.total_due|floatformat:0 }}</p>
+      </div>
+      <div>
+        <p class="text-slate-400">Payé</p>
+        <p class="font-semibold text-green-700">{{ row.total_paid|floatformat:0 }}</p>
+      </div>
+      <div>
+        <p class="text-slate-400">Reste</p>
+        <p class="font-semibold {% if row.balance > 0 %}text-red-600{% else %}text-green-700{% endif %}">{{ row.balance|floatformat:0 }}</p>
+      </div>
+    </div>
+  </a>
+  {% empty %}
+  <p class="text-slate-500 col-span-full">Aucune classe. Créez des classes et inscrivez des élèves.</p>
+  {% endfor %}
+</div>
+{% endblock %}

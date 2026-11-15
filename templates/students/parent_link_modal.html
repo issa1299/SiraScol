@@ -1,0 +1,25 @@
+<form method="post" action="{{ form_action }}" class="space-y-4">
+  {% csrf_token %}
+  <p class="text-sm text-slate-500">Lier un élève à <b>{{ parent.last_name }} {{ parent.first_name }}</b></p>
+  <div>
+    <label class="block text-xs font-medium text-slate-600 mb-1">Élève</label>
+    <select name="student" required class="w-full border rounded-xl px-3 py-2.5 text-sm search-person" data-search-person="1" data-placeholder="Rechercher un élève…">
+      <option value="">— Rechercher / choisir —</option>
+      {% for s in students %}
+      <option value="{{ s.pk }}">{{ s.last_name }} {{ s.first_name }} ({{ s.matricule }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="block text-xs font-medium text-slate-600 mb-1">Lien</label>
+    <select name="relation" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+      {% for val, label in relations %}
+      <option value="{{ val }}">{{ label }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="flex gap-2 pt-2 sticky bottom-0 bg-white">
+    <button type="submit" class="flex-1 bg-cyan-600 text-white py-3 rounded-xl text-sm font-medium">Lier</button>
+    <button type="button" onclick="closeAppModal()" class="px-4 border rounded-xl text-sm">Annuler</button>
+  </div>
+</form>

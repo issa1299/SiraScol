@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Évaluations & Notes - SiraScol{% endblock %}
+
+{% block content %}
+<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800">Évaluations</h1>
+        <p class="text-slate-500 text-sm mt-1">Devoirs, compositions et examens</p>
+    </div>
+    <button type="button" onclick="openModalUrl('{% url 'grades:create' %}', 'Nouvelle évaluation')" class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+        <i class="fas fa-plus"></i> Nouvelle évaluation
+    </button>
+</div>
+
+<form method="get" class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 mb-6 flex flex-wrap gap-3 items-end">
+    <div>
+        <label class="block text-xs text-slate-500 mb-1">Classe</label>
+        <select name="classroom" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Toutes</option>
+            {% for c in classrooms %}
+            <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs text-slate-500 mb-1">Matière</label>
+        <select name="subject" class="border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            <option value="">Toutes</option>
+            {% for s in subjects %}
+            <option value="{{ s.id }}" {% if subject_id == s.id|stringformat:"s" %}selected{% endif %}>{{ s.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm">Filtrer</button>
+</form>
+
+<div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+    <table class="w-full text-sm">
+        <thead class="bg-slate-50 text-slate-600">
+            <tr>
+                <th class="text-left px-4 py-3 font-medium">Titre</th>
+                <th class="text-left px-4 py-3 font-medium">Type</th>
+                <th class="text-left px-4 py-3 font-medium">Matière</th>
+                <th class="text-left px-4 py-3 font-medium">Classe</th>
+                <th class="text-left px-4 py-3 font-medium">Date</th>
+                <th class="text-left px-4 py-3 font-medium">Max</th>
+                <th class="text-right px-4 py-3 font-medium">Actions</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for a in assessments %}
+            <tr class="hover:bg-slate-50">
+                <td class="px-4 py-3 font-medium text-slate-800">{{ a.title }}</td>
+                <td class="px-4 py-3">{{ a.assessment_type.name }}</td>
+                <td class="px-4 py-3">{{ a.subject.name }}</td>
+                <td class="px-4 py-3">{{ a.classroom.name }}</td>
+                <td class="px-4 py-3">{{ a.date|date:"d/m/Y" }}</td>
+                <td class="px-4 py-3">{{ a.max_score }}</td>
+                <td class="px-4 py-3 text-right">
+                    <a href="{% url 'grades:entry' a.pk %}" class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium">
+                        <i class="fas fa-edit"></i> Saisir notes
+                    </a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-slate-500">
+                    Aucune évaluation.
+                    <a href="{% url 'grades:create' %}" class="text-blue-600 hover:underline">Créer la première</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

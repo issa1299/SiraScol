@@ -1,0 +1,165 @@
+{% extends "grades/base_cotes.html" %}
+{% block title %}Bulletins{% endblock %}
+{% block header_title %}Bulletins{% endblock %}
+{% block header_sub %}Par cycle · classes · périodes automatiques{% endblock %}
+{% block content %}
+
+{% if not cycle_filter %}
+{# —— Étape 1 : choisir le cycle —— #}
+<div class="mb-4">
+  <h2 class="text-lg font-bold text-slate-800">Choisir le cycle</h2>
+  <p class="text-xs text-slate-500 mt-1">Les périodes s’adaptent automatiquement (mois ou trimestres).</p>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+  <a href="?cycle=primaire"
+     class="group bg-white rounded-2xl border-2 border-emerald-100 hover:border-emerald-400 shadow-sm p-5 transition hover:shadow-md">
+    <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl mb-3">
+      <i class="fas fa-child"></i>
+    </div>
+    <p class="text-lg font-bold text-slate-800 group-hover:text-emerald-700">1er cycle</p>
+    <p class="text-xs text-slate-500">1ère → 6ème · compositions mensuelles</p>
+    <p class="text-sm mt-2 text-emerald-700 font-medium">{{ nb_primaire }} classe(s) · {{ nb_eleves_pri }} élève(s)</p>
+  </a>
+  <a href="?cycle=secondaire"
+     class="group bg-white rounded-2xl border-2 border-blue-100 hover:border-blue-400 shadow-sm p-5 transition hover:shadow-md">
+    <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl mb-3">
+      <i class="fas fa-user-graduate"></i>
+    </div>
+    <p class="text-lg font-bold text-slate-800 group-hover:text-blue-700">2ème cycle</p>
+    <p class="text-xs text-slate-500">7ème → 9ème · devoirs + compositions</p>
+    <p class="text-sm mt-2 text-blue-700 font-medium">{{ nb_secondaire }} classe(s) · {{ nb_eleves_sec }} élève(s)</p>
+  </a>
+  <a href="?cycle=lycee"
+     class="group bg-white rounded-2xl border-2 border-violet-100 hover:border-violet-400 shadow-sm p-5 transition hover:shadow-md">
+    <div class="w-12 h-12 rounded-2xl bg-violet-100 text-violet-700 flex items-center justify-center text-xl mb-3">
+      <i class="fas fa-university"></i>
+    </div>
+    <p class="text-lg font-bold text-slate-800 group-hover:text-violet-700">Lycée</p>
+    <p class="text-xs text-slate-500">10ème → 12ème · séries</p>
+    <p class="text-sm mt-2 text-violet-700 font-medium">{{ nb_lycee|default:0 }} classe(s) · {{ nb_eleves_lyc|default:0 }} élève(s)</p>
+  </a>
+</div>
+
+{% elif not classroom %}
+{# —— Étape 2 : classes du cycle —— #}
+<div class="mb-4 flex flex-wrap items-center justify-between gap-2">
+  <div>
+    <a href="{% url 'grades:bulletin_list' %}" class="text-xs text-slate-500 hover:text-emerald-600">
+      <i class="fas fa-arrow-left"></i> Cycles
+    </a>
+    <h2 class="text-lg font-bold text-slate-800 mt-1">
+      {% if cycle_filter == "primaire" %}1er cycle{% elif cycle_filter == "lycee" %}Lycée{% else %}2ème cycle{% endif %}
+    </h2>
+    <p class="text-xs text-slate-500">
+      {% if is_primary_cycle %}Périodes mensuelles{% else %}Trimestres{% endif %}
+      · {{ classrooms|length }} classe(s)
+    </p>
+  </div>
+</div>
+
+{# Périodes disponibles (info) #}
+{% if periods %}
+<div class="flex flex-wrap gap-2 mb-4">
+  {% for p in periods %}
+  <span class="text-xs px-3 py-1.5 rounded-full bg-slate-100 text-slate-600 border">{{ p.name }}</span>
+  {% endfor %}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+  {% for c in classrooms %}
+  <a href="?cycle={{ cycle_filter }}&classroom={{ c.id }}"
+     class="bg-white rounded-2xl border hover:border-emerald-400 shadow-sm p-4 transition hover:shadow-md">
+    <p class="font-semibold text-slate-800">{{ c.name }}</p>
+    <p class="text-xs text-slate-400">{{ c.level.name }}{% if c.serie %} · {{ c.serie }}{% endif %}</p>
+    <p class="text-xs text-emerald-600 mt-2 font-medium">
+      Voir les élèves <i class="fas fa-chevron-right text-[10px]"></i>
+    </p>
+  </a>
+  {% empty %}
+  <p class="col-span-full text-center text-slate-400 py-10 text-sm">Aucune classe pour ce cycle.</p>
+  {% endfor %}
+</div>
+
+{% else %}
+{# —— Étape 3 : élèves + périodes appliquées —— #}
+<div class="mb-4">
+  <a href="?cycle={{ cycle_filter }}" class="text-xs text-slate-500 hover:text-emerald-600">
+    <i class="fas fa-arrow-left"></i> Classes
+  </a>
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-1">
+    <div>
+      <h2 class="text-lg font-bold text-slate-800">{{ classroom.name }}</h2>
+      <p class="text-xs text-slate-500">
+        {% if cycle_filter == "primaire" %}1er cycle{% elif cycle_filter == "lycee" %}Lycée{% else %}2ème cycle{% endif %}
+        · {{ students|length }} élève(s)
+      </p>
+    </div>
+    {% if period %}
+    <a href="{% url 'grades:bulletin_class_pdf' %}?classroom={{ classroom.pk }}&period={{ period.id }}"
+       class="inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2.5 rounded-xl text-sm font-medium">
+      <i class="fas fa-file-pdf"></i> PDF classe · {{ period.name }}
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+{# Onglets période — appliqués selon le cycle #}
+{% if periods %}
+<div class="flex flex-wrap gap-2 mb-4">
+  {% for p in periods %}
+  <a href="?cycle={{ cycle_filter }}&classroom={{ classroom.id }}&period={{ p.id }}"
+     class="px-4 py-2 rounded-full text-sm font-medium transition
+       {% if period and period.id == p.id %}bg-emerald-600 text-white shadow
+       {% else %}bg-white border text-slate-600 hover:border-emerald-300{% endif %}">
+    {{ p.name }}
+  </a>
+  {% endfor %}
+</div>
+{% else %}
+<p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 mb-4">
+  Aucune période configurée pour cette année. Créez les mois (primaire) ou trimestres (secondaire) dans les paramètres.
+</p>
+{% endif %}
+
+{% if period %}
+<p class="text-xs text-slate-500 mb-3">
+  Période active : <strong class="text-slate-700">{{ period.name }}</strong>
+  {% if is_primary_cycle %}· notes /10{% else %}· devoirs + composition /20{% endif %}
+</p>
+{% endif %}
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  {% for s in students %}
+  <div class="bg-white rounded-2xl border shadow-sm p-4">
+    <div class="flex items-center gap-3 mb-3">
+      {% if s.photo %}
+      <img src="{{ s.photo.url }}" class="w-12 h-12 rounded-xl object-cover" alt="">
+      {% else %}
+      <div class="w-12 h-12 rounded-xl bg-slate-100 flex items-center justify-center text-slate-400">
+        <i class="fas fa-user"></i>
+      </div>
+      {% endif %}
+      <div class="min-w-0">
+        <p class="font-semibold text-slate-800 truncate">{{ s.last_name }} {{ s.first_name }}</p>
+        <p class="text-xs font-mono text-slate-400">{{ s.matricule }}</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-2 gap-2">
+      <a href="{% url 'grades:bulletin' s.pk %}{% if period %}?period={{ period.id }}{% endif %}"
+         class="text-center bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-xs font-medium">
+        <i class="fas fa-eye"></i> Voir
+      </a>
+      <a href="{% url 'grades:bulletin_pdf' s.pk %}{% if period %}?period={{ period.id }}{% endif %}"
+         class="text-center bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-xl text-xs font-medium">
+        <i class="fas fa-file-pdf"></i> PDF
+      </a>
+    </div>
+  </div>
+  {% empty %}
+  <p class="col-span-full text-center text-slate-400 py-10 text-sm">Aucun élève dans cette classe.</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,15 @@
+<div class="space-y-3 text-sm">
+  <p class="text-lg font-bold">{{ parent.last_name }} {{ parent.first_name }}</p>
+  <p>{{ parent.phone }}{% if parent.phone2 %} · {{ parent.phone2 }}{% endif %}</p>
+  <p class="text-slate-500">{{ parent.email|default:"" }} · {{ parent.profession|default:"" }}</p>
+  {% if links %}
+  <p class="text-xs font-semibold mt-2">Enfants</p>
+  <ul class="text-xs space-y-1">
+    {% for l in links %}<li>{{ l.student }} ({{ l.get_relation_display }})</li>{% endfor %}
+  </ul>
+  {% endif %}
+  <div class="form-actions flex gap-2 pt-2 border-t">
+    <a href="{% url 'students:parent_detail' parent.pk %}" class="flex-1 text-center bg-slate-100 py-2 rounded-lg text-sm">Fiche complète</a>
+    <button type="button" onclick="openModalUrl('{% url 'students:parent_edit' parent.pk %}', 'Modifier parent')" class="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm">Modifier</button>
+  </div>
+</div>

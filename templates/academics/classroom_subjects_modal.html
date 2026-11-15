@@ -1,0 +1,13 @@
+<div class="space-y-3">
+  <p class="text-sm text-slate-600">
+    {% if is_primary %}
+    <strong>1er cycle</strong> : un professeur principal pour toutes les matières.
+    {% else %}
+    <strong>2ème cycle / Lycée</strong> : un enseignant par matière (plusieurs matières possibles pour un même prof).
+    {% endif %}
+  </p>
+  <a href="{% url 'academics:classroom_subjects' classroom.pk %}" class="block text-center bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold">
+    Ouvrir la gestion complète des matières
+  </a>
+  <p class="text-xs text-slate-400 text-center">Programme actuel : {{ class_subjects|length }} matière(s)</p>
+</div>

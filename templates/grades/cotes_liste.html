@@ -1,0 +1,49 @@
+{% extends "grades/base_cotes.html" %}
+{% block title %}Liste des élèves{% endblock %}
+{% block header_title %}Liste des élèves{% endblock %}
+{% block header_sub %}Tous les élèves pour la saisie des notes{% endblock %}
+{% block content %}
+<form method="get" class="bg-white rounded-2xl border p-4 mb-4 flex flex-col sm:flex-row gap-2">
+  <select name="classroom" class="border rounded-xl px-3 py-2.5 text-sm flex-1">
+    <option value="">Toutes les classes</option>
+    {% for c in classrooms %}
+    <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+  <input type="text" name="q" value="{{ q }}" placeholder="Nom ou matricule…" class="border rounded-xl px-3 py-2.5 text-sm flex-1">
+  <button class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-sm">Filtrer</button>
+</form>
+<div class="bg-white rounded-2xl border overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-left text-[10px] uppercase text-slate-500">
+      <tr>
+        <th class="px-3 py-2">Élève</th>
+        <th class="px-3 py-2">Matricule</th>
+        <th class="px-3 py-2">Classe</th>
+        <th class="px-3 py-2"></th>
+      </tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for e in page %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-3 py-2.5 font-medium">{{ e.student.last_name }} {{ e.student.first_name }}</td>
+        <td class="px-3 py-2.5 font-mono text-xs text-slate-500">{{ e.student.matricule }}</td>
+        <td class="px-3 py-2.5 text-xs">{{ e.classroom.name }}</td>
+        <td class="px-3 py-2.5 text-right">
+          <a href="{% url 'grades:classes' %}?classroom={{ e.classroom_id }}" class="text-emerald-600 text-xs font-medium">Saisir notes →</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="4" class="px-3 py-10 text-center text-slate-400">Aucun élève</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% if page.has_other_pages %}
+<div class="mt-3 flex gap-3 justify-center text-sm">
+  {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}&q={{ q }}&classroom={{ classroom_id }}" class="text-blue-600">← Préc.</a>{% endif %}
+  <span class="text-slate-500">Page {{ page.number }}</span>
+  {% if page.has_next %}<a href="?page={{ page.next_page_number }}&q={{ q }}&classroom={{ classroom_id }}" class="text-blue-600">Suiv. →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

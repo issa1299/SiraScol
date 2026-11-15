@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Reçu de paiement - {{ student }}{% endblock %}
+{% block extra_css %}
+<style>
+@media print {
+    aside, header, .no-print { display: none !important; }
+    body { background: white !important; }
+    main { padding: 0 !important; }
+    .receipt { box-shadow: none !important; border: 1px solid #333 !important; }
+}
+</style>
+{% endblock %}
+{% block content %}
+<div class="no-print mb-4 flex gap-3">
+    <a href="{% url 'finance:classes' %}" class="text-sm text-slate-500 hover:text-blue-600">
+        <i class="fas fa-arrow-left"></i> Retour
+    </a>
+    <button onclick="window.print()" class="bg-slate-800 text-white px-4 py-1.5 rounded-lg text-sm">
+        <i class="fas fa-print"></i> Imprimer
+    </button>
+    <button type="button" onclick="sirascolExportPdf('.print-area, .receipt, body', 'recu_paiement.pdf')" class="bg-rose-600 text-white px-4 py-1.5 rounded-lg text-sm">
+        <i class="fas fa-file-pdf"></i> PDF
+    </button>
+</div>
+
+<div class="receipt bg-white rounded-xl border border-gray-200 shadow-sm p-8 max-w-lg mx-auto">
+    <div class="text-center border-b-2 border-slate-800 pb-4 mb-6">
+        {% if school and school.logo %}
+        <img src="{{ school.logo.url }}" class="h-12 mx-auto mb-2 object-contain" alt="">
+        {% endif %}
+        <p class="font-bold text-lg text-slate-800">{% if school %}{{ school.name }}{% else %}Établissement scolaire{% endif %}</p>
+        {% if school %}
+        <p class="text-xs text-slate-500">
+            {% if school.address %}{{ school.address }}{% endif %}
+            {% if school.city %} · {{ school.city }}{% endif %}
+            {% if school.phone %} · {{ school.phone }}{% endif %}
+        </p>
+        {% endif %}
+        <h1 class="text-base font-bold mt-3 tracking-wide uppercase">Reçu de paiement</h1>
+    </div>
+
+    <div class="text-sm space-y-2 mb-6">
+        <div class="flex justify-between"><span class="text-slate-500">N° reçu</span><span class="font-mono font-medium">REC-{{ payment.id|stringformat:"05d" }}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Date</span><span>{{ payment.payment_date|date:"d/m/Y" }}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Élève</span><span class="font-medium">{{ student.last_name }} {{ student.first_name }}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Matricule</span><span class="font-mono">{{ student.matricule }}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Nature</span><span>{{ invoice.fee_type }}</span></div>
+        {% if invoice.academic_year %}
+        <div class="flex justify-between"><span class="text-slate-500">Année scolaire</span><span>{{ invoice.academic_year }}</span></div>
+        {% endif %}
+        <div class="flex justify-between"><span class="text-slate-500">Mode</span><span>{{ payment.get_method_display }}</span></div>
+        {% if payment.reference %}
+        <div class="flex justify-between"><span class="text-slate-500">N° reçu</span><span class="font-mono font-semibold">{{ payment.receipt_number }}</span></div>
+        {% endif %}
+    </div>
+
+    <div class="bg-slate-50 border border-slate-200 rounded-lg p-4 text-center mb-6">
+        <p class="text-xs text-slate-500 uppercase mb-1">Montant payé</p>
+        <p class="text-3xl font-bold text-green-700">{{ payment.amount|floatformat:0 }} {% if school %}{{ school.currency }}{% endif %}</p>
+    </div>
+
+    <div class="text-sm space-y-1 mb-8">
+        <div class="flex justify-between"><span class="text-slate-500">Total facture</span><span>{{ invoice.amount|floatformat:0 }}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Total payé</span><span>{{ invoice.amount_paid|floatformat:0 }}</span></div>
+        <div class="flex justify-between font-medium"><span class="text-slate-500">Reste dû</span><span>{{ invoice.balance|floatformat:0 }}</span></div>
+        <div class="flex justify-between"><span class="text-slate-500">Statut facture</span><span>{{ invoice.get_status_display }}</span></div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6 text-center text-xs text-slate-500 pt-4 border-t">
+        <div>
+            <p class="mb-10">Le payeur</p>
+            <p>______________</p>
+        </div>
+        <div>
+            <p class="mb-10">Reçu par{% if payment.received_by %}<br><span class="text-slate-700">{{ payment.received_by }}</span>{% endif %}</p>
+            <p>______________</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

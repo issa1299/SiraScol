@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+{% block title %}Gestion des documents — SiraScol{% endblock %}
+{% block content %}
+
+<div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+  <div>
+    <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+      <i class="fas fa-folder-open text-amber-500"></i> Gestion des documents
+    </h1>
+    <p class="text-xs text-slate-500 mt-0.5">
+      Bibliothèque de l’école{% if year %} · {{ year.name }}{% endif %}
+    </p>
+  </div>
+  <div class="flex flex-wrap gap-2">
+    {% if can_upload %}
+    <button type="button" onclick="openModalUrl('{% url 'communication:document_upload' %}?modal=1','Ajouter un document')"
+            class="bg-blue-600 text-white text-sm px-4 py-2.5 rounded-xl font-semibold">
+      <i class="fas fa-upload"></i> Ajouter un document
+    </button>
+    {% endif %}
+    <a href="{% url 'communication:announcements' %}" class="border text-sm px-4 py-2.5 rounded-xl">
+      <i class="fas fa-bullhorn"></i> Annonces
+    </a>
+    <a href="{% url 'communication:inbox' %}" class="border text-sm px-4 py-2.5 rounded-xl">
+      <i class="fas fa-envelope"></i> Messages
+    </a>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4">
+  <div class="bg-white rounded-xl border p-3 text-center shadow-sm">
+    <p class="text-2xl font-bold">{{ n_docs }}</p>
+    <p class="text-[10px] uppercase text-slate-400">Documents</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center shadow-sm">
+    <p class="text-2xl font-bold text-emerald-600">{{ n_published }}</p>
+    <p class="text-[10px] uppercase text-slate-400">Publiés</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center shadow-sm col-span-2 flex items-center justify-center gap-2 flex-wrap">
+    {% for c in cat_stats %}
+    {% if c.n %}
+    <a href="?category={{ c.code }}" class="text-[10px] px-2 py-1 rounded-full {% if category == c.code %}bg-blue-600 text-white{% else %}bg-slate-100 text-slate-600{% endif %}">
+      {{ c.label }} · {{ c.n }}
+    </a>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<form method="get" class="bg-white rounded-xl border p-3 mb-4 flex flex-wrap gap-2 items-center">
+  <input type="search" name="q" value="{{ q }}" placeholder="Rechercher…" class="border rounded-lg px-3 py-2 text-sm flex-1 min-w-[10rem]">
+  <select name="category" class="border rounded-lg px-3 py-2 text-sm" onchange="this.form.submit()">
+    <option value="">Toutes catégories</option>
+    {% for code, label in categories %}
+    <option value="{{ code }}" {% if category == code %}selected{% endif %}>{{ label }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm">OK</button>
+</form>
+
+<div class="bg-white rounded-xl border overflow-hidden mb-4">
+  <div class="px-4 py-3 border-b flex justify-between">
+    <p class="text-sm font-semibold">Bibliothèque</p>
+    <span class="text-xs text-slate-400">{{ documents|length }} fichier(s)</span>
+  </div>
+  <div class="divide-y">
+    {% for d in documents %}
+    <div class="px-4 py-3 flex flex-wrap items-center gap-3 hover:bg-slate-50">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 {% if d.extension == 'pdf' %}bg-rose-50 text-rose-600{% else %}bg-slate-100 text-slate-500{% endif %}">
+        {% if d.extension == 'pdf' %}<i class="fas fa-file-pdf"></i>{% else %}<i class="fas fa-file"></i>{% endif %}
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-medium text-slate-800 truncate">{{ d.title }}</p>
+        <p class="text-xs text-slate-500">
+          {{ d.get_category_display }} · {{ d.created_at|date:"d/m/Y" }}
+          {% if d.academic_year %} · {{ d.academic_year.name }}{% endif %}
+          {% if not d.is_published %}<span class="text-amber-600"> · Brouillon</span>{% endif %}
+        </p>
+      </div>
+      <div class="flex items-center gap-2">
+        {% if d.file %}
+        <a href="{{ d.file.url }}" target="_blank" class="text-sm bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg font-medium">
+          <i class="fas fa-download"></i> Télécharger
+        </a>
+        {% endif %}
+        {% if can_upload %}
+        <form method="post" action="{% url 'communication:document_delete' d.pk %}" onsubmit="return confirm('Supprimer ?');">
+          {% csrf_token %}
+          <button type="submit" class="text-rose-600 px-2"><i class="fas fa-trash"></i></button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="p-12 text-center text-slate-400">
+      <i class="fas fa-folder-open text-4xl mb-3 opacity-40"></i>
+      <p>Aucun document.</p>
+      {% if can_upload %}
+      <button type="button" onclick="openModalUrl('{% url 'communication:document_upload' %}?modal=1','Ajouter')" class="mt-2 text-blue-600 text-sm underline">Ajouter</button>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+  {% for c in cat_stats %}
+  <a href="?category={{ c.code }}" class="bg-white border rounded-xl p-3 hover:border-blue-300 transition text-sm">
+    <p class="font-medium text-slate-700">{{ c.label }}</p>
+    <p class="text-xs text-slate-400">{{ c.n }} fichier(s)</p>
+  </a>
+  {% endfor %}
+</div>
+{% endblock %}

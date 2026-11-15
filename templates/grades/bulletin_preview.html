@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block title %}Apercu des bulletins{% endblock %}
+{% block unused_title %}Bulletin{% endblock %}
+{% block header_sub %}Aperçu du bulletin scolaire{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <h1 class="text-2xl font-bold text-slate-800">Apercu des bulletins</h1>
+    <p class="text-slate-500 text-sm mt-1">Visualisez un ou plusieurs bulletins, choisissez le modele, puis telechargez en PDF.</p>
+</div>
+
+<form method="get" class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <div>
+            <label class="block text-xs text-slate-500 mb-1">Classe *</label>
+            <select name="classroom" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <option value="">— Choisir —</option>
+                {% for c in classrooms %}
+                <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs text-slate-500 mb-1">Periode / Trimestre</label>
+            <select name="period" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <option value="">—</option>
+                {% for p in periods %}
+                <option value="{{ p.id }}" {% if period_id == p.id|stringformat:"s" %}selected{% endif %}>
+                    {{ p.name }}{% if p.period_type == 'mois' %} · primaire{% else %} · trim. sec/lycée{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label class="block text-xs text-slate-500 mb-1">Modele de bulletin</label>
+            <select name="template" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                <option value="">Par defaut (selon niveau)</option>
+                {% for t in templates %}
+                <option value="{{ t.id }}" {% if template_id == t.id|stringformat:"s" %}selected{% endif %}>
+                    {{ t.name }} {% if t.is_default %}★{% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                <i class="fas fa-eye"></i> Afficher l'apercu
+            </button>
+        </div>
+    </div>
+</form>
+
+{% if previews %}
+<div class="flex flex-wrap gap-3 mb-6">
+    <a href="{% url 'grades:bulletin_class_pdf' %}?classroom={{ classroom.pk }}{% if period_id %}&period={{ period_id }}{% endif %}{% if template_id %}&template={{ template_id }}{% endif %}"
+       class="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+        <i class="fas fa-file-pdf"></i> Telecharger tous en PDF ({{ previews|length }})
+    </a>
+    <a href="{% url 'grades:template_list' %}" class="inline-flex items-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 px-4 py-2 rounded-lg text-sm">
+        <i class="fas fa-layer-group"></i> Gerer les modeles
+    </a>
+</div>
+
+{% if selected_template %}
+<p class="text-sm text-slate-500 mb-4">Modele utilise : <strong>{{ selected_template.name }}</strong> — {{ selected_template.get_formula_display }}</p>
+{% endif %}
+
+<div class="space-y-8">
+    {% for ctx in previews %}
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-4 py-3 bg-slate-50 border-b flex flex-wrap items-center justify-between gap-2">
+            <div>
+                <span class="font-semibold text-slate-800">{{ ctx.student.last_name }} {{ ctx.student.first_name }}</span>
+                <span class="text-sm text-slate-500 ml-2">{{ ctx.student.matricule }}</span>
+                {% if ctx.general_avg is not None %}
+                <span class="ml-2 text-sm font-medium {% if ctx.general_avg >= 10 %}text-green-700{% else %}text-red-600{% endif %}">
+                    Moy. {{ ctx.general_avg }}
+                </span>
+                {% endif %}
+            </div>
+            <div class="flex gap-2">
+                <a href="{% url 'grades:bulletin' ctx.student.pk %}?{% if period_id %}period={{ period_id }}&{% endif %}{% if template_id %}template={{ template_id }}{% endif %}"
+                   class="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg">Voir</a>
+                <a href="{% url 'grades:bulletin_pdf' ctx.student.pk %}?{% if period_id %}period={{ period_id }}&{% endif %}{% if template_id %}template={{ template_id }}{% endif %}"
+                   class="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg"><i class="fas fa-file-pdf"></i> PDF</a>
+            </div>
+        </div>
+        <div class="p-4 overflow-x-auto">
+            <table class="w-full text-xs border border-slate-300 min-w-[500px]">
+                <thead class="bg-slate-100">
+                    <tr>
+                        <th class="border px-2 py-1 text-left">Matiere</th>
+                        {% if not ctx.is_primary %}
+                        <th class="border px-2 py-1">Classe/20</th>
+                        <th class="border px-2 py-1">Comp/40</th>
+                        {% endif %}
+                        <th class="border px-2 py-1">Moyenne</th>
+                        <th class="border px-2 py-1">Coef</th>
+                        <th class="border px-2 py-1">Moy×Coef</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in ctx.subject_results %}
+                    <tr>
+                        <td class="border px-2 py-1">{{ r.subject.name }}</td>
+                        {% if not ctx.is_primary %}
+                        <td class="border px-2 py-1 text-center">{{ r.note_classe|default:"—" }}</td>
+                        <td class="border px-2 py-1 text-center">{{ r.note_composition_40|default:"—" }}</td>
+                        {% endif %}
+                        <td class="border px-2 py-1 text-center font-medium">{{ r.average|default:"—" }}</td>
+                        <td class="border px-2 py-1 text-center">{{ r.coefficient }}</td>
+                        <td class="border px-2 py-1 text-center">{{ r.moy_coef|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="border px-2 py-3 text-center text-slate-400">Pas de notes</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <p class="text-xs text-slate-500 mt-2">
+                Total coef {{ ctx.total_coef }} · Total general {{ ctx.total_moy_coef|default:"—" }}
+                {% if ctx.rank %} · Rang {{ ctx.rank }}e/{{ ctx.rank_total }}{% endif %}
+                · {{ ctx.appreciation }}
+            </p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% elif classroom %}
+<p class="text-slate-500 text-sm">Aucun eleve dans cette classe.</p>
+{% else %}
+<div class="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-10 text-center text-slate-500 text-sm">
+    Choisissez une classe (et optionnellement un trimestre + modele) pour afficher l'apercu.
+</div>
+{% endif %}
+{% endblock %}

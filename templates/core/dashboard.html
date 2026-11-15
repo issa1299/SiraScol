@@ -1,0 +1,293 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord — SiraScol{% endblock %}
+{% block content %}
+<div class="bg-gradient-to-r from-blue-700 to-indigo-800 rounded-2xl text-white p-4 sm:p-5 mb-4">
+  <p class="text-blue-100 text-xs uppercase tracking-wide">Espace direction</p>
+  <h1 class="text-xl font-bold mt-0.5">{% if user_display %}{{ user_display }}{% else %}Direction{% endif %}</h1>
+  <p class="text-blue-100 text-sm mt-1">
+    {% if school %}{{ school.name }} · {% endif %}{% if selected_year %}{{ selected_year.name }} · {% endif %}Vue globale de l’établissement
+  </p>
+</div>
+
+
+{# Bienvenue #}
+<div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl text-white p-4 sm:p-5 mb-4 shadow-sm">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <p class="text-blue-100 text-xs font-medium uppercase tracking-wide">SiraScol</p>
+      <h1 class="text-xl sm:text-2xl font-bold mt-0.5">
+        Bonjour{% if user_display %}, {{ user_display|truncatewords:2 }}{% endif %}
+      </h1>
+      <p class="text-blue-100 text-sm mt-1">
+        {% if school.name %}{{ school.name }} · {% endif %}
+        {{ today|date:"l d F Y" }}
+        {% if selected_year %} · Année {{ selected_year.name }}{% endif %}
+      </p>
+    </div>
+    {% if all_academic_years %}
+    <form method="get" action="{% url 'core:set_year' %}" class="flex items-center">
+      <input type="hidden" name="next" value="{% url 'core:dashboard' %}">
+      <select name="year" onchange="this.form.submit()"
+              class="text-sm rounded-xl px-3 py-2 bg-white/15 border border-white/30 text-white backdrop-blur focus:outline-none">
+        {% for y in all_academic_years %}
+        <option value="{{ y.id }}" class="text-slate-800" {% if selected_year and selected_year.id == y.id %}selected{% endif %}>
+          {{ y.name }}{% if y.is_current %} ★{% endif %}
+        </option>
+        {% endfor %}
+      </select>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+{# KPI principaux #}
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 mb-4">
+  <a href="{% url 'students:list' %}" class="bg-white rounded-xl border p-3 hover:border-blue-300 transition shadow-sm">
+    <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-2"><i class="fas fa-user-graduate"></i></div>
+    <p class="text-xl font-bold text-slate-800">{{ stats.students }}</p>
+    <p class="text-[10px] uppercase text-slate-400 tracking-wide">Élèves</p>
+  </a>
+  <a href="{% url 'academics:classroom_list' %}" class="bg-white rounded-xl border p-3 hover:border-indigo-300 transition shadow-sm">
+    <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-2"><i class="fas fa-chalkboard"></i></div>
+    <p class="text-xl font-bold text-slate-800">{{ stats.classrooms }}</p>
+    <p class="text-[10px] uppercase text-slate-400 tracking-wide">Classes</p>
+  </a>
+  <a href="{% url 'teachers:list' %}" class="bg-white rounded-xl border p-3 hover:border-violet-300 transition shadow-sm">
+    <div class="w-9 h-9 rounded-xl bg-violet-50 text-violet-600 flex items-center justify-center mb-2"><i class="fas fa-user-tie"></i></div>
+    <p class="text-xl font-bold text-slate-800">{{ stats.teachers }}</p>
+    <p class="text-[10px] uppercase text-slate-400 tracking-wide">Personnel</p>
+  </a>
+  <a href="{% url 'students:parent_list' %}" class="bg-white rounded-xl border p-3 hover:border-amber-300 transition shadow-sm">
+    <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-2"><i class="fas fa-users"></i></div>
+    <p class="text-xl font-bold text-slate-800">{{ stats.parents }}</p>
+    <p class="text-[10px] uppercase text-slate-400 tracking-wide">Parents</p>
+  </a>
+  <div class="bg-white rounded-xl border p-3 shadow-sm">
+    <div class="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-2"><i class="fas fa-arrow-down"></i></div>
+    <p class="text-xl font-bold text-emerald-700">{{ stats.paid_today|floatformat:0 }}</p>
+    <p class="text-[10px] uppercase text-slate-400 tracking-wide">Entrées jour</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 shadow-sm">
+    <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-500 flex items-center justify-center mb-2"><i class="fas fa-arrow-up"></i></div>
+    <p class="text-xl font-bold text-rose-600">{{ stats.expense_today|floatformat:0 }}</p>
+    <p class="text-[10px] uppercase text-slate-400 tracking-wide">Dépenses jour</p>
+  </div>
+</div>
+
+{# Finance résumé + présence #}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4">
+  <div class="bg-white rounded-xl border p-3 sm:p-4">
+    <p class="text-[11px] text-slate-500">Encaissé (mois)</p>
+    <p class="text-lg font-bold text-emerald-700">{{ stats.paid_month|floatformat:0 }} <span class="text-xs font-normal text-slate-400">FCFA</span></p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 sm:p-4">
+    <p class="text-[11px] text-slate-500">Dépenses (mois)</p>
+    <p class="text-lg font-bold text-rose-600">{{ stats.expense_month|floatformat:0 }} <span class="text-xs font-normal text-slate-400">FCFA</span></p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 sm:p-4">
+    <p class="text-[11px] text-slate-500">Caisse nette (mois)</p>
+    <p class="text-lg font-bold {% if stats.caisse >= 0 %}text-blue-700{% else %}text-rose-600{% endif %}">{{ stats.caisse|floatformat:0 }} <span class="text-xs font-normal text-slate-400">FCFA</span></p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 sm:p-4">
+    <p class="text-[11px] text-slate-500">Impayés</p>
+    <p class="text-lg font-bold text-amber-600">{{ stats.unpaid|floatformat:0 }} <span class="text-xs font-normal text-slate-400">FCFA</span></p>
+    <p class="text-[10px] text-slate-400">{{ stats.n_unpaid_invoices }} facture(s)</p>
+  </div>
+</div>
+
+{# Actions rapides #}
+<div class="mb-4">
+  <p class="text-xs font-semibold uppercase text-slate-400 mb-2 px-0.5">Actions rapides</p>
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+    <button type="button" onclick="openModalUrl('{% url 'students:create' %}?modal=1','Inscrire un élève')"
+            class="bg-white border rounded-xl p-3 text-left hover:border-blue-400 hover:shadow-sm transition">
+      <span class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 inline-flex items-center justify-center mb-1"><i class="fas fa-user-plus"></i></span>
+      <p class="text-sm font-semibold text-slate-800">Inscription</p>
+      <p class="text-[10px] text-slate-400">Nouvel élève</p>
+    </button>
+    <button type="button" onclick="openModalUrl('{% url 'finance:payment_create' %}?modal=1','Encaisser')"
+            class="bg-white border rounded-xl p-3 text-left hover:border-emerald-400 hover:shadow-sm transition">
+      <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 inline-flex items-center justify-center mb-1"><i class="fas fa-coins"></i></span>
+      <p class="text-sm font-semibold text-slate-800">Encaisser</p>
+      <p class="text-[10px] text-slate-400">Paiement</p>
+    </button>
+    <a href="{% url 'attendance:scan' %}" class="bg-white border rounded-xl p-3 text-left hover:border-indigo-400 hover:shadow-sm transition block">
+      <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 inline-flex items-center justify-center mb-1"><i class="fas fa-qrcode"></i></span>
+      <p class="text-sm font-semibold text-slate-800">Scan QR</p>
+      <p class="text-[10px] text-slate-400">Présences</p>
+    </a>
+    <a href="{% url 'core:reports' %}" class="bg-white border rounded-xl p-3 text-left hover:border-violet-400 hover:shadow-sm transition block">
+      <span class="w-8 h-8 rounded-lg bg-violet-50 text-violet-600 inline-flex items-center justify-center mb-1"><i class="fas fa-chart-pie"></i></span>
+      <p class="text-sm font-semibold text-slate-800">Rapports</p>
+      <p class="text-[10px] text-slate-400">Statistiques</p>
+    </a>
+  </div>
+</div>
+
+{# Graphiques dynamiques #}
+{{ chart_cycles_json|json_script:"data-cycles" }}
+{{ chart_finance_json|json_script:"data-finance" }}
+{{ chart_gender_json|json_script:"data-gender" }}
+{{ chart_promo_json|json_script:"data-promo" }}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
+  <div class="bg-white rounded-xl border p-4 shadow-sm">
+    <p class="text-sm font-semibold text-slate-800 mb-2"><i class="fas fa-chart-pie text-blue-600"></i> Effectifs par cycle</p>
+    <div class="relative" style="height:220px"><canvas id="chartCycles"></canvas></div>
+  </div>
+  <div class="bg-white rounded-xl border p-4 shadow-sm">
+    <p class="text-sm font-semibold text-slate-800 mb-2"><i class="fas fa-chart-bar text-emerald-600"></i> Finance (mois)</p>
+    <div class="relative" style="height:220px"><canvas id="chartFinance"></canvas></div>
+  </div>
+  <div class="bg-white rounded-xl border p-4 shadow-sm">
+    <p class="text-sm font-semibold text-slate-800 mb-2"><i class="fas fa-venus-mars text-pink-500"></i> Répartition genre</p>
+    <div class="relative" style="height:220px"><canvas id="chartGender"></canvas></div>
+  </div>
+  <div class="bg-white rounded-xl border p-4 shadow-sm">
+    <p class="text-sm font-semibold text-slate-800 mb-2"><i class="fas fa-exchange-alt text-indigo-600"></i> Fin d’année</p>
+    <div class="relative" style="height:220px"><canvas id="chartPromo"></canvas></div>
+    {% if can_nav_promotion %}
+    <a href="{% url 'students:promotion_home' %}" class="mt-2 block text-center text-xs text-indigo-600 font-medium hover:underline">Passage / Redoublement →</a>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+(function(){
+  if (typeof Chart === 'undefined') return;
+  function read(id){ try { return JSON.parse(document.getElementById(id).textContent); } catch(e){ return {labels:[], values:[]}; } }
+  var cycles = read('data-cycles');
+  var finance = read('data-finance');
+  var gender = read('data-gender');
+  var promo = read('data-promo');
+  var common = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } } };
+
+  if (document.getElementById('chartCycles')) {
+    new Chart(document.getElementById('chartCycles'), {
+      type: 'doughnut',
+      data: {
+        labels: cycles.labels || [],
+        datasets: [{ data: cycles.values || [], backgroundColor: ['#10b981','#3b82f6','#8b5cf6','#f59e0b','#64748b'], borderWidth: 0 }]
+      },
+      options: common
+    });
+  }
+  if (document.getElementById('chartFinance')) {
+    new Chart(document.getElementById('chartFinance'), {
+      type: 'bar',
+      data: {
+        labels: finance.labels || [],
+        datasets: [{ label: 'FCFA', data: finance.values || [], backgroundColor: ['#10b981','#f43f5e','#f59e0b'], borderRadius: 8, maxBarThickness: 48 }]
+      },
+      options: Object.assign({}, common, { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { font: { size: 10 } } }, x: { ticks: { font: { size: 11 } } } } })
+    });
+  }
+  if (document.getElementById('chartGender')) {
+    new Chart(document.getElementById('chartGender'), {
+      type: 'pie',
+      data: {
+        labels: gender.labels || [],
+        datasets: [{ data: gender.values || [], backgroundColor: ['#38bdf8','#f472b6'], borderWidth: 0 }]
+      },
+      options: common
+    });
+  }
+  if (document.getElementById('chartPromo')) {
+    new Chart(document.getElementById('chartPromo'), {
+      type: 'bar',
+      data: {
+        labels: promo.labels || [],
+        datasets: [{ label: 'Élèves', data: promo.values || [], backgroundColor: ['#94a3b8','#10b981','#f59e0b'], borderRadius: 8, maxBarThickness: 48 }]
+      },
+      options: Object.assign({}, common, { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } } }, x: { ticks: { font: { size: 11 } } } } })
+    });
+  }
+})();
+</script>
+
+{# Listes : paiements, rappels, inscrits #}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+  <div class="bg-white rounded-xl border p-4">
+    <div class="flex justify-between items-center mb-3">
+      <p class="text-sm font-semibold text-slate-800"><i class="fas fa-receipt text-emerald-600"></i> Derniers paiements</p>
+      {% if can_nav_finance %}<a href="{% url 'finance:classes' %}" class="text-[11px] text-blue-600">Voir</a>{% endif %}
+    </div>
+    {% if recent_payments %}
+    <ul class="space-y-2">
+      {% for p in recent_payments %}
+      <li class="flex justify-between gap-2 text-sm border-b border-slate-50 pb-2 last:border-0">
+        <div class="min-w-0">
+          <p class="font-medium truncate">{{ p.invoice.student }}</p>
+          <p class="text-[11px] text-slate-400">{{ p.payment_date|date:"d/m" }} · {{ p.invoice.fee_type.name }}</p>
+        </div>
+        <span class="text-emerald-700 font-semibold shrink-0">+{{ p.amount|floatformat:0 }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-center text-slate-400 text-sm py-6">Aucun paiement</p>
+    {% endif %}
+  </div>
+
+  <div class="bg-white rounded-xl border p-4">
+    <div class="flex justify-between items-center mb-3">
+      <p class="text-sm font-semibold text-slate-800"><i class="fas fa-exclamation-triangle text-amber-500"></i> Rappels de frais</p>
+      <span class="text-xs text-slate-400">{{ fee_reminders|length }}</span>
+    </div>
+    {% if fee_reminders %}
+    <ul class="space-y-2">
+      {% for r in fee_reminders %}
+      <li class="flex justify-between items-center gap-2 text-sm border-b border-slate-50 pb-2 last:border-0">
+        <div class="min-w-0">
+          <p class="font-medium truncate">{{ r.invoice.student }}</p>
+          <p class="text-[11px] text-slate-400">{{ r.invoice.fee_type.name }}</p>
+        </div>
+        <span class="text-amber-600 font-semibold shrink-0">{{ r.balance|floatformat:0 }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-center text-slate-400 text-sm py-6">Aucun impayé</p>
+    {% endif %}
+  </div>
+
+  <div class="bg-white rounded-xl border p-4">
+    <div class="flex justify-between items-center mb-3">
+      <p class="text-sm font-semibold text-slate-800"><i class="fas fa-user-plus text-blue-600"></i> Derniers inscrits</p>
+      <a href="{% url 'students:list' %}" class="text-[11px] text-blue-600">Voir</a>
+    </div>
+    {% if recent_enrollments %}
+    <ul class="space-y-2">
+      {% for e in recent_enrollments %}
+      <li class="flex items-center gap-2 text-sm border-b border-slate-50 pb-2 last:border-0">
+        <span class="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center text-xs font-bold shrink-0">
+          {{ e.student.last_name|first|upper }}
+        </span>
+        <div class="min-w-0">
+          <p class="font-medium truncate">{{ e.student.last_name }} {{ e.student.first_name }}</p>
+          <p class="text-[11px] text-slate-400 font-mono">{{ e.student.matricule }} · {{ e.classroom.name }}</p>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-center text-slate-400 text-sm py-6">Aucun inscrit récent</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if announcements %}
+<div class="bg-white rounded-xl border p-4 mb-2">
+  <p class="text-sm font-semibold mb-2"><i class="fas fa-bullhorn text-amber-500"></i> Annonces</p>
+  <div class="divide-y">
+    {% for a in announcements %}
+    <a href="{% url 'communication:detail' a.pk %}" class="block text-sm py-2.5 hover:text-blue-600">
+      {{ a.title }}
+      <span class="text-[11px] text-slate-400 block">{{ a.published_at|date:"d/m/Y"|default:a.created_at|date:"d/m/Y" }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

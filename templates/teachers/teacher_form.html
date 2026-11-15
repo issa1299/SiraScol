@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}{{ title|default:"Personnel" }}{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto bg-white rounded-2xl border p-5 mb-20">
+  <h1 class="font-bold text-lg mb-1">{{ title|default:"Fiche personnel" }}</h1>
+  {% if teacher %}<p class="text-xs text-slate-500 mb-4">{{ teacher.matricule }} · {{ teacher }}</p>{% endif %}
+
+  {% if form.errors %}
+  <div class="bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3 mb-4">
+    <p class="font-semibold mb-1">Corrigez les erreurs :</p>
+    {% for field, errs in form.errors.items %}
+      <p>• <strong>{{ field }}</strong> : {{ errs|join:", " }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form method="post" action="{{ form_action }}" enctype="multipart/form-data" class="space-y-4" id="teacher-form-page">
+    {% csrf_token %}
+
+    <p class="text-xs font-semibold uppercase text-slate-500">Type de membre</p>
+    <div class="grid grid-cols-3 gap-2">
+      {% for val, label in form.fields.category.choices %}
+      {% if val %}
+      <label class="border-2 rounded-xl p-3 text-center cursor-pointer
+        {% if form.category.value == val %}border-indigo-500 bg-indigo-50{% else %}border-slate-200{% endif %}">
+        <input type="radio" name="category" value="{{ val }}" class="sr-only"
+               {% if form.category.value == val %}checked{% endif %}>
+        <div class="text-xs font-bold">{{ label }}</div>
+      </label>
+      {% endif %}
+      {% endfor %}
+    </div>
+
+    <div>
+      <label class="text-xs text-slate-500">Photo</label>
+      {{ form.photo }}
+    </div>
+
+    <p class="text-xs font-semibold uppercase text-slate-600">Identité</p>
+    <div class="grid grid-cols-2 gap-2">
+      <div><label class="text-xs text-slate-500">Matricule *</label>{{ form.matricule }}</div>
+      <div><label class="text-xs text-slate-500">Sexe *</label>{{ form.gender }}</div>
+      <div><label class="text-xs text-slate-500">Nom *</label>{{ form.last_name }}</div>
+      <div><label class="text-xs text-slate-500">Prénom *</label>{{ form.first_name }}</div>
+      <div class="col-span-2"><label class="text-xs text-slate-500">Date de naissance</label>{{ form.date_of_birth }}</div>
+    </div>
+
+    <p class="text-xs font-semibold uppercase text-slate-600">Contact</p>
+    <div class="grid grid-cols-2 gap-2">
+      <div><label class="text-xs text-slate-500">Téléphone</label>{{ form.phone }}</div>
+      <div><label class="text-xs text-slate-500">Email</label>{{ form.email }}</div>
+      <div class="col-span-2"><label class="text-xs text-slate-500">Adresse</label>{{ form.address }}</div>
+    </div>
+
+    <p class="text-xs font-semibold uppercase text-slate-600">Poste</p>
+    <div class="grid grid-cols-2 gap-2">
+      <div><label class="text-xs text-slate-500">Fonction</label>{{ form.function }}</div>
+      <div><label class="text-xs text-slate-500">Département</label>{{ form.department }}</div>
+      <div><label class="text-xs text-slate-500">Spécialité</label>{{ form.speciality }}</div>
+      <div><label class="text-xs text-slate-500">Diplôme</label>{{ form.diploma }}</div>
+    </div>
+
+    <p class="text-xs font-semibold uppercase text-slate-600">Contrat & salaire</p>
+    <div class="grid grid-cols-2 gap-2">
+      <div><label class="text-xs text-slate-500">Embauche</label>{{ form.hire_date }}</div>
+      <div><label class="text-xs text-slate-500">Type contrat</label>{{ form.contract_type }}</div>
+      <div><label class="text-xs text-slate-500">Statut</label>{{ form.status }}</div>
+      <div><label class="text-xs text-slate-500">Salaire de base</label>{{ form.base_salary }}</div>
+    </div>
+
+    <div class="sticky bottom-0 bg-white border-t pt-3 flex gap-2">
+      <button type="submit" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl text-sm font-semibold">
+        Enregistrer
+      </button>
+      <a href="{% url 'teachers:list' %}" class="px-4 border rounded-xl text-sm flex items-center">Annuler</a>
+    </div>
+  </form>
+</div>
+<style>
+  #teacher-form-page .form-input, #teacher-form-page input, #teacher-form-page select, #teacher-form-page textarea {
+    width: 100%; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.5rem 0.75rem; font-size: 0.875rem;
+  }
+</style>
+{% endblock %}

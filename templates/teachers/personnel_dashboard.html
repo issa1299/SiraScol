@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Personnel — SiraScol{% endblock %}
+{% block content %}
+<div class="mb-3">
+  <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+    <i class="fas fa-user-tie text-indigo-600"></i> Gestion du Personnel
+  </h1>
+</div>
+
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+  <div class="bg-white rounded-xl border p-3 text-center">
+    <p class="text-2xl font-bold">{{ stats.total }}</p>
+    <p class="text-[10px] uppercase text-slate-400">Total personnel</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center">
+    <p class="text-2xl font-bold text-indigo-600">{{ stats.enseignants }}</p>
+    <p class="text-[10px] uppercase text-slate-400">Enseignants</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center">
+    <p class="text-2xl font-bold text-blue-600">{{ stats.admin }}</p>
+    <p class="text-[10px] uppercase text-slate-400">Administration</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center">
+    <p class="text-2xl font-bold text-amber-600">{{ stats.service }}</p>
+    <p class="text-[10px] uppercase text-slate-400">Service</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 mb-4">
+  <div class="bg-emerald-50 rounded-xl p-3 text-center border border-emerald-100">
+    <p class="font-bold text-emerald-700">{{ stats.actifs }}</p>
+    <p class="text-[10px] text-emerald-600">Actifs</p>
+  </div>
+  <div class="bg-red-50 rounded-xl p-3 text-center border border-red-100">
+    <p class="font-bold text-red-700">{{ stats.absents_today }}</p>
+    <p class="text-[10px] text-red-600">Absents aujourd'hui</p>
+  </div>
+  <div class="bg-orange-50 rounded-xl p-3 text-center border border-orange-100">
+    <p class="font-bold text-orange-700">{{ stats.retards_today }}</p>
+    <p class="text-[10px] text-orange-600">En retard</p>
+  </div>
+  <div class="bg-sky-50 rounded-xl p-3 text-center border border-sky-100">
+    <p class="font-bold text-sky-700">{{ stats.conges }}</p>
+    <p class="text-[10px] text-sky-600">En congé</p>
+  </div>
+  <div class="bg-violet-50 rounded-xl p-3 text-center border border-violet-100">
+    <p class="font-bold text-violet-700">{{ stats.contrats_expirent }}</p>
+    <p class="text-[10px] text-violet-600">Contrats ≤ 30 j</p>
+  </div>
+  <div class="bg-amber-50 rounded-xl p-3 text-center border border-amber-100">
+    <p class="font-bold text-amber-700">{{ stats.salaires_attente }}</p>
+    <p class="text-[10px] text-amber-600">Salaires à payer</p>
+  </div>
+</div>
+
+<div class="flex flex-wrap gap-2 mb-4">
+  <button type="button" onclick="openModalUrl('{% url 'teachers:create' %}', 'Nouveau personnel')"
+          class="bg-indigo-600 text-white text-sm px-4 py-2.5 rounded-xl"><i class="fas fa-plus"></i> Ajouter</button>
+  <a href="{% url 'teachers:presences' %}" class="border text-sm px-4 py-2.5 rounded-xl">Présences du jour</a>
+  <a href="{% url 'teachers:salaries' %}" class="border text-sm px-4 py-2.5 rounded-xl">Salaires</a>
+  <a href="{% url 'teachers:mise_en_place' %}" class="bg-emerald-600 text-white text-sm px-4 py-2.5 rounded-xl">📋 Mise en place</a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  <div class="bg-white rounded-2xl border p-4">
+    <h2 class="font-semibold text-sm mb-3">Présences aujourd'hui</h2>
+    {% for a in recent_att %}
+    <div class="flex justify-between text-sm py-1.5 border-b border-slate-50">
+      <span>{{ a.staff.last_name }} {{ a.staff.first_name }}</span>
+      <span class="text-xs {% if a.status == 'absent' %}text-red-600{% elif a.status == 'retard' %}text-orange-600{% else %}text-emerald-600{% endif %}">
+        {{ a.get_status_display }}
+        {% if a.time_in %} · {{ a.time_in|time:"H:i" }}{% endif %}
+      </span>
+    </div>
+    {% empty %}
+    <p class="text-sm text-slate-400">Aucune présence saisie aujourd'hui.</p>
+    {% endfor %}
+  </div>
+  <div class="bg-white rounded-2xl border p-4">
+    <h2 class="font-semibold text-sm mb-3">Contrats arrivant à échéance</h2>
+    {% for c in expiring %}
+    <div class="flex justify-between text-sm py-1.5 border-b border-slate-50">
+      <span>{{ c.staff.last_name }} {{ c.staff.first_name }}</span>
+      <span class="text-xs text-violet-600">{{ c.end_date|date:"d/m/Y" }}</span>
+    </div>
+    {% empty %}
+    <p class="text-sm text-slate-400">Aucun contrat bientôt expiré.</p>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

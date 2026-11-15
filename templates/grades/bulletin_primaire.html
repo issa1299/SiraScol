@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Bulletin Primaire - {{ student.full_name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+    aside, header, .no-print { display: none !important; }
+    body { background: white !important; }
+    main { padding: 0 !important; }
+    .print-area { box-shadow: none !important; border: 1px solid #ccc !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="no-print mb-4 flex flex-wrap gap-3 items-center justify-between">
+    <a href="{% url 'grades:bulletin_list' %}{% if classroom %}?classroom={{ classroom.id }}{% if period %}&period={{ period.id }}{% endif %}{% endif %}"
+       class="text-sm text-violet-600 hover:text-violet-800 font-medium">
+        <i class="fas fa-arrow-left"></i> Retour aux bulletins
+    </a>
+    <div class="flex gap-2 items-center">
+        <form method="get" class="flex gap-2 items-center">
+            <select name="period" onchange="this.form.submit()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+                <option value="">Toutes les périodes</option>
+                {% for p in periods %}
+                <option value="{{ p.id }}" {% if period and period.id == p.id %}selected{% endif %}>{{ p.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+        <a href="?period={% if period %}{{ period.id }}{% endif %}&print=1" target="_blank"
+           class="bg-slate-800 text-white px-4 py-1.5 rounded-lg text-sm" onclick="window.print()">
+            <i class="fas fa-print"></i> Imprimer
+        </button>
+        <button type="button" onclick="sirascolExportPdf('.print-area', 'bulletin.pdf')" class="bg-rose-600 text-white px-4 py-1.5 rounded-lg text-sm">
+            <i class="fas fa-file-pdf"></i> PDF
+        </a>
+    </div>
+</div>
+
+<div class="print-area bg-white rounded-xl border border-gray-200 shadow-sm p-8 max-w-3xl mx-auto">
+    <!-- En-tête -->
+    <div class="text-center border-b-2 border-slate-800 pb-4 mb-6">
+        {% if school and school.logo %}
+        <img src="{{ school.logo.url }}" alt="" class="h-14 mx-auto mb-2 object-contain">
+        {% endif %}
+        <p class="text-sm font-semibold text-slate-700">{% if school %}{{ school.name }}{% else %}Établissement scolaire{% endif %}</p>
+        {% if school and school.city %}<p class="text-xs text-slate-500">{{ school.city }}{% if school.phone %} · {{ school.phone }}{% endif %}</p>{% endif %}
+        <h1 class="text-xl font-bold text-slate-800 mt-2">BULLETIN SCOLAIRE — PRIMAIRE</h1>
+        <p class="text-sm text-slate-600 mt-1">
+            {% if current_year %}Année scolaire {{ current_year.name }}{% endif %}
+            {% if period %} · {{ period.name }}{% endif %}
+        </p>
+    </div>
+
+    <!-- Infos élève -->
+    <div class="grid grid-cols-2 gap-4 text-sm mb-6">
+        <div>
+            <p><span class="text-slate-500">Élève :</span> <strong>{{ student.last_name }} {{ student.first_name }}</strong></p>
+            <p><span class="text-slate-500">Matricule :</span> {{ student.matricule }}</p>
+            <p><span class="text-slate-500">Né(e) le :</span> {{ student.date_of_birth|date:"d/m/Y" }}</p>
+        </div>
+        <div>
+            <p><span class="text-slate-500">Classe :</span>
+                <strong>{% if enrollment %}{{ enrollment.classroom.name }}{% else %}—{% endif %}</strong>
+            </p>
+            <p><span class="text-slate-500">Niveau :</span>
+                {% if enrollment %}{{ enrollment.classroom.level.name }}{% else %}—{% endif %}
+            </p>
+            <p><span class="text-slate-500">Cycle :</span> Primaire</p>
+        </div>
+    </div>
+
+    <!-- Tableau notes (compositions) -->
+    <div class="overflow-x-auto -mx-2 px-2"><table class="w-full text-sm border border-slate-300 mb-6">
+        <thead>
+            <tr class="bg-slate-100">
+                <th class="border border-slate-300 px-3 py-2 text-left">Matière</th>
+                <th class="border border-slate-300 px-3 py-2 text-center">Coef.</th>
+                <th class="border border-slate-300 px-3 py-2 text-center">Moyenne /10</th>
+                <th class="border border-slate-300 px-3 py-2 text-left">Appréciation</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in subject_results %}
+            <tr>
+                <td class="border border-slate-300 px-3 py-2 font-medium">{{ r.subject.name }}</td>
+                <td class="border border-slate-300 px-3 py-2 text-center">{{ r.coefficient }}</td>
+                <td class="border border-slate-300 px-3 py-2 text-center font-semibold
+                    {% if r.average and r.average >= 10 %}text-green-700{% elif r.average %}text-red-600{% endif %}">
+                    {% if r.average %}{{ r.average }}{% else %}—{% endif %}
+                </td>
+                <td class="border border-slate-300 px-3 py-2 text-slate-600 text-xs">
+                    {% for g in r.grades %}{{ g.appreciation }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="border border-slate-300 px-3 py-4 text-center text-slate-500">
+                    Aucune note enregistrée pour cette période.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% if general_avg %}
+        <tfoot>
+            <tr class="bg-slate-50 font-bold">
+                <td class="border border-slate-300 px-3 py-2" colspan="2">MOYENNE GÉNÉRALE</td>
+                <td class="border border-slate-300 px-3 py-2 text-center text-lg
+                    {% if general_avg >= 10 %}text-green-700{% else %}text-red-600{% endif %}">
+                    {{ general_avg }} / 10
+                </td>
+                <td class="border border-slate-300 px-3 py-2"></td>
+            </tr>
+        </tfoot>
+        {% endif %}
+    </table>
+
+    <!-- Appréciation -->
+    <div class="border border-slate-300 rounded p-4 mb-6">
+        <p class="text-xs uppercase text-slate-500 mb-1">Appréciation du conseil / Instituteur</p>
+        <p class="text-sm">{{ appreciation|default:"—" }}</p>
+    </div>
+
+    <!-- Signatures -->
+    <div class="grid grid-cols-3 gap-4 text-center text-xs text-slate-500 mt-8">
+        <div>
+            <p class="mb-12">Le parent / tuteur</p>
+            <p>______________</p>
+        </div>
+        <div>
+            <p class="mb-12">L'instituteur(trice)</p>
+            <p>______________</p>
+        </div>
+        <div>
+            <p class="mb-12">Le directeur</p>
+            <p>______________</p>
+        </div>
+    </div>
+    {% if school and school.footer_text %}
+    <p class="text-center text-xs text-slate-400 mt-6">{{ school.footer_text }}</p>
+    {% endif %}
+</div>
+{% endblock %}

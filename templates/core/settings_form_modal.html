@@ -1,0 +1,66 @@
+<form method="post" action="{% url 'core:settings' %}" enctype="multipart/form-data" id="settings-form-modal" class="space-y-4 pb-4">
+  {% csrf_token %}
+  <p class="text-xs font-semibold uppercase text-slate-500">Informations générales</p>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+    <div class="sm:col-span-1"><label class="text-xs text-slate-500">Nom de l'école *</label>{{ form.name }}</div>
+    <div><label class="text-xs text-slate-500">Type d'établissement</label>{{ form.establishment_type }}</div>
+    <div><label class="text-xs text-slate-500">Statut</label>{{ form.establishment_status }}</div>
+    <div><label class="text-xs text-slate-500">Année scolaire</label>{{ form.academic_year_label }}</div>
+    <div><label class="text-xs text-slate-500">Pays</label>{{ form.country }}</div>
+    <div><label class="text-xs text-slate-500">Devise</label>{{ form.currency }}</div>
+    <div><label class="text-xs text-slate-500">Téléphone</label>{{ form.phone }}</div>
+    <div><label class="text-xs text-slate-500">Email</label>{{ form.email }}</div>
+    <div><label class="text-xs text-slate-500">Site web</label>{{ form.website }}</div>
+  </div>
+
+  <p class="text-xs font-semibold uppercase text-slate-500 pt-2">Localisation</p>
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+    <div><label class="text-xs text-slate-500">Région / Province</label>{{ form.province }}</div>
+    <div><label class="text-xs text-slate-500">Ville</label>{{ form.city }}</div>
+    <div><label class="text-xs text-slate-500">Commune</label>{{ form.commune }}</div>
+    <div><label class="text-xs text-slate-500">District / Cercle</label>{{ form.district }}</div>
+    <div><label class="text-xs text-slate-500">Inspection / CAP</label>{{ form.inspection }}</div>
+    <div class="sm:col-span-3"><label class="text-xs text-slate-500">Adresse</label>{{ form.address }}</div>
+  </div>
+
+  <p class="text-xs font-semibold uppercase text-slate-500 pt-2">Direction & bulletins</p>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+    <div><label class="text-xs text-slate-500">Directeur</label>{{ form.director_name }}</div>
+    <div><label class="text-xs text-slate-500">Sigle</label>{{ form.short_name }}</div>
+    <div><label class="text-xs text-slate-500">En-tête bulletin (gauche)</label>{{ form.header_left }}</div>
+    <div><label class="text-xs text-slate-500">En-tête bulletin (droite)</label>{{ form.header_right }}</div>
+  </div>
+
+  <div class="flex items-center gap-2 pt-1">
+    {{ form.maintenance_mode }}
+    <label class="text-sm text-slate-700">Mode maintenance (bloquer l'accès)</label>
+  </div>
+
+  <div class="sticky bottom-0 bg-white border-t pt-3 flex gap-2">
+    <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold">
+      <i class="fas fa-save"></i> Enregistrer
+    </button>
+    <button type="button" onclick="closeModal('modal-dynamic')" class="px-4 border rounded-xl text-sm">Annuler</button>
+  </div>
+</form>
+<script>
+(function(){
+  var form = document.getElementById('settings-form-modal');
+  if (!form) return;
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var body = document.getElementById('modal-dynamic-body');
+    body.innerHTML = '<p class="text-center py-8 text-slate-500"><i class="fas fa-spinner fa-spin"></i> Enregistrement…</p>';
+    fetch(form.action + '?modal=1', {
+      method: 'POST', body: new FormData(form),
+      headers: {'X-Requested-With': 'XMLHttpRequest'}, credentials: 'same-origin'
+    }).then(r => r.text()).then(html => {
+      body.innerHTML = html;
+      body.querySelectorAll('script').forEach(function(old){
+        var s = document.createElement('script'); s.textContent = old.textContent;
+        old.parentNode.replaceChild(s, old);
+      });
+    });
+  });
+})();
+</script>

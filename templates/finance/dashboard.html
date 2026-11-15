@@ -1,0 +1,263 @@
+{% extends "base.html" %}
+{% block title %}Centre Financier — SiraScol{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+    <i class="fas fa-university text-blue-600"></i> Centre Financier
+  </h1>
+  <p class="text-xs text-slate-500 mt-1">Encaissements, dépenses, soldes, rapports et suivi des frais scolaires.</p>
+</div>
+
+{# Onglets #}
+<div class="flex flex-wrap gap-2 mb-3">
+  <a href="?tab=dashboard{% if classroom_id %}&classroom={{ classroom_id }}{% endif %}"
+     class="px-3 py-2 rounded-xl text-sm font-medium {% if tab == 'dashboard' %}bg-blue-600 text-white{% else %}bg-white border text-slate-600{% endif %}">
+    <i class="fas fa-chart-pie"></i> Tableau de bord
+  </a>
+  <a href="?tab=paiements{% if classroom_id %}&classroom={{ classroom_id }}{% endif %}"
+     class="px-3 py-2 rounded-xl text-sm font-medium {% if tab == 'paiements' %}bg-blue-600 text-white{% else %}bg-white border text-slate-600{% endif %}">
+    <i class="fas fa-money-bill"></i> Paiements
+  </a>
+  <a href="?tab=depenses{% if classroom_id %}&classroom={{ classroom_id }}{% endif %}"
+     class="px-3 py-2 rounded-xl text-sm font-medium {% if tab == 'depenses' %}bg-blue-600 text-white{% else %}bg-white border text-slate-600{% endif %}">
+    <i class="fas fa-shopping-cart"></i> Dépenses
+  </a>
+  <a href="{% url 'finance:report' %}"
+     class="px-3 py-2 rounded-xl text-sm font-medium bg-white border text-slate-600">
+    <i class="fas fa-file-alt"></i> Rapports
+  </a>
+</div>
+
+{# Actions #}
+<div class="flex flex-wrap gap-2 mb-4">
+  <button type="button" onclick="document.getElementById('modal-paiement').classList.remove('hidden');document.getElementById('modal-paiement').classList.add('flex')"
+          class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+    <i class="fas fa-plus-circle"></i> Payer le frais scolaire
+  </button>
+  <button type="button" onclick="document.getElementById('modal-depense').classList.remove('hidden');document.getElementById('modal-depense').classList.add('flex')"
+          class="bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+    <i class="fas fa-minus-circle"></i> Dépense
+  </button>
+  <a href="{% url 'finance:report' %}?print=1" target="_blank"
+     class="bg-slate-700 hover:bg-slate-800 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+    <i class="fas fa-print"></i> Imprimer rapport
+  </a>
+  <a href="{% url 'finance:report' %}" target="_blank"
+     class="bg-rose-600 hover:bg-rose-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl"
+     title="Ouvrir le rapport puis cliquer PDF">
+    <i class="fas fa-file-pdf"></i> PDF rapport
+  </a>
+</div>
+
+{# Filtres #}
+<form method="get" class="bg-white rounded-2xl border p-3 mb-4 flex flex-wrap gap-2 items-end">
+  <input type="hidden" name="tab" value="{{ tab }}">
+  <div>
+    <label class="text-[10px] uppercase text-slate-400">Classe</label>
+    <select name="classroom" class="border rounded-xl px-3 py-2 text-sm" onchange="this.form.submit()">
+      <option value="">Toutes les classes</option>
+      {% for c in classrooms %}
+      <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="bg-blue-600 text-white text-sm px-4 py-2 rounded-xl">Appliquer</button>
+</form>
+
+{# KPIs #}
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+  <div class="bg-white rounded-xl border p-3 text-center">
+    <p class="text-lg font-bold text-emerald-600">{{ stats.encaise|floatformat:0 }}</p>
+    <p class="text-[10px] uppercase text-slate-400">Encaissé</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center">
+    <p class="text-lg font-bold text-amber-600">{{ stats.depenses|floatformat:0 }}</p>
+    <p class="text-[10px] uppercase text-slate-400">Dépenses</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center">
+    <p class="text-lg font-bold text-blue-700">{{ stats.solde|floatformat:0 }}</p>
+    <p class="text-[10px] uppercase text-slate-400">Solde</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center">
+    <p class="text-lg font-bold text-slate-700">{{ stats.nb_eleves }}</p>
+    <p class="text-[10px] uppercase text-slate-400">Élèves</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center">
+    <p class="text-lg font-bold text-slate-700">{{ stats.aujourdhui }}</p>
+    <p class="text-[10px] uppercase text-slate-400">Aujourd'hui</p>
+  </div>
+  <div class="bg-white rounded-xl border p-3 text-center">
+    <p class="text-lg font-bold text-slate-700">{{ stats.montant_jour|floatformat:0 }}</p>
+    <p class="text-[10px] uppercase text-slate-400">Montant jour</p>
+  </div>
+</div>
+
+{% if tab == 'depenses' %}
+<div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+  <div class="px-4 py-3 border-b font-semibold text-sm">Dépenses récentes</div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-[10px] uppercase text-slate-500 text-left">
+        <tr>
+          <th class="px-3 py-2">Date</th>
+          <th class="px-3 py-2">Catégorie</th>
+          <th class="px-3 py-2">Motif</th>
+          <th class="px-3 py-2">Montant</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for e in recent_expenses %}
+        <tr>
+          <td class="px-3 py-2">{{ e.date|date:"d/m/Y" }}</td>
+          <td class="px-3 py-2">{{ e.get_category_display }}</td>
+          <td class="px-3 py-2">{{ e.motif }}</td>
+          <td class="px-3 py-2 font-semibold text-amber-700">{{ e.amount|floatformat:0 }} {{ e.currency }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-3 py-10 text-center text-slate-400">Aucune dépense</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+  <div class="px-4 py-3 border-b flex justify-between items-center">
+    <p class="font-semibold text-sm">Paiements récents</p>
+    <span class="text-xs text-slate-400">{{ recent_payments|length }} transaction(s)</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-[10px] uppercase text-slate-500 text-left">
+        <tr>
+          <th class="px-3 py-2">Date</th>
+          <th class="px-3 py-2">N° reçu</th>
+          <th class="px-3 py-2">Élève</th>
+          <th class="px-3 py-2">Type</th>
+          <th class="px-3 py-2">Montant</th>
+          <th class="px-3 py-2">Mode</th>
+          <th class="px-3 py-2">Agent</th>
+          <th class="px-3 py-2"></th>
+        </tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for p in recent_payments %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-3 py-2 whitespace-nowrap">{{ p.payment_date|date:"d/m/Y" }}</td>
+          <td class="px-3 py-2 font-mono text-xs">{{ p.receipt_number }}</td>
+          <td class="px-3 py-2">
+            <a href="{% url 'finance:student_card' p.invoice.student_id %}" class="text-blue-600 font-medium hover:underline">
+              {{ p.invoice.student.last_name }} {{ p.invoice.student.first_name }}
+            </a>
+          </td>
+          <td class="px-3 py-2 text-xs">{{ p.invoice.fee_type.name }}</td>
+          <td class="px-3 py-2 font-semibold text-emerald-700">{{ p.amount|floatformat:0 }}</td>
+          <td class="px-3 py-2 text-xs">{{ p.get_method_display }}</td>
+          <td class="px-3 py-2 text-xs text-slate-500">{{ p.received_by|default:"—" }}</td>
+          <td class="px-3 py-2 text-right">
+            <a href="{% url 'finance:receipt' p.pk %}" class="text-xs text-blue-600">Reçu</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="px-3 py-10 text-center text-slate-400">Aucun paiement</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{# —— Modal paiement —— #}
+<div id="modal-paiement" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+    <div class="px-5 py-4 border-b flex justify-between items-center">
+      <p class="font-bold text-slate-800"><i class="fas fa-plus-circle text-blue-600"></i> Encaisser un paiement</p>
+      <button type="button" onclick="document.getElementById('modal-paiement').classList.add('hidden');document.getElementById('modal-paiement').classList.remove('flex')" class="text-slate-400 text-xl">&times;</button>
+    </div>
+    <form method="post" action="{% url 'finance:payment_create' %}" class="p-5 space-y-3">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{% url 'finance:dashboard' %}">
+      <div>
+        <label class="text-xs font-medium text-slate-600">Facture / Élève *</label>
+        <select name="invoice" required class="w-full border rounded-xl px-3 py-2.5 text-sm mt-1">
+          <option value="">— Choisir une facture ouverte —</option>
+          {% for inv in pending_invoices %}
+          <option value="{{ inv.id }}">{{ inv.student.last_name }} {{ inv.student.first_name }} — {{ inv.fee_type.name }} (reste {{ inv.balance|floatformat:0 }})</option>
+          {% endfor %}
+        </select>
+        <p class="text-[10px] text-slate-400 mt-1">Astuce : créez d’abord une facture ou payez depuis la fiche élève / classe.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="text-xs font-medium text-slate-600">Montant *</label>
+          <input type="number" name="amount" step="1" min="1" required class="w-full border rounded-xl px-3 py-2.5 text-sm mt-1">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-slate-600">Mode</label>
+          <select name="method" class="w-full border rounded-xl px-3 py-2.5 text-sm mt-1">
+            {% for val, label in method_choices %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-medium text-slate-600">Date</label>
+        <input type="date" name="payment_date" value="{{ today }}" class="w-full border rounded-xl px-3 py-2.5 text-sm mt-1">
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button type="submit" class="flex-1 bg-blue-600 text-white py-2.5 rounded-xl text-sm font-medium">Valider</button>
+        <button type="button" onclick="document.getElementById('modal-paiement').classList.add('hidden');document.getElementById('modal-paiement').classList.remove('flex')" class="flex-1 border rounded-xl py-2.5 text-sm">Annuler</button>
+      </div>
+    </form>
+    <div class="px-5 pb-4">
+      <a href="{% url 'finance:classes' %}" class="text-sm text-blue-600 underline">Payer depuis une classe →</a>
+    </div>
+  </div>
+</div>
+
+{# —— Modal dépense —— #}
+<div id="modal-depense" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
+  <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl">
+    <div class="px-5 py-4 border-b flex justify-between items-center">
+      <p class="font-bold text-slate-800"><i class="fas fa-minus-circle text-amber-500"></i> Enregistrer une dépense</p>
+      <button type="button" onclick="document.getElementById('modal-depense').classList.add('hidden');document.getElementById('modal-depense').classList.remove('flex')" class="text-slate-400 text-xl">&times;</button>
+    </div>
+    <form method="post" action="{% url 'finance:expense_create' %}" class="p-5 space-y-3">
+      {% csrf_token %}
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="text-xs font-medium text-slate-600">Date</label>
+          <input type="date" name="date" value="{{ today }}" required class="w-full border rounded-xl px-3 py-2.5 text-sm mt-1">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-slate-600">Catégorie</label>
+          <select name="category" class="w-full border rounded-xl px-3 py-2.5 text-sm mt-1">
+            {% for val, label in expense_categories %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2">
+        <div>
+          <label class="text-xs font-medium text-slate-600">Montant *</label>
+          <input type="number" name="amount" step="1" min="1" required class="w-full border rounded-xl px-3 py-2.5 text-sm mt-1">
+        </div>
+        <div>
+          <label class="text-xs font-medium text-slate-600">Devise</label>
+          <input type="text" name="currency" value="FCFA" class="w-full border rounded-xl px-3 py-2.5 text-sm mt-1">
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-medium text-slate-600">Motif *</label>
+        <input type="text" name="motif" required placeholder="Ex: Achat craie" class="w-full border rounded-xl px-3 py-2.5 text-sm mt-1">
+      </div>
+      <div class="flex gap-2 pt-2">
+        <button type="submit" class="flex-1 bg-amber-500 text-white py-2.5 rounded-xl text-sm font-medium">Enregistrer</button>
+        <button type="button" onclick="document.getElementById('modal-depense').classList.add('hidden');document.getElementById('modal-depense').classList.remove('flex')" class="flex-1 border rounded-xl py-2.5 text-sm">Annuler</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

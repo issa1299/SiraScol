@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Nouveau message{% endblock %}
+{% block content %}
+<a href="{% url 'communication:inbox' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Messages</a>
+<h1 class="text-xl font-bold mt-1 mb-4">Nouveau message</h1>
+<form method="post" class="bg-white rounded-2xl border p-4 space-y-3 max-w-lg">
+  {% csrf_token %}
+  <select name="recipient" required class="w-full border rounded-xl px-3 py-2.5 text-sm">
+    <option value="">— Destinataire —</option>
+    {% for u in users %}<option value="{{ u.pk }}">{{ u.get_full_name|default:u.username }}</option>{% endfor %}
+  </select>
+  <input name="subject" required placeholder="Sujet" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+  <textarea name="body" required rows="5" placeholder="Message..." class="w-full border rounded-xl px-3 py-2.5 text-sm"></textarea>
+  <button class="w-full bg-blue-600 text-white py-3 rounded-xl text-sm">Envoyer</button>
+</form>
+{% endblock %}

@@ -1,0 +1,18 @@
+<style>.form-input{width:100%;border:1px solid #d1d5db;border-radius:.5rem;padding:.5rem .75rem;font-size:.875rem}</style>
+{% if form.errors %}<div class="bg-red-50 text-red-700 text-sm p-3 rounded-lg mb-3">{{ form.errors }}</div>{% endif %}
+<form method="post" action="{{ form_action }}" class="space-y-3">
+  {% csrf_token %}
+  <div><label class="text-xs font-medium">Nom *</label>{{ form.name }}</div>
+  <div><label class="text-xs font-medium">Catégorie *</label>{{ form.category }}</div>
+  <div><label class="text-xs font-medium">Mise en page</label>{{ form.layout }}</div>
+  <div><label class="text-xs font-medium">Formule</label>{{ form.formula }}</div>
+  <div><label class="text-xs font-medium">Description</label>{{ form.description }}</div>
+  <div><label class="text-xs font-medium">Titre en-tête</label>{{ form.header_title }}</div>
+  <label class="text-sm flex items-center gap-2">{{ form.is_default }} Par défaut</label>
+  <label class="text-sm flex items-center gap-2">{{ form.show_rank }} Afficher le rang</label>
+  <label class="text-sm flex items-center gap-2">{{ form.show_prev_average }} Moyenne trimestre précédent</label>
+  <div class="form-actions flex gap-2">
+    <button type="submit" class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium">Enregistrer</button>
+    <button type="button" onclick="closeModal('modal-dynamic')" class="px-4 text-sm">Annuler</button>
+  </div>
+</form>

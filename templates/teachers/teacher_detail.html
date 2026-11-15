@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}{{ teacher }} — Fiche personnel{% endblock %}
+{% block content %}
+<a href="{% url 'teachers:list' %}" class="text-sm text-slate-500 hover:text-indigo-600">
+  <i class="fas fa-arrow-left"></i> Gestion du personnel
+</a>
+
+{# En-tête #}
+<div class="mt-3 bg-white rounded-2xl border overflow-hidden mb-4">
+  <div class="bg-gradient-to-r from-indigo-600 to-blue-600 h-16 sm:h-20"></div>
+  <div class="px-4 sm:px-5 pb-4 -mt-8 flex flex-col sm:flex-row sm:items-end gap-4">
+    {% if teacher.photo %}
+    <img src="{{ teacher.photo.url }}" alt="" class="w-20 h-20 rounded-2xl object-cover border-4 border-white shadow">
+    {% else %}
+    <div class="w-20 h-20 rounded-2xl bg-indigo-100 text-indigo-600 border-4 border-white shadow flex items-center justify-center text-2xl font-bold">
+      {{ teacher.last_name|first|upper }}{{ teacher.first_name|first|upper }}
+    </div>
+    {% endif %}
+    <div class="flex-1 min-w-0 pt-2 sm:pt-0 sm:pb-1">
+      <h1 class="text-xl font-bold text-slate-800">{{ teacher.last_name }} {{ teacher.first_name }}</h1>
+      <p class="text-sm text-slate-500 mt-0.5">
+        <span class="font-mono text-indigo-600">{{ teacher.matricule }}</span>
+        · {{ teacher.get_category_display }}
+        {% if teacher.function %}· {{ teacher.function }}{% endif %}
+      </p>
+      <div class="flex flex-wrap gap-1.5 mt-2">
+        <span class="text-[11px] px-2 py-0.5 rounded-full font-medium
+          {% if teacher.status == 'actif' %}bg-emerald-100 text-emerald-700
+          {% elif teacher.status == 'conge' %}bg-amber-100 text-amber-700
+          {% else %}bg-slate-100 text-slate-600{% endif %}">
+          {{ teacher.get_status_display }}
+        </span>
+        {% if teacher.user %}
+        <span class="text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700">
+          <i class="fas fa-check-circle"></i> Compte : {{ teacher.user.username }}
+        </span>
+        {% else %}
+        <span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">Sans compte</span>
+        {% endif %}
+      </div>
+    </div>
+    <div class="flex flex-wrap gap-2 pb-1">
+      <button type="button" onclick="openModalUrl('{% url 'teachers:qr' teacher.pk %}','QR Code')"
+              class="border text-sm px-3 py-2 rounded-xl text-slate-700 hover:bg-slate-50">
+        <i class="fas fa-qrcode"></i> QR
+      </button>
+      {% if can_personnel_create or can_personnel_edit %}
+      <button type="button" onclick="openModalUrl('{% url 'teachers:edit' teacher.pk %}?modal=1','Modifier')"
+              class="bg-indigo-600 text-white text-sm px-3 py-2 rounded-xl font-medium">
+        <i class="fas fa-edit"></i> Modifier
+      </button>
+      {% endif %}
+      {% if teacher.category == 'enseignant' %}
+      <button type="button" onclick="openModalUrl('{% url 'teachers:assign' teacher.pk %}?modal=1','Affectations')"
+              class="bg-blue-600 text-white text-sm px-3 py-2 rounded-xl font-medium">
+        <i class="fas fa-link"></i> Affectations
+      </button>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{# Onglets #}
+<div class="flex gap-1 border-b mb-4 text-sm overflow-x-auto" id="fiche-tabs">
+  <button type="button" data-tab="infos" class="tab-btn px-4 py-2 border-b-2 border-indigo-600 text-indigo-700 font-semibold whitespace-nowrap">Infos</button>
+  {% if teacher.category == 'enseignant' %}
+  <button type="button" data-tab="affectations" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Affectations</button>
+  {% endif %}
+  <button type="button" data-tab="contrats" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Contrats</button>
+  <button type="button" data-tab="salaires" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Salaires</button>
+  <button type="button" data-tab="presences" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Présences</button>
+  <button type="button" data-tab="docs" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">Documents</button>
+</div>
+
+{# —— INFOS —— #}
+<div id="tab-infos" class="tab-panel">
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 bg-white rounded-xl border p-4">
+      <h2 class="text-sm font-bold text-slate-800 mb-3"><i class="fas fa-id-card text-indigo-600"></i> Identité & contact</h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+        <div><p class="text-[10px] uppercase text-slate-400">Sexe</p><p class="font-medium">{{ teacher.get_gender_display }}</p></div>
+        <div><p class="text-[10px] uppercase text-slate-400">Naissance</p><p class="font-medium">{{ teacher.date_of_birth|date:"d/m/Y"|default:"—" }}</p></div>
+        <div><p class="text-[10px] uppercase text-slate-400">Téléphone</p><p class="font-medium">{{ teacher.phone|default:"—" }}</p></div>
+        <div class="col-span-2"><p class="text-[10px] uppercase text-slate-400">Email</p><p class="font-medium truncate">{{ teacher.email|default:"—" }}</p></div>
+        <div class="col-span-2 sm:col-span-3"><p class="text-[10px] uppercase text-slate-400">Adresse</p><p class="font-medium">{{ teacher.address|default:"—" }}</p></div>
+      </div>
+    </div>
+    <div class="bg-white rounded-xl border p-4">
+      <h2 class="text-sm font-bold text-slate-800 mb-3"><i class="fas fa-briefcase text-indigo-600"></i> Poste</h2>
+      <div class="space-y-2 text-sm">
+        <div><p class="text-[10px] uppercase text-slate-400">Fonction</p><p class="font-medium">{{ teacher.function|default:"—" }}</p></div>
+        <div><p class="text-[10px] uppercase text-slate-400">Département</p><p class="font-medium">{{ teacher.department|default:"—" }}</p></div>
+        <div><p class="text-[10px] uppercase text-slate-400">Spécialité</p><p class="font-medium">{{ teacher.speciality|default:"—" }}</p></div>
+        <div><p class="text-[10px] uppercase text-slate-400">Diplôme</p><p class="font-medium">{{ teacher.diploma|default:"—" }}</p></div>
+        <div><p class="text-[10px] uppercase text-slate-400">Embauche</p><p class="font-medium">{{ teacher.hire_date|date:"d/m/Y"|default:"—" }}</p></div>
+        <div><p class="text-[10px] uppercase text-slate-400">Contrat</p><p class="font-medium">{{ teacher.get_contract_type_display|default:"—" }}</p></div>
+        <div><p class="text-[10px] uppercase text-slate-400">Salaire de base</p><p class="font-bold text-emerald-700">{{ teacher.base_salary|floatformat:0 }} FCFA</p></div>
+      </div>
+    </div>
+  </div>
+  {% if main_classes %}
+  <div class="bg-white rounded-xl border p-4 mt-4">
+    <h2 class="text-sm font-bold mb-2">Classes principales</h2>
+    <div class="flex flex-wrap gap-2">
+      {% for c in main_classes %}
+      <span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-1 rounded-full font-medium">{{ c.name }}</span>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{# —— AFFECTATIONS —— #}
+{% if teacher.category == 'enseignant' %}
+<div id="tab-affectations" class="tab-panel hidden">
+  <div class="bg-white rounded-xl border overflow-hidden">
+    <div class="px-4 py-3 border-b flex justify-between items-center">
+      <h2 class="text-sm font-bold">Classes & matières ({{ assignments|length }})</h2>
+      <button type="button" onclick="openModalUrl('{% url 'teachers:assign' teacher.pk %}?modal=1','Affectations')"
+              class="text-xs text-indigo-600 font-medium">Gérer →</button>
+    </div>
+    <div class="divide-y">
+      {% for a in assignments %}
+      <div class="px-4 py-3 flex justify-between text-sm gap-2">
+        <span class="font-medium">{{ a.classroom.name }}</span>
+        <span class="text-indigo-600">{{ a.subject.name }}</span>
+      </div>
+      {% empty %}
+      <p class="p-8 text-center text-slate-400 text-sm">Aucune affectation</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{# —— CONTRATS —— #}
+<div id="tab-contrats" class="tab-panel hidden">
+  <div class="bg-white rounded-xl border overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-[10px] uppercase text-slate-500 text-left">
+        <tr><th class="px-3 py-2">Type</th><th class="px-3 py-2">Début</th><th class="px-3 py-2">Fin</th><th class="px-3 py-2">Salaire</th><th class="px-3 py-2">Statut</th></tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for c in contracts %}
+        <tr>
+          <td class="px-3 py-2">{{ c.get_contract_type_display }}</td>
+          <td class="px-3 py-2">{{ c.start_date|date:"d/m/Y" }}</td>
+          <td class="px-3 py-2">{{ c.end_date|date:"d/m/Y"|default:"—" }}</td>
+          <td class="px-3 py-2">{{ c.salary|floatformat:0 }}</td>
+          <td class="px-3 py-2">{{ c.get_status_display }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="px-3 py-8 text-center text-slate-400">Aucun contrat enregistré</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# —— SALAIRES —— #}
+<div id="tab-salaires" class="tab-panel hidden">
+  <div class="bg-white rounded-xl border overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-[10px] uppercase text-slate-500 text-left">
+        <tr><th class="px-3 py-2">Période</th><th class="px-3 py-2">Base</th><th class="px-3 py-2">Primes</th><th class="px-3 py-2">Retenues</th><th class="px-3 py-2">Net</th><th class="px-3 py-2">Statut</th></tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for s in salaries %}
+        <tr>
+          <td class="px-3 py-2">{{ s.month }}/{{ s.year }}</td>
+          <td class="px-3 py-2">{{ s.base|floatformat:0 }}</td>
+          <td class="px-3 py-2">{{ s.primes|floatformat:0 }}</td>
+          <td class="px-3 py-2">{{ s.retenues|floatformat:0 }}</td>
+          <td class="px-3 py-2 font-semibold">{{ s.net|floatformat:0 }}</td>
+          <td class="px-3 py-2">{{ s.get_status_display }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="px-3 py-8 text-center text-slate-400">Aucun bulletin de salaire</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# —— PRÉSENCES —— #}
+<div id="tab-presences" class="tab-panel hidden">
+  <div class="bg-white rounded-xl border overflow-hidden">
+    <table class="w-full text-sm">
+      <thead class="bg-slate-50 text-[10px] uppercase text-slate-500 text-left">
+        <tr><th class="px-3 py-2">Date</th><th class="px-3 py-2">Arrivée</th><th class="px-3 py-2">Départ</th><th class="px-3 py-2">Statut</th></tr>
+      </thead>
+      <tbody class="divide-y">
+        {% for a in attendances %}
+        <tr>
+          <td class="px-3 py-2">{{ a.date|date:"d/m/Y" }}</td>
+          <td class="px-3 py-2">{{ a.time_in|time:"H:i"|default:"—" }}</td>
+          <td class="px-3 py-2">{{ a.time_out|time:"H:i"|default:"—" }}</td>
+          <td class="px-3 py-2">{{ a.get_status_display }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="px-3 py-8 text-center text-slate-400">Aucune présence enregistrée</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{# —— DOCUMENTS —— #}
+<div id="tab-docs" class="tab-panel hidden">
+  <div class="bg-white rounded-xl border divide-y">
+    {% for d in documents %}
+    <div class="px-4 py-3 flex justify-between items-center text-sm">
+      <div>
+        <p class="font-medium">{{ d.title }}</p>
+        <p class="text-xs text-slate-500">{{ d.get_doc_type_display }} · {{ d.uploaded_at|date:"d/m/Y" }}</p>
+      </div>
+      {% if d.file %}<a href="{{ d.file.url }}" target="_blank" class="text-indigo-600 text-xs">Ouvrir</a>{% endif %}
+    </div>
+    {% empty %}
+    <p class="p-8 text-center text-slate-400 text-sm">Aucun document</p>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+(function(){
+  var tabs = document.querySelectorAll('#fiche-tabs .tab-btn');
+  var panels = document.querySelectorAll('.tab-panel');
+  tabs.forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var id = btn.getAttribute('data-tab');
+      tabs.forEach(function(b){
+        b.classList.remove('border-indigo-600','text-indigo-700','font-semibold');
+        b.classList.add('border-transparent','text-slate-500');
+      });
+      btn.classList.add('border-indigo-600','text-indigo-700','font-semibold');
+      btn.classList.remove('border-transparent','text-slate-500');
+      panels.forEach(function(p){ p.classList.add('hidden'); });
+      var panel = document.getElementById('tab-' + id);
+      if (panel) panel.classList.remove('hidden');
+    });
+  });
+})();
+</script>
+{% endblock %}

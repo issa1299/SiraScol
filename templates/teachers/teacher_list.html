@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% block title %}Gestion du Personnel — SiraScol{% endblock %}
+{% block content %}
+<style>
+  .pers-kpi { background:#fff; border:1px solid #e8ecf1; border-radius:14px; padding:14px 16px; display:flex; align-items:center; gap:12px; }
+  .pers-kpi .ico { width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+  .pers-kpi .num { font-size:22px; font-weight:700; line-height:1; }
+  .pers-kpi .lbl { font-size:10px; text-transform:uppercase; letter-spacing:.04em; color:#6b7280; margin-top:2px; font-weight:600; }
+  .btn-edunet { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:10px; font-size:13px; font-weight:600; border:none; cursor:pointer; text-decoration:none; white-space:nowrap; }
+  .btn-edunet-blue { background:#2563eb; color:#fff; }
+  .btn-edunet-blue:hover { background:#1d4ed8; color:#fff; }
+  .btn-edunet-orange { background:#f59e0b; color:#fff; }
+  .btn-edunet-orange:hover { background:#d97706; color:#fff; }
+  .btn-edunet-green { background:#10b981; color:#fff; }
+  .btn-edunet-green:hover { background:#059669; color:#fff; }
+  .btn-edunet-gray { background:#f3f4f6; color:#374151; border:1px solid #e5e7eb; }
+  .btn-edunet-gray:hover { background:#e5e7eb; color:#111; }
+  .badge-poste { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; background:#fef3c7; color:#92400e; }
+  .badge-type { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; background:#dbeafe; color:#1e40af; }
+  .badge-type-admin { background:#ede9fe; color:#5b21b6; }
+  .badge-type-service { background:#f3f4f6; color:#4b5563; }
+  .badge-compte { display:inline-flex; align-items:center; gap:4px; font-size:11px; font-weight:600; color:#059669; }
+  .avatar-init { width:40px; height:40px; border-radius:50%; background:#2563eb; color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; flex-shrink:0; }
+  .pers-table th { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:#6b7280; font-weight:700; padding:12px 14px; border-bottom:1px solid #e5e7eb; background:#fafbfc; }
+  .pers-table td { padding:12px 14px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+  .pers-table tr:hover td { background:#f8fafc; }
+</style>
+
+<div class="mb-1">
+  <h1 class="text-xl font-bold text-slate-800 flex items-center gap-2" style="font-size:20px;">
+    <span style="color:#2563eb;"><i class="fas fa-users"></i></span> Gestion du Personnel
+  </h1>
+</div>
+
+{# ===== KPIs exact EduNet ===== #}
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+  <div class="pers-kpi">
+    <div class="ico" style="background:#dbeafe;color:#2563eb;"><i class="fas fa-users"></i></div>
+    <div>
+      <div class="num" style="color:#1e293b;">{{ stats.total }}</div>
+      <div class="lbl">Total</div>
+    </div>
+  </div>
+  <div class="pers-kpi">
+    <div class="ico" style="background:#d1fae5;color:#059669;"><i class="fas fa-user-check"></i></div>
+    <div>
+      <div class="num" style="color:#059669;">{{ stats.actifs }}</div>
+      <div class="lbl">Actifs</div>
+    </div>
+  </div>
+  <div class="pers-kpi">
+    <div class="ico" style="background:#dbeafe;color:#2563eb;"><i class="fas fa-chalkboard-teacher"></i></div>
+    <div>
+      <div class="num" style="color:#2563eb;">{{ stats.enseignants }}</div>
+      <div class="lbl">Enseignants</div>
+    </div>
+  </div>
+  <div class="pers-kpi">
+    <div class="ico" style="background:#ede9fe;color:#7c3aed;"><i class="fas fa-briefcase"></i></div>
+    <div>
+      <div class="num" style="color:#7c3aed;">{{ stats.admin }}</div>
+      <div class="lbl">Administratifs</div>
+    </div>
+  </div>
+  <div class="pers-kpi">
+    <div class="ico" style="background:#fce7f3;color:#db2777;"><i class="fas fa-tools"></i></div>
+    <div>
+      <div class="num" style="color:#db2777;">{{ stats.service }}</div>
+      <div class="lbl">Ouvriers</div>
+    </div>
+  </div>
+</div>
+
+{# ===== Filtres ===== #}
+<form method="get" class="flex flex-wrap gap-2 items-center mb-3">
+  {% if category %}<input type="hidden" name="category" value="{{ category }}">{% endif %}
+  <select name="category" class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" onchange="this.form.submit()" style="min-width:110px;">
+    <option value="">Tous</option>
+    {% for v,l in categories %}
+    <option value="{{ v }}" {% if category == v %}selected{% endif %}>{{ l }}</option>
+    {% endfor %}
+  </select>
+  <select name="status" class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white" onchange="this.form.submit()" style="min-width:120px;">
+    <option value="">Tous statuts</option>
+    {% for v,l in statuses %}
+    <option value="{{ v }}" {% if status == v %}selected{% endif %}>{{ l }}</option>
+    {% endfor %}
+  </select>
+  <input type="text" name="q" value="{{ q }}" placeholder="Rechercher…"
+         class="border border-slate-200 rounded-lg px-3 py-2 text-sm bg-white flex-1" style="min-width:140px;max-width:260px;">
+  <button type="submit" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-medium">OK</button>
+</form>
+
+{# ===== Boutons d'action exact EduNet ===== #}
+<div class="flex flex-wrap gap-2 mb-4">
+  {% if can_personnel_create %}
+  <button type="button" class="btn-edunet btn-edunet-blue"
+          onclick="openModalUrl('{% url 'teachers:create' %}?with_account=1', 'Ajouter un membre (avec compte)')">
+    <i class="fas fa-plus"></i> Ajouter un membre (avec compte)
+  </button>
+  <button type="button" class="btn-edunet btn-edunet-orange"
+          onclick="openModalUrl('{% url 'teachers:create' %}?with_account=0', 'Ajouter un membre (sans compte)')">
+    <i class="fas fa-user"></i> Ajouter un membre (sans compte)
+  </button>
+  {% endif %}
+  <a href="{% url 'teachers:mise_en_place' %}" class="btn-edunet btn-edunet-green">
+    <i class="fas fa-file-alt"></i> Mise en place
+  </a>
+  <a href="{% url 'teachers:qr_codes' %}" class="btn-edunet btn-edunet-gray">
+    <i class="fas fa-qrcode"></i> Générer QR codes
+  </a>
+</div>
+
+{# ===== Tableau exact EduNet ===== #}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+  <div class="px-4 py-3 border-b border-slate-100 font-semibold text-sm text-slate-700">
+    Liste du personnel
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full pers-table text-sm">
+      <thead>
+        <tr>
+          <th class="text-left">Membre</th>
+          <th class="text-left">Poste</th>
+          <th class="text-left">Type</th>
+          <th class="text-left">Compte</th>
+          <th class="text-right">Salaire</th>
+          <th class="text-left">Contact</th>
+          <th style="width:40px;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in teachers %}
+        <tr>
+          <td>
+            <button type="button" class="flex items-center gap-3 text-left w-full"
+                    onclick="openModalUrl('{% url 'teachers:detail' t.pk %}', '{{ t.last_name }} {{ t.first_name }}')">
+              {% if t.photo %}
+              <img src="{{ t.photo.url }}" class="w-10 h-10 rounded-full object-cover flex-shrink-0" alt="">
+              {% else %}
+              <div class="avatar-init">{{ t.last_name|slice:":1"|upper }}</div>
+              {% endif %}
+              <div class="min-w-0">
+                <p class="font-semibold text-slate-800 truncate" style="font-size:13px;">{{ t.last_name }} {{ t.first_name }}</p>
+                <p class="text-slate-400" style="font-size:11px;">{{ t.matricule }}</p>
+              </div>
+            </button>
+          </td>
+          <td>
+            <span class="badge-poste">{{ t.function|default:t.get_category_display }}</span>
+          </td>
+          <td>
+            <span class="badge-type {% if t.category == 'admin' %}badge-type-admin{% elif t.category == 'service' %}badge-type-service{% endif %}">
+              {{ t.get_category_display }}
+            </span>
+          </td>
+          <td>
+            {% if t.user_id %}
+            <span class="badge-compte"><i class="fas fa-check-circle"></i> Avec compte</span>
+            {% else %}
+            <span class="text-slate-400 text-xs font-medium">Sans compte</span>
+            {% endif %}
+          </td>
+          <td class="text-right font-semibold text-slate-700 whitespace-nowrap" style="font-size:13px;">
+            {% if t.base_salary %}{{ t.base_salary|floatformat:0 }} FCFA{% else %}0 FCFA{% endif %}
+          </td>
+          <td class="text-slate-600 whitespace-nowrap" style="font-size:13px;">{{ t.phone|default:"—" }}</td>
+          <td class="text-right">
+            <button type="button" data-row-menu
+                    class="p-2 rounded-lg hover:bg-slate-100 text-slate-400 inline-flex"
+                    onclick="openRowMenu(this, [
+                      {label:'Voir fiche', icon:'fa-id-card', onclick:function(){ openModalUrl('{% url 'teachers:detail' t.pk %}?modal=1','Fiche'); }},
+                      {% if can_personnel_create %}{label:'Modifier', icon:'fa-edit', onclick:function(){ openModalUrl('{% url 'teachers:edit' t.pk %}?modal=1','Modifier'); }},{% endif %}
+                      {% if t.category == 'enseignant' %}{label:'Affectations', icon:'fa-link', onclick:function(){ openModalUrl('{% url 'teachers:assign' t.pk %}?modal=1','Affectations'); }},{% endif %}
+                    ].filter(Boolean))">
+              <i class="fas fa-ellipsis-v"></i>
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center text-slate-400 py-16 text-sm">
+            Aucun personnel. Cliquez sur <b>Ajouter un membre (avec compte)</b> pour commencer.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if teachers.has_other_pages %}
+  <div class="px-4 py-3 border-t border-slate-100 flex justify-center gap-2 text-sm">
+    {% if teachers.has_previous %}
+    <a href="?page={{ teachers.previous_page_number }}&q={{ q }}&category={{ category }}&status={{ status }}" class="px-3 py-1 border rounded-lg hover:bg-slate-50">←</a>
+    {% endif %}
+    <span class="px-3 py-1 text-slate-600">{{ teachers.number }} / {{ teachers.paginator.num_pages }}</span>
+    {% if teachers.has_next %}
+    <a href="?page={{ teachers.next_page_number }}&q={{ q }}&category={{ category }}&status={{ status }}" class="px-3 py-1 border rounded-lg hover:bg-slate-50">→</a>
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

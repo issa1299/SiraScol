@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block extra_css %}
+<style>
+.form-input { width: 100%; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.625rem 0.75rem; font-size: 0.875rem; outline: none; }
+.form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+</style>
+{% endblock %}
+{% block content %}
+<div class="mb-6">
+    <a href="{% if is_edit %}{% url 'students:parent_detail' parent.pk %}{% else %}{% url 'students:parent_list' %}{% endif %}"
+       class="text-sm text-slate-500 hover:text-blue-600"><i class="fas fa-arrow-left"></i> Retour</a>
+</div>
+<div class="max-w-xl">
+    <h1 class="text-2xl font-bold text-slate-800 mb-6">{{ title }}</h1>
+    <form method="post" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-4">
+        {% csrf_token %}
+        {% if form.errors %}<div class="bg-red-50 text-red-700 text-sm p-3 rounded-lg">{{ form.errors }}</div>{% endif %}
+        <div class="grid grid-cols-2 gap-4">
+            <div><label class="block text-sm font-medium text-slate-700 mb-1">Nom *</label>{{ form.last_name }}</div>
+            <div><label class="block text-sm font-medium text-slate-700 mb-1">Prénom *</label>{{ form.first_name }}</div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div><label class="block text-sm font-medium text-slate-700 mb-1">Téléphone *</label>{{ form.phone }}</div>
+            <div><label class="block text-sm font-medium text-slate-700 mb-1">Téléphone 2</label>{{ form.phone2 }}</div>
+        </div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">Email</label>{{ form.email }}</div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">Profession</label>{{ form.profession }}</div>
+        <div><label class="block text-sm font-medium text-slate-700 mb-1">Adresse</label>{{ form.address }}</div>
+        {% if not is_edit and students %}
+        <hr class="border-gray-100">
+        <p class="text-sm font-medium text-slate-700">Lier à un élève (optionnel)</p>
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Élève</label>
+            <select name="student" class="form-input search-person" data-search-person="1" data-placeholder="Rechercher un élève…">
+                <option value="">— Aucun —</option>
+                {% for s in students %}
+                <option value="{{ s.id }}">{{ s.last_name }} {{ s.first_name }} ({{ s.matricule }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Lien</label>
+                <select name="relation" class="form-input">
+                    {% for v, l in relations %}
+                    <option value="{{ v }}">{{ l }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="flex items-center gap-2 pt-6">
+                <input type="checkbox" name="is_primary" id="is_primary" class="rounded">
+                <label for="is_primary" class="text-sm">Contact principal</label>
+            </div>
+        </div>
+        {% endif %}
+        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium">
+            <i class="fas fa-save"></i> Enregistrer
+        </button>
+    </form>
+</div>
+{% endblock %}

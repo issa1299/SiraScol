@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1e40af">
+    <meta name="apple-mobile-web-app-title" content="SiraScol">
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>{% block title %}SiraScol{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    {% block extra_head %}{% endblock %}
+    <style>
+        [x-cloak] { display: none !important; }
+        .nav-link { display: flex; align-items: center; gap: 0.75rem; padding: 0.625rem 0.75rem; border-radius: 0.5rem; color: #cbd5e1; transition: all 0.15s; font-size: 0.875rem; }
+        .nav-link:hover { background: #334155; color: white; }
+        .nav-link.active { background: #1e40af; color: white; }
+        .nav-section { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; padding: 0.75rem 0.75rem 0.25rem; font-weight: 600; }
+        /* Sidebar fixe : ne remonte pas en haut au clic */
+        @media (min-width: 768px) {
+            .app-sidebar {
+                position: fixed;
+                left: 0; top: 0; bottom: 0;
+                width: 16rem;
+                z-index: 50;
+                display: flex;
+                flex-direction: column;
+            }
+            .app-sidebar .sidebar-scroll {
+                flex: 1 1 auto;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .app-sidebar .sidebar-footer {
+                flex-shrink: 0;
+            }
+            .app-content {
+                margin-left: 16rem;
+            }
+            .year-bar-offset {
+                padding-left: 16rem;
+            }
+        }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.55); z-index: 110; display: none; align-items: center; justify-content: center; padding: 1rem; }
+        .modal-overlay.open { display: flex; }
+        body.modal-open .bottom-nav { display: none !important; }
+        body.modal-open main.app-main { padding-bottom: 1rem !important; }
+        .modal-box { background: white; border-radius: 1rem; width: 100%; max-width: 36rem; max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        .modal-box.modal-lg { max-width: 42rem; }
+        .form-input { width: 100%; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.625rem 0.75rem; font-size: 0.875rem; outline: none; }
+        .form-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.3); }
+
+        
+        .photo-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .photo-btns .btn-camera, label.btn-camera {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.65rem 1rem; border-radius: 0.75rem; font-size: 0.8rem; font-weight: 500;
+            cursor: pointer; border: none; background: #1e40af; color: white;
+        }
+        .photo-btns .btn-gallery, label.btn-gallery {
+            display: inline-flex; align-items: center; gap: 0.4rem;
+            padding: 0.65rem 1rem; border-radius: 0.75rem; font-size: 0.8rem; font-weight: 500;
+            cursor: pointer; border: none; background: #e2e8f0; color: #334155;
+        }
+
+        /* —— App mobile —— */
+        .bottom-nav { display: none; }
+        .mobile-drawer { display: none; }
+
+        html { -webkit-tap-highlight-color: transparent; }
+        body.app-mobile { overscroll-behavior-y: none; }
+        @media (max-width: 767px) {
+            .modal-overlay { align-items: flex-end; padding: 0; }
+            .modal-box, .modal-box.modal-lg {
+                max-width: 100%; width: 100%;
+                max-height: 92vh; border-radius: 1.25rem 1.25rem 0 0;
+                margin: 0;
+            }
+            main.app-main {
+                padding-bottom: calc(6.5rem + env(safe-area-inset-bottom, 0px)) !important;
+            }
+            /* Boutons de validation toujours visibles au-dessus du menu bas */
+            .form-actions, form .form-actions, .sticky-form-actions {
+                position: sticky;
+                bottom: calc(4.25rem + env(safe-area-inset-bottom, 0px));
+                z-index: 30;
+                background: #fff;
+                padding: 0.75rem 0;
+                margin-top: 1rem;
+                border-top: 1px solid #e2e8f0;
+                box-shadow: 0 -4px 12px rgba(0,0,0,0.04);
+            }
+            /* Dans une modale : coller en bas de la boîte, pas sous le menu */
+            .modal-box .form-actions,
+            .modal-box .sticky-form-actions,
+            .modal-box form > .flex.gap-2.pt-2,
+            .modal-box form > .flex.gap-2.pt-3,
+            .modal-box form > div.flex.gap-2.pt-2 {
+                position: sticky;
+                bottom: 0;
+                z-index: 5;
+                background: #fff;
+                padding-top: 0.75rem;
+                padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+                margin-left: -0.25rem;
+                margin-right: -0.25rem;
+                padding-left: 0.25rem;
+                padding-right: 0.25rem;
+                border-top: 1px solid #e2e8f0;
+            }
+            .modal-box {
+                display: flex;
+                flex-direction: column;
+            }
+            .modal-box #modal-dynamic-body {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                flex: 1;
+                padding: 1rem;
+                padding-bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
+            }
+            /* Espace après le dernier champ pour scroller jusqu'aux boutons */
+            form:not(.year-switcher) {
+                padding-bottom: 0.5rem;
+            }
+
+            .bottom-nav {
+                position: fixed; left: 0; right: 0; bottom: 0; z-index: 100;
+                background: rgba(255,255,255,0.96);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border-top: 1px solid #e2e8f0;
+                padding: 0.25rem 0.15rem env(safe-area-inset-bottom, 0px);
+                display: flex; justify-content: space-around; align-items: stretch;
+                min-height: calc(3.9rem + env(safe-area-inset-bottom, 0px));
+                box-shadow: 0 -2px 16px rgba(15,23,42,0.08);
+            }
+            .bottom-nav a,
+            .bottom-nav button {
+                flex: 1 1 0;
+                min-width: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                gap: 0.2rem;
+                font-size: 0.62rem;
+                line-height: 1.1;
+                color: #64748b;
+                text-decoration: none;
+                background: transparent;
+                border: none;
+                padding: 0.4rem 0.1rem;
+                min-height: 3.4rem;
+                cursor: pointer;
+                -webkit-tap-highlight-color: transparent;
+                font-family: inherit;
+                position: relative;
+            }
+            .bottom-nav a i,
+            .bottom-nav button i {
+                font-size: 1.35rem;
+                width: 1.75rem;
+                height: 1.75rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 0.65rem;
+                transition: background 0.15s, color 0.15s;
+            }
+            .bottom-nav a span,
+            .bottom-nav button span {
+                max-width: 100%;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+                padding: 0 0.1rem;
+            }
+            .bottom-nav a.active,
+            .bottom-nav button.active {
+                color: #1d4ed8;
+                font-weight: 700;
+            }
+            .bottom-nav a.active i,
+            .bottom-nav button.active i {
+                background: #dbeafe;
+                color: #1d4ed8;
+            }
+            .bottom-nav a:active,
+            .bottom-nav button:active {
+                opacity: 0.75;
+            }
+            .mobile-drawer {
+                position: fixed; inset: 0; z-index: 200; display: none;
+            }
+            .mobile-drawer.open { display: block !important; }
+            .mobile-drawer-bg { position: absolute; inset: 0; background: rgba(15,23,42,0.5); }
+            .mobile-drawer-panel {
+                position: absolute; top: 0; left: 0; bottom: 0; width: min(85vw, 20rem);
+                background: #0f172a; color: #fff; overflow-y: auto;
+                padding-bottom: env(safe-area-inset-bottom, 0px);
+                box-shadow: 8px 0 30px rgba(0,0,0,0.3);
+            }
+            .touch-btn { min-height: 44px; min-width: 44px; }
+            input, select, textarea, button { font-size: 16px !important; } /* anti-zoom iOS */
+            .photo-capture-zone {
+                display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+                padding: 1rem; border: 2px dashed #cbd5e1; border-radius: 1rem; background: #f8fafc;
+            }
+            .photo-capture-zone img.preview {
+                width: 96px; height: 96px; border-radius: 1rem; object-fit: cover;
+            }
+            .photo-btns { display: flex; gap: 0.5rem; flex-wrap: wrap; justify-content: center; }
+            .photo-btns label, .photo-btns button {
+                display: inline-flex; align-items: center; gap: 0.4rem;
+                padding: 0.65rem 1rem; border-radius: 0.75rem; font-size: 0.8rem; font-weight: 500;
+                cursor: pointer; border: none;
+            }
+            .btn-camera { background: #1e40af; color: white; }
+            .btn-gallery { background: #e2e8f0; color: #334155; }
+        }
+        @media (min-width: 768px) {
+            .bottom-nav, .mobile-drawer, .mobile-menu-btn { display: none !important; }
+        }
+    
+        /* Barre de recherche pour élève / personnel */
+        .ss-wrap { position: relative; width: 100%; }
+        .ss-wrap select.ss-native { position: absolute; opacity: 0; pointer-events: none; height: 0; width: 0; }
+        .ss-input {
+          width: 100%; border: 1px solid #e2e8f0; border-radius: 0.75rem;
+          padding: 0.625rem 2.25rem 0.625rem 0.75rem; font-size: 0.875rem;
+          background: #fff;
+        }
+        .ss-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,.2); }
+        .ss-icon { position: absolute; right: 0.75rem; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
+        .ss-dropdown {
+          display: none; position: absolute; left: 0; right: 0; top: 100%; margin-top: 2px;
+          max-height: 220px; overflow-y: auto; background: #fff; border: 1px solid #e2e8f0;
+          border-radius: 0.75rem; z-index: 80; box-shadow: 0 8px 24px rgba(15,23,42,.12);
+        }
+        .ss-dropdown.open { display: block; }
+        .ss-option { padding: 0.55rem 0.75rem; font-size: 0.875rem; cursor: pointer; }
+        .ss-option:hover, .ss-option.active { background: #eff6ff; color: #1d4ed8; }
+        .ss-option.muted { color: #94a3b8; cursor: default; }
+        .ss-clear { position: absolute; right: 2rem; top: 50%; transform: translateY(-50%); color: #94a3b8; cursor: pointer; font-size: 0.75rem; display: none; }
+        .ss-wrap.has-value .ss-clear { display: block; }
+
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-gray-50 min-h-screen app-mobile">
+    {% if user.is_authenticated %}
+
+    <!-- Barre année (toujours visible) -->
+    {% if user.is_authenticated and all_academic_years %}
+    <div class="sticky top-0 z-40 bg-blue-700 text-white px-3 py-2 flex items-center justify-between gap-2 shadow year-bar-offset">
+      <span class="text-xs sm:text-sm font-medium truncate"><i class="fas fa-calendar-alt mr-1"></i> Année de travail</span>
+      <form method="get" action="{% url 'core:set_year' %}" class="flex items-center">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <select name="year" onchange="this.form.submit()"
+          class="text-xs sm:text-sm rounded-lg border-0 text-slate-800 px-2 py-1.5 font-semibold bg-white min-w-[7.5rem]">
+          {% for y in all_academic_years %}
+          <option value="{{ y.id }}" {% if selected_year and selected_year.id == y.id %}selected{% endif %}>
+            {{ y.name }}{% if y.is_current %} ★{% endif %}
+          </option>
+          {% endfor %}
+        </select>
+      </form>
+    </div>
+    {% endif %}
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="app-sidebar w-64 bg-slate-900 text-white flex-shrink-0 hidden md:flex flex-col">
+            <div class="p-4 border-b border-slate-700">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-lg">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <h1 class="text-sm font-bold truncate leading-tight">SiraScol</h1>
+                        <p class="text-xs text-slate-400 truncate">
+                            {% if user_role == 'enseignant' %}Espace enseignant
+                            {% elif user_role == 'parent' %}Espace parent
+                            {% elif user_role == 'comptable' %}Espace comptable
+                            {% elif user_role == 'secretaire' %}Secrétariat
+                            {% else %}Administration{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="sidebar-scroll p-3 space-y-0.5">
+                {% if user_role == 'enseignant' %}
+                <div class="nav-section">Mon espace</div>
+                <a href="{% url 'core:dashboard' %}" class="nav-link {% if request.path == '/' or request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-home w-5 text-center"></i> Accueil
+                </a>
+                <a href="{% url 'teachers:portal_classes' %}" class="nav-link {% if '/personnel/espace' in request.path or '/enseignants/espace' in request.path %}active{% endif %}">
+                    <i class="fas fa-chalkboard w-5 text-center"></i> Mes classes
+                </a>
+                <a href="{% url 'grades:classes' %}" class="nav-link {% if '/notes' in request.path and 'bulletin' not in request.path %}active{% endif %}">
+                    <i class="fas fa-pen w-5 text-center"></i> Porter les notes
+                </a>
+                <a href="{% url 'attendance:list' %}" class="nav-link {% if request.resolver_match.app_name == 'attendance' %}active{% endif %}">
+                    <i class="fas fa-user-check w-5 text-center"></i> Faire l’appel
+                </a>
+                <a href="{% url 'timetable:home' %}" class="nav-link {% if request.resolver_match.app_name == 'timetable' %}active{% endif %}">
+                    <i class="fas fa-calendar-alt w-5 text-center"></i> Emploi du temps
+                </a>
+                <a href="{% url 'grades:bulletin_list' %}" class="nav-link {% if 'bulletin' in request.path %}active{% endif %}">
+                    <i class="fas fa-file-alt w-5 text-center"></i> Bulletins
+                </a>
+                <div class="nav-section">Infos</div>
+                <a href="{% url 'communication:documents' %}" class="nav-link {% if '/communication' in request.path %}active{% endif %}">
+                    <i class="fas fa-folder-open w-5 text-center"></i> Documents
+                </a>
+                <a href="{% url 'communication:inbox' %}" class="nav-link {% if 'messages' in request.path %}active{% endif %}">
+                    <i class="fas fa-envelope w-5 text-center"></i> Messages
+                </a>
+                {% else %}
+
+                {# —— NAVIGATION —— #}
+                <div class="nav-section">Navigation</div>
+                <a href="{% url 'core:dashboard' %}" class="nav-link {% if request.path == '/' or request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-home w-5 text-center"></i> Tableau de bord
+                </a>
+                {% if can_nav_students %}
+                <a href="{% url 'attendance:scan' %}" class="nav-link {% if '/absences/scan' in request.path %}active{% endif %}">
+                    <i class="fas fa-qrcode w-5 text-center"></i> Scan QR Code
+                </a>
+                {% endif %}
+                {% if can_nav_attendance %}
+                <a href="{% url 'attendance:history' %}" class="nav-link {% if '/absences/historique' in request.path %}active{% endif %}">
+                    <i class="fas fa-clock w-5 text-center"></i> Historique des présences
+                </a>
+                {% endif %}
+
+                {# —— PÉDAGOGIE —— #}
+                <div class="nav-section">Pédagogie</div>
+                {% if can_nav_students %}
+                <a href="{% url 'students:list' %}" class="nav-link {% if request.resolver_match.app_name == 'students' and 'parent' not in request.path and 'cartes' not in request.path and 'fin-annee' not in request.path and 'promotion' not in request.path %}active{% endif %}">
+                    <i class="fas fa-user-graduate w-5 text-center"></i> Gestion des élèves
+                </a>
+                {% if can_nav_students %}
+                <a href="{% url 'students:cards_home' %}" class="nav-link {% if '/cartes' in request.path %}active{% endif %}">
+                    <i class="fas fa-id-card w-5 text-center"></i> Cartes scolaires
+                </a>
+                {% endif %}
+                {% endif %}
+                {% if can_nav_classrooms %}
+                <a href="{% url 'academics:classroom_list' %}" class="nav-link {% if request.resolver_match.app_name == 'academics' or '/classes' in request.path %}active{% endif %}">
+                    <i class="fas fa-chalkboard w-5 text-center"></i> Gestion Des Classes
+                </a>
+                {% endif %}
+                {% if can_nav_grades or can_nav_bulletins %}
+                <a href="{% url 'timetable:home' %}" class="nav-link {% if '/emploi' in request.path or request.resolver_match.app_name == 'timetable' %}active{% endif %}">
+                    <i class="fas fa-book-open w-5 text-center"></i> Gestion Pédagogique
+                </a>
+                {% endif %}
+                {% if can_nav_grades %}
+                <button type="button" onclick="openCotesModal()" class="nav-link w-full text-left {% if '/notes' in request.path or request.resolver_match.app_name == 'grades' %}active{% endif %}">
+                    <i class="fas fa-chart-line w-5 text-center"></i> Gestion des cotes
+                </button>
+                {% endif %}
+
+                {# —— ADMINISTRATION —— #}
+                <div class="nav-section">Administration</div>
+                {% if can_nav_finance %}
+                <a href="{% url 'finance:classes' %}" class="nav-link {% if '/finance' in request.path %}active{% endif %}">
+                    <i class="fas fa-wallet w-5 text-center"></i> Gestion De La Finance
+                </a>
+                {% endif %}
+                {% if can_nav_teachers %}
+                <a href="{% url 'teachers:list' %}" class="nav-link {% if '/enseignants' in request.path or request.resolver_match.app_name == 'teachers' %}active{% endif %}">
+                    <i class="fas fa-user-tie w-5 text-center"></i> Gestion Du Personnel
+                </a>
+                {% endif %}
+                {% if can_nav_announcements %}
+                <a href="{% url 'communication:list' %}" class="nav-link {% if request.resolver_match.app_name == 'communication' %}active{% endif %}">
+                    <i class="fas fa-folder-open w-5 text-center"></i> Gestion Des Documents
+                </a>
+                {% endif %}
+                {% if can_nav_reports %}
+                <a href="{% url 'core:reports' %}" class="nav-link {% if '/rapports' in request.path %}active{% endif %}">
+                    <i class="fas fa-chart-pie w-5 text-center"></i> Rapports & Statistiques
+                </a>
+                {% endif %}
+                {% if can_nav_promotion %}
+                <a href="{% url 'students:promotion_home' %}" class="nav-link {% if 'fin-annee' in request.path or 'promotion' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+                    <i class="fas fa-exchange-alt w-5 text-center"></i> Passage / Redoublement
+                </a>
+                {% endif %}
+                {# —— PARENTS —— #}
+                {% if can_nav_parents %}
+                <div class="nav-section">Parents</div>
+                <a href="{% url 'students:parent_list' %}" class="nav-link {% if '/parents' in request.path or 'parent' in request.resolver_match.url_name|default:'' %}active{% endif %}">
+                    <i class="fas fa-users w-5 text-center"></i> Gestion des Parents
+                </a>
+                {% endif %}
+
+                {# —— SYSTÈME —— #}
+                <div class="nav-section">Système</div>
+                {% if can_nav_config %}
+                <a href="{% url 'core:config_home' %}" class="nav-link {% if '/configuration' in request.path %}active{% endif %}">
+                    <i class="fas fa-cogs w-5 text-center"></i> Configuration
+                </a>
+                {% endif %}
+                {% if can_nav_settings %}
+                <a href="{% url 'core:settings' %}" class="nav-link {% if request.resolver_match.url_name == 'settings' or '/parametres' in request.path %}active{% endif %}">
+                    <i class="fas fa-cog w-5 text-center"></i> Paramètres
+                </a>
+                {% endif %}
+                            {% endif %}
+            </nav>
+
+
+
+            <div class="sidebar-footer p-3 border-t border-slate-700">
+                <div class="flex items-center gap-3 mb-2 px-1">
+                    <div class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold">
+                        {{ user.first_name|first|upper|default:user.username|first|upper }}
+                    </div>
+                    <div class="overflow-hidden flex-1">
+                        <p class="text-sm font-medium truncate">{{ user.get_full_name|default:user.username }}</p>
+                        <p class="text-[10px] mt-0.5">
+                          <span class="inline-block px-1.5 py-0.5 rounded bg-slate-700 text-slate-200 uppercase tracking-wide">
+                            {% if user_role_label %}{{ user_role_label }}{% elif user.profile %}{{ user.profile.get_role_display }}{% else %}Utilisateur{% endif %}
+                          </span>
+                        </p>
+                    </div>
+                </div>
+                <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
+                    {% csrf_token %}
+                    <button type="submit" class="nav-link text-slate-400 hover:text-white w-full text-left cursor-pointer border-0 bg-transparent">
+                        <i class="fas fa-sign-out-alt w-5 text-center"></i> Déconnexion
+                    </button>
+                </form>
+            </div>
+        </aside>
+
+        <!-- Contenu -->
+        <div class="app-content flex-1 flex flex-col min-w-0">
+            <header class="bg-blue-700 text-white px-3 py-2.5 flex items-center justify-between md:hidden sticky top-0 z-30 shadow-md"
+                    style="padding-top: max(0.65rem, env(safe-area-inset-top));">
+                <div class="flex items-center gap-2 min-w-0">
+                    <div class="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center flex-shrink-0">
+                        <i class="fas fa-graduation-cap text-lg"></i>
+                    </div>
+                    <div class="min-w-0">
+                        <h1 class="font-bold text-sm leading-tight truncate">SiraScol</h1>
+                        <p class="text-[10px] text-blue-100 truncate opacity-90">{% if user_role_label %}{{ user_role_label }}{% elif user.profile %}{{ user.profile.get_role_display }}{% else %}École{% endif %}</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-1">
+                    <a href="{% url 'core:dashboard' %}" class="touch-btn w-10 h-10 flex items-center justify-center rounded-xl hover:bg-blue-600" title="Accueil">
+                        <i class="fas fa-home"></i>
+                    </a>
+                    <button type="button" onclick="openMobileDrawer()" class="touch-btn w-10 h-10 flex items-center justify-center rounded-xl hover:bg-blue-600" aria-label="Menu">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </header>
+
+            <main class="flex-1 p-3 sm:p-4 md:p-8 overflow-x-auto app-main">
+                {% if messages %}
+                <div class="mb-6 space-y-2">
+                    {% for message in messages %}
+                    <div class="px-4 py-3 rounded-lg text-sm
+                        {% if message.tags == 'success' %}bg-green-50 text-green-800 border border-green-200
+                        {% elif message.tags == 'error' %}bg-red-50 text-red-800 border border-red-200
+                        {% elif message.tags == 'warning' %}bg-amber-50 text-amber-800 border border-amber-200
+                        {% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+                        {{ message }}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% block content %}{% endblock %}
+            </main>
+
+            <!-- Bottom nav mobile — style app native (5 onglets max) -->
+            <nav class="bottom-nav md:hidden" aria-label="Navigation principale">
+                {% if user_role == 'enseignant' %}
+                <a href="{% url 'core:dashboard' %}" class="{% if request.path == '/' %}active{% endif %}">
+                    <i class="fas fa-home"></i><span>Accueil</span>
+                </a>
+                <a href="{% url 'teachers:portal_classes' %}" class="{% if 'espace' in request.path %}active{% endif %}">
+                    <i class="fas fa-chalkboard"></i><span>Classes</span>
+                </a>
+                <a href="{% url 'grades:classes' %}" class="{% if '/notes' in request.path %}active{% endif %}">
+                    <i class="fas fa-pen"></i><span>Notes</span>
+                </a>
+                <a href="{% url 'attendance:list' %}" class="{% if '/absences' in request.path %}active{% endif %}">
+                    <i class="fas fa-user-check"></i><span>Appel</span>
+                </a>
+                <button type="button" onclick="openMobileDrawer()">
+                    <i class="fas fa-bars"></i><span>Menu</span>
+                </button>
+                {% elif user_role == 'parent' %}
+                <a href="{% url 'core:dashboard' %}" class="{% if request.path == '/' %}active{% endif %}">
+                    <i class="fas fa-home"></i><span>Accueil</span>
+                </a>
+                <a href="{% url 'students:list' %}" class="{% if 'eleves' in request.path %}active{% endif %}">
+                    <i class="fas fa-user-graduate"></i><span>Enfants</span>
+                </a>
+                <a href="{% url 'grades:bulletin_list' %}" class="{% if 'bulletin' in request.path %}active{% endif %}">
+                    <i class="fas fa-file-alt"></i><span>Bulletins</span>
+                </a>
+                <a href="{% url 'communication:list' %}" class="{% if 'annonces' in request.path %}active{% endif %}">
+                    <i class="fas fa-bullhorn"></i><span>Annonces</span>
+                </a>
+                <button type="button" onclick="openMobileDrawer()">
+                    <i class="fas fa-bars"></i><span>Menu</span>
+                </button>
+                {% else %}
+                <a href="{% url 'core:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <i class="fas fa-home"></i><span>Accueil</span>
+                </a>
+                <a href="{% url 'students:list' %}" class="{% if request.resolver_match.app_name == 'students' and 'parent' not in request.resolver_match.url_name %}active{% endif %}">
+                    <i class="fas fa-user-graduate"></i><span>Élèves</span>
+                </a>
+                <button type="button" onclick="openCotesModal()" class="{% if request.resolver_match.app_name == 'grades' %}active{% endif %}">
+                    <i class="fas fa-clipboard-list"></i><span>Cotes</span>
+                </button>
+                <a href="{% url 'finance:classes' %}" class="{% if request.resolver_match.app_name == 'finance' %}active{% endif %}">
+                    <i class="fas fa-wallet"></i><span>Finance</span>
+                </a>
+                <button type="button" onclick="openMobileDrawer()">
+                    <i class="fas fa-bars"></i><span>Menu</span>
+                </button>
+                {% endif %}
+            </nav>
+
+            <!-- Drawer menu mobile -->
+            <div id="mobile-drawer" class="mobile-drawer md:hidden" onclick="if(event.target===this||event.target.classList.contains('mobile-drawer-bg'))closeMobileDrawer()">
+                <div class="mobile-drawer-bg"></div>
+                <div class="mobile-drawer-panel">
+                    <div class="p-4 border-b border-slate-700 flex items-center justify-between">
+                        <span class="font-bold">Menu</span>
+                        <button type="button" onclick="closeMobileDrawer()" class="w-10 h-10 rounded-lg hover:bg-slate-800"><i class="fas fa-times"></i></button>
+                    </div>
+                    <nav class="p-3 space-y-1 text-sm">
+                        {% if user_role == 'enseignant' %}
+                        <div class="nav-section">Mon espace</div>
+                        <a href="{% url 'core:dashboard' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-home w-5 text-center"></i> Accueil</a>
+                        <a href="{% url 'teachers:portal_classes' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-chalkboard w-5 text-center"></i> Mes classes</a>
+                        <a href="{% url 'grades:classes' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-pen w-5 text-center"></i> Porter les notes</a>
+                        <a href="{% url 'attendance:list' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-user-check w-5 text-center"></i> Faire l’appel</a>
+                        <a href="{% url 'timetable:home' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-calendar-alt w-5 text-center"></i> Emploi du temps</a>
+                        <a href="{% url 'grades:bulletin_list' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-file-alt w-5 text-center"></i> Bulletins</a>
+                        <div class="nav-section">Infos</div>
+                        <a href="{% url 'communication:documents' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-folder-open w-5 text-center"></i> Documents</a>
+                        <a href="{% url 'communication:inbox' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-envelope w-5 text-center"></i> Messages</a>
+                        {% else %}
+
+                        <div class="nav-section">Navigation</div>
+                        <a href="{% url 'core:dashboard' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-home w-5 text-center"></i> Tableau de bord</a>
+                        {% if can_nav_students %}
+                        <a href="{% url 'attendance:scan' %}" class="nav-link {% if '/absences/scan' in request.path %}active{% endif %}" onclick="closeMobileDrawer()"><i class="fas fa-qrcode w-5 text-center"></i> Scan QR Code</a>
+                        {% endif %}
+                        {% if can_nav_attendance %}
+                        <a href="{% url 'attendance:history' %}" class="nav-link {% if '/absences/historique' in request.path %}active{% endif %}" onclick="closeMobileDrawer()"><i class="fas fa-clock w-5 text-center"></i> Historique des présences</a>
+                        {% endif %}
+
+                        <div class="nav-section">Pédagogie</div>
+                        {% if can_nav_students %}
+                        <a href="{% url 'students:list' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-user-graduate w-5 text-center"></i> Gestion des élèves</a>
+                        <a href="{% url 'students:cards_home' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-id-card w-5 text-center"></i> Cartes scolaires</a>
+                        {% endif %}
+                        {% if can_nav_classrooms %}
+                        <a href="{% url 'academics:classroom_list' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-chalkboard w-5 text-center"></i> Gestion Des Classes</a>
+                        {% endif %}
+                        {% if can_nav_grades or can_nav_bulletins %}
+                        <a href="{% url 'timetable:home' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-book-open w-5 text-center"></i> Gestion Pédagogique</a>
+                        {% endif %}
+                        {% if can_nav_grades %}
+                        <button type="button" class="nav-link w-full text-left" onclick="closeMobileDrawer(); openCotesModal()"><i class="fas fa-chart-line w-5 text-center"></i> Gestion des cotes</button>
+                        {% endif %}
+
+                        <div class="nav-section">Administration</div>
+                        {% if can_nav_finance %}
+                        <a href="{% url 'finance:classes' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-wallet w-5 text-center"></i> Gestion De La Finance</a>
+                        {% endif %}
+                        {% if can_nav_teachers %}
+                        <a href="{% url 'teachers:list' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-user-tie w-5 text-center"></i> Gestion Du Personnel</a>
+                        {% endif %}
+                        {% if can_nav_announcements %}
+                        <a href="{% url 'communication:list' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-folder-open w-5 text-center"></i> Gestion Des Documents</a>
+                        {% endif %}
+                        {% if can_nav_reports %}
+                        <a href="{% url 'core:reports' %}" class="nav-link {% if '/rapports' in request.path %}active{% endif %}" onclick="closeMobileDrawer()"><i class="fas fa-chart-pie w-5 text-center"></i> Rapports & Statistiques</a>
+                        {% endif %}
+                        {% if can_nav_promotion %}
+                        <a href="{% url 'students:promotion_home' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-exchange-alt w-5 text-center"></i> Passage / Redoublement</a>
+                        {% endif %}
+                        
+                        {% if can_nav_parents %}
+                        <div class="nav-section">Parents</div>
+                        <a href="{% url 'students:parent_list' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-users w-5 text-center"></i> Gestion des Parents</a>
+                        {% endif %}
+
+                        <div class="nav-section">Système</div>
+                        {% if can_nav_config %}
+                        <a href="{% url 'core:config_home' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-cogs w-5 text-center"></i> Configuration</a>
+                        {% endif %}
+                        {% if can_nav_settings %}
+                        <a href="{% url 'core:settings' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-cog w-5 text-center"></i> Paramètres globaux</a>
+                        {% endif %}
+                        <form method="post" action="{% url 'accounts:logout' %}" class="m-0">
+                            {% csrf_token %}
+                            <button type="submit" class="nav-link text-red-300 w-full text-left cursor-pointer border-0 bg-transparent" onclick="closeMobileDrawer()">
+                                <i class="fas fa-sign-out-alt w-5 text-center"></i> Déconnexion
+                            </button>
+                        </form>
+                        {% endif %}
+                    </nav>
+                </div>
+            </div>
+
+        </div>
+    </div>
+    {% else %}
+        {% block auth_content %}{% endblock %}
+    {% endif %}
+    <script>
+        
+        function previewStudentPhoto(input, previewId, placeholderId) {
+            var file = input.files && input.files[0];
+            if (!file) return;
+            var prev = document.getElementById(previewId);
+            var ph = document.getElementById(placeholderId);
+            if (prev) {
+                prev.src = URL.createObjectURL(file);
+                prev.classList.remove('hidden');
+            }
+            if (ph) ph.classList.add('hidden');
+        }
+        function openStudentCamera(inputId) {
+            var input = document.getElementById(inputId);
+            if (!input) return;
+            input.setAttribute('capture', 'environment');
+            input.accept = 'image/*';
+            input.click();
+        }
+        function openStudentGallery(inputId) {
+            var input = document.getElementById(inputId);
+            if (!input) return;
+            input.removeAttribute('capture');
+            input.accept = 'image/*';
+            input.click();
+        }
+
+        function openMobileDrawer() {
+            var d = document.getElementById('mobile-drawer');
+            if (d) {
+                d.classList.add('open');
+                d.style.display = 'block';
+            }
+            document.body.style.overflow = 'hidden';
+        }
+        function closeMobileDrawer() {
+            var d = document.getElementById('mobile-drawer');
+            if (d) {
+                d.classList.remove('open');
+                d.style.display = '';
+            }
+            document.body.style.overflow = '';
+        }
+        function openModal(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.classList.add('open');
+                document.body.style.overflow = 'hidden';
+                document.body.classList.add('modal-open');
+            }
+        }
+        function closeModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.classList.remove('open');
+            if (!document.querySelector('.modal-overlay.open')) {
+                document.body.style.overflow = '';
+                document.body.classList.remove('modal-open');
+            }
+        }
+        /** Ouvre une modale et charge une page formulaire (fragment HTML) */
+
+        /* Menu ⋮ flottant (évite le clip overflow des tableaux) */
+        window._rowMenuEl = null;
+        function closeRowMenu() {
+            if (window._rowMenuEl) {
+                window._rowMenuEl.remove();
+                window._rowMenuEl = null;
+            }
+            document.removeEventListener('click', window._rowMenuOutside, true);
+        }
+        window._rowMenuOutside = function(e) {
+            if (window._rowMenuEl && !window._rowMenuEl.contains(e.target) && !e.target.closest('[data-row-menu]')) {
+                closeRowMenu();
+            }
+        };
+        /**
+         * openRowMenu(button, items)
+         * items: [{label, icon, href?, onclick?}, ...]
+         */
+        function openRowMenu(btn, items) {
+            closeRowMenu();
+            var menu = document.createElement('div');
+            menu.id = 'row-action-menu';
+            menu.className = 'fixed z-[9999] bg-white border border-slate-200 rounded-xl shadow-xl py-1 min-w-[11rem] text-sm';
+            items.forEach(function(it) {
+                if (it.divider) {
+                    var hr = document.createElement('div');
+                    hr.className = 'border-t my-1';
+                    menu.appendChild(hr);
+                    return;
+                }
+                var el;
+                if (it.href) {
+                    el = document.createElement('a');
+                    el.href = it.href;
+                } else {
+                    el = document.createElement('button');
+                    el.type = 'button';
+                }
+                el.className = 'w-full text-left px-3 py-2.5 hover:bg-slate-50 flex items-center gap-2 text-slate-700';
+                el.innerHTML = (it.icon ? '<i class="fas ' + it.icon + ' w-5 text-slate-400"></i> ' : '') + (it.label || '');
+                if (it.onclick) {
+                    el.addEventListener('click', function(ev) {
+                        ev.preventDefault();
+                        closeRowMenu();
+                        if (typeof it.onclick === 'function') it.onclick();
+                        else if (typeof it.onclick === 'string') {
+                            try { eval(it.onclick); } catch(e) { console.error(e); }
+                        }
+                    });
+                } else if (it.href) {
+                    el.addEventListener('click', function(){ closeRowMenu(); });
+                }
+                menu.appendChild(el);
+            });
+            document.body.appendChild(menu);
+            window._rowMenuEl = menu;
+            var rect = btn.getBoundingClientRect();
+            var mw = menu.offsetWidth || 176;
+            var mh = menu.offsetHeight || 120;
+            var left = Math.min(rect.right - mw, window.innerWidth - mw - 8);
+            left = Math.max(8, left);
+            var top = rect.bottom + 4;
+            if (top + mh > window.innerHeight - 8) {
+                top = Math.max(8, rect.top - mh - 4);
+            }
+            menu.style.left = left + 'px';
+            menu.style.top = top + 'px';
+            setTimeout(function(){
+                document.addEventListener('click', window._rowMenuOutside, true);
+            }, 0);
+        }
+
+        function openModalUrl(url, title) {
+            let overlay = document.getElementById('modal-dynamic');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'modal-dynamic';
+                overlay.className = 'modal-overlay';
+                overlay.innerHTML = '<div class="modal-box modal-lg p-0"><div class="flex items-center justify-between px-5 py-4 border-b sticky top-0 bg-white rounded-t-2xl z-10"><h2 class="text-lg font-bold text-slate-800" id="modal-dynamic-title">Formulaire</h2><button type="button" onclick="closeModal(\'modal-dynamic\')" class="text-slate-400 hover:text-slate-700 text-xl leading-none">&times;</button></div><div id="modal-dynamic-body" class="px-4 pt-4 pb-6 overflow-y-auto"><p class="text-sm text-slate-500">Chargement…</p></div></div>';
+                document.body.appendChild(overlay);
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === overlay) closeModal('modal-dynamic');
+                });
+            }
+            document.getElementById('modal-dynamic-title').textContent = title || 'Formulaire';
+            document.getElementById('modal-dynamic-body').innerHTML = '<p class="text-sm text-slate-500 text-center py-8"><i class="fas fa-spinner fa-spin"></i> Chargement…</p>';
+            openModal('modal-dynamic'); document.body.classList.add('modal-open');
+            const sep = url.indexOf('?') >= 0 ? '&' : '?';
+            fetch(url + sep + 'modal=1', { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' })
+                .then(r => {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.text();
+                })
+                .then(html => {
+                    const body = document.getElementById('modal-dynamic-body');
+                    // Accepter un partial même s'il contient accidentellement html
+                    var isPartial = html && (
+                        html.indexOf('teacher-form-modal') !== -1 ||
+                        html.indexOf('id="teacher-form') !== -1 ||
+                        html.indexOf('method="post"') !== -1 ||
+                        html.indexOf('cycle enseigne') !== -1 ||
+                        (html.indexOf('<html') === -1 && html.indexOf('<!DOCTYPE') === -1)
+                    );
+                    if (!isPartial) {
+                        body.innerHTML = '<p class="text-amber-700 text-sm mb-2">Formulaire non disponible en modale.</p><a href="'+url+'" class="text-blue-600 underline text-sm">Ouvrir en page complète →</a>';
+                        return;
+                    }
+                    // Si full page renvoyée, extraire le body
+                    if (html.indexOf('<html') !== -1 || html.indexOf('<!DOCTYPE') !== -1) {
+                        var m = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+                        if (m) html = m[1];
+                    }
+                    body.innerHTML = html;
+                    // Ré-exécuter les scripts injectés (innerHTML ne les lance pas)
+                    body.querySelectorAll('script').forEach(function(oldScript) {
+                        const s = document.createElement('script');
+                        if (oldScript.src) { s.src = oldScript.src; }
+                        else { s.textContent = oldScript.textContent; }
+                        oldScript.parentNode.replaceChild(s, oldScript);
+                    });
+                    if (typeof window.initStudentFeeBox === 'function') {
+                        try { window.initStudentFeeBox(); } catch(e) {}
+                    }
+                    if (typeof window.initSearchSelects === 'function') {
+                        try { window.initSearchSelects(body); } catch(e) {}
+                    }
+                })
+                .catch((err) => {
+                    document.getElementById('modal-dynamic-body').innerHTML = '<p class="text-red-600 text-sm">Erreur de chargement. <a class="underline" href="'+url+'">Ouvrir en page</a></p>';
+                    console.error(err);
+                });
+        }
+
+        window.initStudentFeeBox = function(root) {
+            root = root || document.getElementById('modal-dynamic-body') || document;
+            var sel = root.querySelector('#modal_id_classroom') || root.querySelector('#id_classroom');
+            var box = root.querySelector('#modal-fees-box') || root.querySelector('#fees-box');
+            var paid = root.querySelector('#modal_amount_paid') || root.querySelector('#amount_paid');
+            if (!sel || !box) return;
+            function fmt(n) {
+                var x = parseFloat(n || 0) || 0;
+                return x.toLocaleString('fr-FR', { maximumFractionDigits: 0 });
+            }
+            function update() {
+                var opt = sel.options[sel.selectedIndex];
+                if (!opt || !opt.value) { box.classList.add('hidden'); return; }
+                var ins = parseFloat(opt.getAttribute('data-inscription') || 0) || 0;
+                var sco = parseFloat(opt.getAttribute('data-scolarite') || 0) || 0;
+                var total = ins + sco;
+                var elIns = root.querySelector('#modal-fee-inscription') || root.querySelector('#fee-inscription');
+                var elSco = root.querySelector('#modal-fee-scolarite') || root.querySelector('#fee-scolarite');
+                var elTot = root.querySelector('#modal-fee-total') || root.querySelector('#fee-total');
+                var elReste = root.querySelector('#modal-fee-reste') || root.querySelector('#fee-reste');
+                if (elIns) elIns.textContent = fmt(ins);
+                if (elSco) elSco.textContent = fmt(sco);
+                if (elTot) elTot.textContent = fmt(total);
+                var p = parseFloat((paid && paid.value) || 0) || 0;
+                if (elReste) elReste.textContent = fmt(Math.max(0, total - p));
+                box.classList.remove('hidden');
+            }
+            sel.onchange = update;
+            if (paid) paid.oninput = update;
+            update();
+        };
+        window.updateStudentFees = function(sel) {
+            if (typeof window.initStudentFeeBox === 'function') window.initStudentFeeBox();
+        };
+
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.open').forEach(m => {
+                    m.classList.remove('open');
+                    document.body.style.overflow = '';
+                });
+            }
+        });
+        document.addEventListener('click', function(e) {
+            const overlay = e.target.closest('.modal-overlay');
+            if (overlay && e.target === overlay) {
+                overlay.classList.remove('open');
+                document.body.style.overflow = '';
+            }
+        });
+        </script>
+        {% block extra_js %}{% endblock %}
+
+{# Modal accès centre des cotes #}
+<div id="cotes-entry-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/50 p-4" onclick="if(event.target===this)closeCotesModal()">
+  <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
+    <div class="bg-emerald-600 text-white px-5 py-4 flex items-center justify-between">
+      <p class="font-bold flex items-center gap-2"><i class="fas fa-chart-line"></i> Gestion des cotes</p>
+      <button type="button" onclick="closeCotesModal()" class="text-white/80 hover:text-white text-xl leading-none">&times;</button>
+    </div>
+    <div class="px-5 py-5">
+      <p class="text-sm text-slate-700 mb-4">Accéder au centre de gestion des notes ?</p>
+      <ul class="text-xs text-slate-600 space-y-2 mb-5">
+        <li class="flex items-center gap-2"><i class="fas fa-check-circle text-emerald-500"></i> Saisie par classe / évaluation</li>
+        <li class="flex items-center gap-2"><i class="fas fa-check-circle text-emerald-500"></i> Primaire /10 · Sec. /20</li>
+        <li class="flex items-center gap-2"><i class="fas fa-check-circle text-emerald-500"></i> Bulletins PDF</li>
+      </ul>
+      <div class="flex gap-2">
+        <button type="button" onclick="closeCotesModal()" class="flex-1 border rounded-xl py-2.5 text-sm text-slate-600">Annuler</button>
+        <a href="{% url 'grades:classes' %}" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white text-center rounded-xl py-2.5 text-sm font-medium">Confirmer</a>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+function openCotesModal() {
+  var m = document.getElementById('cotes-entry-modal');
+  if (!m) { location.href = "{% url 'grades:classes' %}"; return; }
+  m.classList.remove('hidden');
+  m.classList.add('flex');
+  document.body.classList.add('modal-open');
+}
+function closeCotesModal() {
+  var m = document.getElementById('cotes-entry-modal');
+  if (!m) return;
+  m.classList.add('hidden');
+  m.classList.remove('flex');
+  document.body.classList.remove('modal-open');
+}
+</script>
+
+
+<script>
+(function(){
+  var nav = document.querySelector('.app-sidebar .sidebar-scroll');
+  if (!nav) return;
+  var key = 'sirascol_sidebar_scroll';
+  try {
+    var y = sessionStorage.getItem(key);
+    if (y) nav.scrollTop = parseInt(y, 10) || 0;
+  } catch(e) {}
+  nav.addEventListener('scroll', function(){
+    try { sessionStorage.setItem(key, String(nav.scrollTop)); } catch(e) {}
+  });
+  // Avant navigation, mémoriser
+  nav.querySelectorAll('a.nav-link').forEach(function(a){
+    a.addEventListener('click', function(){
+      try { sessionStorage.setItem(key, String(nav.scrollTop)); } catch(e) {}
+    });
+  });
+})();
+</script>
+
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+window.sirascolExportPdf = function(target, filename) {
+  filename = filename || ('sirascol_' + new Date().toISOString().slice(0,10) + '.pdf');
+  var el = null;
+  if (typeof target === 'string') el = document.querySelector(target);
+  else if (target && target.nodeType) el = target;
+  if (!el) el = document.getElementById('print-area')
+            || document.querySelector('.print-area')
+            || document.getElementById('mise-doc')
+            || document.querySelector('.app-content')
+            || document.querySelector('main')
+            || document.body;
+  if (typeof html2pdf === 'undefined') {
+    window.print();
+    return;
+  }
+  var opt = {
+    margin: [8, 8, 8, 8],
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.96 },
+    html2canvas: { scale: 2, useCORS: true, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+  };
+  // hide no-print during capture
+  var hidden = [];
+  document.querySelectorAll('.no-print, .print\\:hidden, .app-sidebar, .bottom-nav, header').forEach(function(n){
+    hidden.push([n, n.style.display]);
+    n.style.display = 'none';
+  });
+  html2pdf().set(opt).from(el).save().then(function(){
+    hidden.forEach(function(pair){ pair[0].style.display = pair[1]; });
+  }).catch(function(){
+    hidden.forEach(function(pair){ pair[0].style.display = pair[1]; });
+    window.print();
+  });
+};
+</script>
+
+
+<script>
+window.initSearchSelects = function(root) {
+  root = root || document;
+  var names = ['student', 'teacher', 'main_teacher', 'staff', 'parent', 'personnel', 'enseignant'];
+  var selects = root.querySelectorAll('select');
+  selects.forEach(function(sel) {
+    if (sel.dataset.ssInit === '1') return;
+    var name = (sel.getAttribute('name') || '').toLowerCase();
+    var id = (sel.id || '').toLowerCase();
+    var label = '';
+    try {
+      var lab = sel.closest('div, label, .form-group') && sel.closest('div, label, .form-group').querySelector('label');
+      if (lab) label = (lab.textContent || '').toLowerCase();
+    } catch(e) {}
+    var isPerson = names.indexOf(name) >= 0
+      || names.some(function(n){ return id.indexOf(n) >= 0; })
+      || /élève|eleve|enseignant|personnel|parent|prof|staff|tuteur/.test(label)
+      || sel.classList.contains('search-person')
+      || sel.dataset.searchPerson === '1';
+    if (!isPerson) return;
+    if (sel.options.length < 2) return; // nothing to search
+
+    sel.dataset.ssInit = '1';
+    var wrap = document.createElement('div');
+    wrap.className = 'ss-wrap';
+    sel.parentNode.insertBefore(wrap, sel);
+    wrap.appendChild(sel);
+    sel.classList.add('ss-native');
+
+    var input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'ss-input';
+    input.placeholder = sel.dataset.placeholder || 'Rechercher…';
+    input.autocomplete = 'off';
+    input.setAttribute('aria-label', 'Recherche');
+
+    var icon = document.createElement('i');
+    icon.className = 'fas fa-search ss-icon';
+
+    var clear = document.createElement('span');
+    clear.className = 'ss-clear';
+    clear.innerHTML = '&times;';
+    clear.title = 'Effacer';
+
+    var drop = document.createElement('div');
+    drop.className = 'ss-dropdown';
+
+    wrap.appendChild(input);
+    wrap.appendChild(clear);
+    wrap.appendChild(icon);
+    wrap.appendChild(drop);
+
+    function selectedText() {
+      var opt = sel.options[sel.selectedIndex];
+      if (!opt || !opt.value) return '';
+      return (opt.textContent || '').trim();
+    }
+    function syncFromSelect() {
+      var txt = selectedText();
+      input.value = txt;
+      if (txt) wrap.classList.add('has-value'); else wrap.classList.remove('has-value');
+    }
+    function filter(q) {
+      q = (q || '').toLowerCase().trim();
+      drop.innerHTML = '';
+      var count = 0;
+      for (var i = 0; i < sel.options.length; i++) {
+        var opt = sel.options[i];
+        var text = (opt.textContent || '').trim();
+        if (!opt.value && !text) continue;
+        if (q && text.toLowerCase().indexOf(q) < 0 && String(opt.value).toLowerCase().indexOf(q) < 0) continue;
+        var div = document.createElement('div');
+        div.className = 'ss-option' + (!opt.value ? ' muted' : '');
+        div.textContent = text || '—';
+        div.dataset.value = opt.value;
+        if (opt.value === sel.value) div.classList.add('active');
+        div.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          sel.value = this.dataset.value;
+          input.value = this.textContent;
+          wrap.classList.add('has-value');
+          drop.classList.remove('open');
+          sel.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        drop.appendChild(div);
+        count++;
+        if (count >= 80) break;
+      }
+      if (!count) {
+        var empty = document.createElement('div');
+        empty.className = 'ss-option muted';
+        empty.textContent = 'Aucun résultat';
+        drop.appendChild(empty);
+      }
+      drop.classList.add('open');
+    }
+    input.addEventListener('focus', function(){ filter(input.value); });
+    input.addEventListener('input', function(){ filter(input.value); });
+    input.addEventListener('keydown', function(e){
+      if (e.key === 'Escape') { drop.classList.remove('open'); input.blur(); }
+    });
+    clear.addEventListener('mousedown', function(e){
+      e.preventDefault();
+      sel.value = '';
+      input.value = '';
+      wrap.classList.remove('has-value');
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+      filter('');
+    });
+    document.addEventListener('click', function(e){
+      if (!wrap.contains(e.target)) drop.classList.remove('open');
+    });
+    syncFromSelect();
+    sel.addEventListener('change', syncFromSelect);
+  });
+};
+document.addEventListener('DOMContentLoaded', function(){ window.initSearchSelects(document); });
+</script>
+
+</body>
+</html>

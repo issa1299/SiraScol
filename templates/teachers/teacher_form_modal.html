@@ -1,0 +1,162 @@
+<form method="post" action="{{ form_action }}" enctype="multipart/form-data" id="teacher-form-modal" class="space-y-3 pb-4">
+  {% csrf_token %}
+  <input type="hidden" name="with_account" value="{% if with_account %}1{% else %}0{% endif %}">
+
+  <p class="text-xs font-semibold uppercase text-slate-500">Type de membre</p>
+  <div class="grid grid-cols-3 gap-2" id="cat-picker">
+    {% with cat=form.initial.category|default:form.category.value|default:"enseignant" %}
+    <label class="cat-opt cursor-pointer border-2 rounded-xl p-3 text-center transition {% if cat == 'enseignant' %}border-indigo-500 bg-indigo-50{% else %}border-slate-200{% endif %}">
+      <input type="radio" name="category" value="enseignant" class="sr-only" {% if cat == 'enseignant' %}checked{% endif %}>
+      <div class="text-xl mb-1">👨‍🏫</div>
+      <div class="text-xs font-bold">Enseignant</div>
+      <div class="text-[10px] text-slate-500">Prof / formateur</div>
+    </label>
+    <label class="cat-opt cursor-pointer border-2 rounded-xl p-3 text-center transition {% if cat == 'admin' %}border-amber-500 bg-amber-50{% else %}border-slate-200{% endif %}">
+      <input type="radio" name="category" value="admin" class="sr-only" {% if cat == 'admin' %}checked{% endif %}>
+      <div class="text-xl mb-1">👨‍💼</div>
+      <div class="text-xs font-bold">Administration</div>
+      <div class="text-[10px] text-slate-500">Dir. / Sec. / Comptable</div>
+    </label>
+    <label class="cat-opt cursor-pointer border-2 rounded-xl p-3 text-center transition {% if cat == 'service' %}border-slate-500 bg-slate-100{% else %}border-slate-200{% endif %}">
+      <input type="radio" name="category" value="service" class="sr-only" {% if cat == 'service' %}checked{% endif %}>
+      <div class="text-xl mb-1">🧹</div>
+      <div class="text-xs font-bold">Service</div>
+      <div class="text-[10px] text-slate-500">Gardien / Entretien</div>
+    </label>
+    {% endwith %}
+  </div>
+
+  {% if form.errors %}
+  <div class="bg-red-50 text-red-700 text-xs rounded-lg p-2">
+    {% for field, errs in form.errors.items %}
+      <p><strong>{{ field }}</strong> : {{ errs|join:", " }}</p>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div>
+    <label class="text-xs text-slate-500">Photo</label>
+    {{ form.photo }}
+  </div>
+
+  <p class="text-xs font-semibold uppercase text-slate-600">Identité</p>
+  <div class="grid grid-cols-2 gap-2">
+    <div><label class="text-xs text-slate-500">Matricule *</label>{{ form.matricule }}</div>
+    <div><label class="text-xs text-slate-500">Sexe *</label>{{ form.gender }}</div>
+    <div><label class="text-xs text-slate-500">Nom *</label>{{ form.last_name }}</div>
+    <div><label class="text-xs text-slate-500">Prénom *</label>{{ form.first_name }}</div>
+    <div class="col-span-2"><label class="text-xs text-slate-500">Date de naissance</label>{{ form.date_of_birth }}</div>
+  </div>
+
+  <p class="text-xs font-semibold uppercase text-slate-600">Contact</p>
+  <div class="grid grid-cols-2 gap-2">
+    <div><label class="text-xs text-slate-500">Téléphone</label>{{ form.phone }}</div>
+    <div><label class="text-xs text-slate-500">Email</label>{{ form.email }}</div>
+    <div class="col-span-2"><label class="text-xs text-slate-500">Adresse</label>{{ form.address }}</div>
+  </div>
+
+  <p class="text-xs font-semibold uppercase text-slate-600">Poste</p>
+  <div class="grid grid-cols-2 gap-2">
+    <div>
+      <label class="text-xs text-slate-500">Fonction</label>
+      {{ form.function }}
+      <select id="function-presets" class="mt-1 w-full border rounded-lg px-2 py-1.5 text-xs text-slate-600">
+        <option value="">— Raccourcis fonction —</option>
+      </select>
+    </div>
+    <div><label class="text-xs text-slate-500">Département</label>{{ form.department }}</div>
+    <div><label class="text-xs text-slate-500">Spécialité</label>{{ form.speciality }}</div>
+    <div><label class="text-xs text-slate-500">Diplôme</label>{{ form.diploma }}</div>
+  </div>
+
+  <p class="text-xs font-semibold uppercase text-slate-600">Contrat & salaire</p>
+  <div class="grid grid-cols-2 gap-2">
+    <div><label class="text-xs text-slate-500">Embauche</label>{{ form.hire_date }}</div>
+    <div><label class="text-xs text-slate-500">Type contrat</label>{{ form.contract_type }}</div>
+    <div><label class="text-xs text-slate-500">Statut</label>{{ form.status }}</div>
+    <div><label class="text-xs text-slate-500">Salaire de base</label>{{ form.base_salary }}</div>
+  </div>
+
+  <div class="sticky bottom-0 bg-white border-t pt-3 flex gap-2">
+    <button type="submit" id="teacher-submit-btn" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl text-sm font-semibold">
+      Enregistrer
+    </button>
+    <button type="button" onclick="closeModal('modal-dynamic')" class="px-4 border rounded-xl text-sm">Annuler</button>
+  </div>
+</form>
+<script>
+(function(){
+  var form = document.getElementById('teacher-form-modal');
+  if (!form) return;
+  var presets = {
+    enseignant: ['Enseignant', 'Professeur principal', 'Formateur', 'Surveillant pédagogique'],
+    admin: ['Directeur', 'Directeur adjoint', 'Secrétaire', 'Comptable', 'Censeur', 'Économe', 'Informaticien', 'Bibliothécaire'],
+    service: ['Gardien', "Agent d'entretien", 'Cuisinier', 'Chauffeur', 'Planton', 'Agent de sécurité']
+  };
+  var sel = document.getElementById('function-presets');
+  var fnField = form.querySelector('[name="function"]');
+  var radios = form.querySelectorAll('input[name="category"]');
+
+  function paint() {
+    form.querySelectorAll('.cat-opt').forEach(function(lab){
+      var r = lab.querySelector('input[type=radio]');
+      lab.className = 'cat-opt cursor-pointer border-2 rounded-xl p-3 text-center transition border-slate-200';
+      if (r && r.checked) {
+        if (r.value === 'enseignant') lab.className += ' border-indigo-500 bg-indigo-50';
+        else if (r.value === 'admin') lab.className += ' border-amber-500 bg-amber-50';
+        else lab.className += ' border-slate-500 bg-slate-100';
+      }
+    });
+  }
+  function fill(cat) {
+    sel.innerHTML = '<option value="">— Raccourcis fonction —</option>';
+    (presets[cat] || []).forEach(function(p){
+      var o = document.createElement('option'); o.value = p; o.textContent = p; sel.appendChild(o);
+    });
+    var btn = document.getElementById('teacher-submit-btn');
+    if (btn) btn.textContent = (cat === 'enseignant') ? 'Suivant → Affectations' : 'Enregistrer le membre';
+  }
+  function sync() {
+    var cat = (form.querySelector('input[name="category"]:checked') || {}).value || 'enseignant';
+    fill(cat); paint();
+  }
+  radios.forEach(function(r){ r.addEventListener('change', sync); });
+  sel.addEventListener('change', function(){ if (sel.value && fnField) fnField.value = sel.value; });
+  sync();
+
+  form.addEventListener('submit', function(e) {
+    var body = document.getElementById('modal-dynamic-body');
+    // Page complète (pas de modal) → soumission normale HTML
+    if (!body || !body.contains(form)) {
+      return; // laisser le navigateur poster normalement
+    }
+    e.preventDefault();
+    var title = document.getElementById('modal-dynamic-title');
+    body.innerHTML = '<p class="text-center py-8 text-slate-500"><i class="fas fa-spinner fa-spin"></i> Enregistrement…</p>';
+    var fd = new FormData(form);
+    var checked = form.querySelector('input[name="category"]:checked');
+    if (checked) fd.set('category', checked.value);
+    function getCookie(n){var m=document.cookie.match('(^|;)\\s*'+n+'\\s*=\\s*([^;]+)');return m?m.pop():'';}
+    var csrf = (fd.get('csrfmiddlewaretoken') || getCookie('csrftoken') || '');
+    fetch(form.action + (form.action.indexOf('?')>=0?'&':'?') + 'modal=1', {
+      method: 'POST', body: fd,
+      headers: { 'X-Requested-With': 'XMLHttpRequest', 'X-CSRFToken': csrf },
+      credentials: 'same-origin'
+    }).then(function(r){ return r.text(); }).then(function(html){
+      if (!html) {
+        body.innerHTML = '<p class="text-amber-700 text-sm">Réponse vide. <a href="/enseignants/" class="underline">Liste</a></p>';
+        return;
+      }
+      body.innerHTML = html;
+      if (title && html.indexOf('cycle enseigne') !== -1) title.textContent = 'Affectations';
+      body.querySelectorAll('script').forEach(function(old){
+        var s = document.createElement('script');
+        s.textContent = old.textContent;
+        old.parentNode.replaceChild(s, old);
+      });
+    }).catch(function(){
+      body.innerHTML = '<p class="text-red-600 text-sm">Erreur réseau. Réessayez.</p>';
+    });
+  });
+})();
+</script>

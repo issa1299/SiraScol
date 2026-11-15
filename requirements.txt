@@ -1,0 +1,5 @@
+Django>=5.0,<7.0
+Pillow>=10.0
+reportlab>=4.0
+webauthn>=2.0
+# waitress>=3.0  # optionnel production Windows

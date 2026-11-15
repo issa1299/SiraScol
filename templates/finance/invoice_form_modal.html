@@ -1,0 +1,39 @@
+
+<style>.form-input{width:100%;border:1px solid #d1d5db;border-radius:.5rem;padding:.5rem .75rem;font-size:.875rem}</style>
+<form method="post" action="{{ form_action }}" class="space-y-3">
+  {% csrf_token %}
+  <div>
+    <label class="text-xs font-medium">Élève *</label>
+    <select name="student" required class="form-input search-person" data-search-person="1" data-placeholder="Rechercher un élève…">
+      <option value="">— Choisir —</option>
+      {% for s in students %}
+      <option value="{{ s.id }}">{{ s.last_name }} {{ s.first_name }} ({{ s.matricule }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="text-xs font-medium">Type de frais *</label>
+    <select name="fee_type" required class="form-input">
+      {% for f in fee_types %}
+      <option value="{{ f.id }}">{{ f.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="text-xs font-medium">Année *</label>
+    <select name="academic_year" required class="form-input">
+      {% for y in years %}
+      <option value="{{ y.id }}" {% if current_year and y.id == current_year.id %}selected{% endif %}>{{ y.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="grid grid-cols-2 gap-2">
+    <div><label class="text-xs font-medium">Montant *</label><input type="number" name="amount" step="0.01" required class="form-input"></div>
+    <div><label class="text-xs font-medium">Échéance</label><input type="date" name="due_date" value="{{ today }}" class="form-input"></div>
+  </div>
+  <div><label class="text-xs font-medium">Description</label><input type="text" name="description" class="form-input"></div>
+  <div class="form-actions flex gap-2">
+    <button type="submit" class="flex-1 bg-blue-600 text-white py-2.5 rounded-lg text-sm font-medium">Créer facture</button>
+    <button type="button" onclick="closeModal('modal-dynamic')" class="px-4 text-sm">Annuler</button>
+  </div>
+</form>

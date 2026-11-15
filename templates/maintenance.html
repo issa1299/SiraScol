@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Maintenance — SiraScol</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="min-h-screen bg-slate-100 flex items-center justify-center p-4">
+  <div class="max-w-md w-full bg-white rounded-3xl shadow-xl border p-8 text-center">
+    <div class="w-16 h-16 mx-auto rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl mb-4">
+      <i class="fas fa-tools"></i>
+    </div>
+    <h1 class="text-2xl font-bold text-slate-800 mb-2">Maintenance en cours</h1>
+    <p class="text-sm text-slate-500 mb-1">{{ school.name|default:"SiraScol" }}</p>
+    <p class="text-sm text-slate-600 leading-relaxed mb-6">
+      {{ message }}
+    </p>
+    <p class="text-xs text-slate-400">
+      Les administrateurs peuvent toujours se connecter.
+    </p>
+    <a href="/accounts/login/" class="inline-block mt-6 text-sm text-blue-600 font-medium hover:underline">
+      Connexion administrateur →
+    </a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<div class="flex flex-wrap gap-1.5 mb-4 overflow-x-auto pb-1">
+  {% if can_personnel_list %}
+  <a href="{% url 'teachers:list' %}" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap {% if section == 'all' or section == None or not section %}bg-indigo-600 text-white{% else %}bg-white border text-slate-600{% endif %}">👥 Tout le personnel</a>
+  <a href="{% url 'teachers:enseignants' %}?category=enseignant" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap {% if category == 'enseignant' %}bg-indigo-600 text-white{% else %}bg-white border text-slate-600{% endif %}">👨‍🏫 Enseignants</a>
+  <a href="{% url 'teachers:list' %}?category=admin" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap {% if category == 'admin' %}bg-indigo-600 text-white{% else %}bg-white border text-slate-600{% endif %}">👨‍💼 Administration</a>
+  <a href="{% url 'teachers:list' %}?category=service" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap {% if category == 'service' %}bg-indigo-600 text-white{% else %}bg-white border text-slate-600{% endif %}">🧹 Service</a>
+  {% endif %}
+  {% if can_personnel_dashboard %}
+  <a href="{% url 'teachers:dashboard' %}" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap {% if section == 'dashboard' %}bg-indigo-600 text-white{% else %}bg-white border text-slate-600{% endif %}">📊 Tableau de bord</a>
+  {% endif %}
+  {% if can_personnel_contracts %}
+  <a href="{% url 'teachers:contracts' %}" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap {% if section == 'contrats' %}bg-indigo-600 text-white{% else %}bg-white border text-slate-600{% endif %}">📝 Contrats</a>
+  {% endif %}
+  {% if can_personnel_presences %}
+  <a href="{% url 'teachers:presences' %}" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap {% if section == 'presences' %}bg-indigo-600 text-white{% else %}bg-white border text-slate-600{% endif %}">🕐 Présences</a>
+  {% endif %}
+  {% if can_personnel_salaries %}
+  <a href="{% url 'teachers:salaries' %}" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap {% if section == 'salaires' %}bg-indigo-600 text-white{% else %}bg-white border text-slate-600{% endif %}">💰 Salaires</a>
+  {% endif %}
+  {% if can_personnel_documents %}
+  <a href="{% url 'teachers:documents' %}" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap {% if section == 'documents' %}bg-indigo-600 text-white{% else %}bg-white border text-slate-600{% endif %}">📄 Documents</a>
+  {% endif %}
+  {% if can_personnel_list or can_personnel_reports %}
+  <a href="{% url 'teachers:mise_en_place' %}" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap {% if section == 'mise_en_place' %}bg-indigo-600 text-white{% else %}bg-white border text-slate-600{% endif %}">📋 Mise en place</a>
+  {% endif %}
+  {% if can_personnel_reports %}
+  <a href="{% url 'teachers:reports' %}" class="px-3 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap {% if section == 'rapports' %}bg-indigo-600 text-white{% else %}bg-white border text-slate-600{% endif %}">📊 Rapports</a>
+  {% endif %}
+</div>

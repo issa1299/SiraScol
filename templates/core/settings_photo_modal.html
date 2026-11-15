@@ -1,0 +1,24 @@
+<form method="post" action="{% url 'core:settings' %}" enctype="multipart/form-data" class="space-y-4 pb-4">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="photo">
+  <div>
+    <label class="text-xs text-slate-500">Titre de la photo (optionnel)</label>
+    {{ photo_form.title }}
+  </div>
+  <div class="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center">
+    <i class="fas fa-cloud-upload-alt text-3xl text-blue-400 mb-2"></i>
+    <p class="text-sm text-slate-600 mb-2">Cliquez pour sélectionner une photo</p>
+    <p class="text-[10px] text-slate-400 mb-3">JPG, PNG, GIF, WEBP (max 10 Mo)</p>
+    {{ photo_form.image }}
+  </div>
+  <label class="flex items-center gap-2 text-sm">
+    {{ photo_form.is_primary }}
+    <span>Définir comme photo principale</span>
+  </label>
+  <div class="flex gap-2">
+    <button type="submit" class="flex-1 bg-emerald-600 text-white py-3 rounded-xl text-sm font-semibold">
+      <i class="fas fa-upload"></i> Uploader
+    </button>
+    <button type="button" onclick="closeModal('modal-dynamic')" class="px-4 border rounded-xl text-sm">Annuler</button>
+  </div>
+</form>

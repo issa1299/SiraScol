@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Affectations{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'core:config_home' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Configuration</a>
+  <h1 class="text-xl font-bold text-slate-800 mt-1">Affectations matières</h1>
+  <p class="text-xs text-slate-500">
+    Enseignant + matière + classe
+    {% if selected_year %}· {{ selected_year.name }}{% endif %}
+  </p>
+</div>
+
+<form method="post" action="{% url 'core:config_assignment_save' %}" class="bg-white rounded-2xl border p-4 mb-4 space-y-3">
+  {% csrf_token %}
+  <p class="text-sm font-semibold text-slate-700">Nouvelle affectation</p>
+  <div>
+    <label class="text-xs font-medium text-slate-600">Classe *</label>
+    <select name="classroom" required class="w-full border rounded-xl px-3 py-2.5 text-sm mt-0.5">
+      <option value="">— Classe —</option>
+      {% for c in classrooms %}
+      <option value="{{ c.id }}">{{ c.name }} ({{ c.level.name }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="text-xs font-medium text-slate-600">Matière *</label>
+    <select name="subject" required class="w-full border rounded-xl px-3 py-2.5 text-sm mt-0.5">
+      <option value="">— Matière —</option>
+      {% for s in subjects %}
+      <option value="{{ s.id }}">{{ s.name }} (coef. {{ s.coefficient }})</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="text-xs font-medium text-slate-600">Enseignant *</label>
+    <select name="teacher" required class="w-full border rounded-xl px-3 py-2.5 text-sm mt-0.5 search-person" data-search-person="1" data-placeholder="Rechercher un enseignant…">
+      <option value="">— Enseignant —</option>
+      {% for t in teachers %}
+      <option value="{{ t.id }}">{{ t.last_name }} {{ t.first_name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div>
+    <label class="text-xs font-medium text-slate-600">Heures / semaine</label>
+    <input type="number" name="hours_per_week" value="2" min="1" class="w-full border rounded-xl px-3 py-2.5 text-sm mt-0.5">
+  </div>
+  <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold">Enregistrer</button>
+</form>
+
+<form method="get" class="mb-3">
+  <select name="classroom" onchange="this.form.submit()" class="w-full border rounded-xl px-3 py-2.5 text-sm">
+    <option value="">Toutes les classes</option>
+    {% for c in classrooms %}
+    <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="space-y-2">
+{% for a in assignments %}
+<div class="bg-white rounded-xl border p-3 flex justify-between items-start gap-2">
+  <div class="min-w-0">
+    <p class="font-semibold text-sm">{{ a.subject.name }}</p>
+    <p class="text-xs text-slate-500">{{ a.classroom.name }} · {{ a.teacher.last_name }} {{ a.teacher.first_name }}</p>
+    <p class="text-[11px] text-slate-400">{{ a.hours_per_week }} h / semaine</p>
+  </div>
+  <form method="post" action="{% url 'core:config_assignment_delete' a.pk %}" onsubmit="return confirm('Supprimer ?');">
+    {% csrf_token %}
+    <button class="text-xs text-red-500 px-2 py-1">Suppr.</button>
+  </form>
+</div>
+{% empty %}
+<p class="text-center text-slate-400 text-sm py-8">Aucune affectation pour cette année.</p>
+{% endfor %}
+</div>
+{% endblock %}

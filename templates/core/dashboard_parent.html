@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Espace parent — SiraScol{% endblock %}
+{% block content %}
+
+<div class="bg-gradient-to-r from-violet-600 to-purple-700 rounded-2xl text-white p-4 sm:p-5 mb-4">
+  <p class="text-violet-100 text-xs uppercase tracking-wide">Espace parent</p>
+  <h1 class="text-xl font-bold mt-0.5">
+    {% if parent %}{{ parent.last_name }} {{ parent.first_name }}{% else %}Parent{% endif %}
+  </h1>
+  <p class="text-violet-100 text-sm mt-1">
+    Suivi de la scolarité de vos enfants
+    {% if selected_year %} · {{ selected_year.name }}{% endif %}
+  </p>
+</div>
+
+{% if not parent and not child_rows %}
+<div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm mb-4">
+  Votre compte n’est pas encore lié à un dossier parent. Contactez le secrétariat de l’école.
+</div>
+{% endif %}
+
+<p class="text-xs font-semibold uppercase text-slate-400 mb-2">Mes enfants</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+  {% for row in child_rows %}
+  <div class="bg-white rounded-2xl border shadow-sm p-4">
+    <div class="flex items-center gap-3 mb-3">
+      {% if row.student.photo %}
+      <img src="{{ row.student.photo.url }}" class="w-12 h-12 rounded-full object-cover" alt="">
+      {% else %}
+      <div class="w-12 h-12 rounded-full bg-violet-100 text-violet-700 flex items-center justify-center font-bold">
+        {{ row.student.first_name|first }}{{ row.student.last_name|first }}
+      </div>
+      {% endif %}
+      <div class="min-w-0">
+        <p class="font-bold text-slate-800 truncate">{{ row.student.last_name }} {{ row.student.first_name }}</p>
+        <p class="text-xs text-slate-500">
+          {{ row.student.matricule }}
+          {% if row.enrollment %} · {{ row.enrollment.classroom.name }}{% endif %}
+        </p>
+      </div>
+    </div>
+    {% if row.balance %}
+    <p class="text-xs mb-2 {% if row.balance > 0 %}text-amber-600{% else %}text-emerald-600{% endif %}">
+      {% if row.balance > 0 %}Reste à payer : {{ row.balance|floatformat:0 }} FCFA{% else %}Scolarité à jour{% endif %}
+    </p>
+    {% endif %}
+    <div class="grid grid-cols-3 gap-1 text-center text-xs">
+      <a href="{% url 'students:detail' row.student.pk %}" class="bg-slate-50 rounded-lg py-2 hover:bg-violet-50">Profil</a>
+      <a href="{% url 'grades:bulletin_list' %}?student={{ row.student.pk }}" class="bg-slate-50 rounded-lg py-2 hover:bg-violet-50">Notes</a>
+      <a href="{% url 'finance:dashboard' %}?student={{ row.student.pk }}" class="bg-slate-50 rounded-lg py-2 hover:bg-violet-50">Paiements</a>
+    </div>
+  </div>
+  {% empty %}
+  <div class="bg-white rounded-xl border p-6 text-slate-400 text-sm col-span-full text-center">
+    Aucun enfant associé à ce compte.
+  </div>
+  {% endfor %}
+</div>
+
+<p class="text-xs font-semibold uppercase text-slate-400 mb-2">Accès rapide</p>
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+  <a href="{% url 'grades:bulletin_list' %}" class="bg-white border rounded-xl p-3 text-center">
+    <i class="fas fa-file-alt text-indigo-600"></i>
+    <p class="text-sm font-semibold mt-1">Bulletins</p>
+  </a>
+  <a href="{% url 'timetable:home' %}" class="bg-white border rounded-xl p-3 text-center">
+    <i class="fas fa-calendar-alt text-blue-600"></i>
+    <p class="text-sm font-semibold mt-1">Emploi du temps</p>
+  </a>
+  <a href="{% url 'attendance:history' %}" class="bg-white border rounded-xl p-3 text-center">
+    <i class="fas fa-user-check text-rose-600"></i>
+    <p class="text-sm font-semibold mt-1">Absences</p>
+  </a>
+  <a href="{% url 'communication:list' %}" class="bg-white border rounded-xl p-3 text-center">
+    <i class="fas fa-bullhorn text-amber-600"></i>
+    <p class="text-sm font-semibold mt-1">Annonces</p>
+  </a>
+</div>
+
+{% if announcements %}
+<div class="bg-white rounded-xl border overflow-hidden">
+  <div class="px-4 py-3 border-b text-sm font-semibold">Annonces de l’école</div>
+  <div class="divide-y">
+    {% for a in announcements %}
+    <a href="{% url 'communication:detail' a.pk %}" class="block px-4 py-2.5 text-sm hover:bg-slate-50">
+      <p class="font-medium">{{ a.title }}</p>
+      <p class="text-xs text-slate-400">{{ a.published_at|date:"d/m/Y" }}</p>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endblock %}

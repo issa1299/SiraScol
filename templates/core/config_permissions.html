@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Permissions par rôle{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'core:config_home' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Configuration</a>
+  <h1 class="text-xl font-bold text-slate-800 mt-1">Permissions par rôle</h1>
+  <p class="text-xs text-slate-500">Ce que chaque type de compte peut voir et faire</p>
+</div>
+
+<div class="bg-blue-50 border border-blue-100 rounded-2xl p-3 mb-4 text-sm text-blue-900">
+  Votre rôle : <strong>{{ user_role_label|default:"—" }}</strong>
+</div>
+
+{# Tableau PC #}
+<div class="overflow-x-auto bg-white rounded-2xl border mb-4 hidden md:block">
+  <table class="w-full text-xs min-w-[700px]">
+    <thead class="bg-slate-800 text-white">
+      <tr>
+        <th class="text-left px-3 py-2">Action</th>
+        {% for code, label in roles %}
+        <th class="px-1 py-2 text-center text-[10px] leading-tight max-w-[4.5rem]">{{ label }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for group in table %}
+      <tr class="bg-slate-100">
+        <td colspan="7" class="px-3 py-1.5 font-semibold text-slate-700">{{ group.title }}</td>
+      </tr>
+      {% for row in group.rows %}
+      <tr class="border-t border-slate-50">
+        <td class="px-3 py-2 text-slate-700">{{ row.label }}</td>
+        {% for ok in row.cells %}
+        <td class="px-1 py-2 text-center">
+          {% if ok %}<span class="text-emerald-600 font-bold">✓</span>{% else %}<span class="text-slate-300">—</span>{% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{# Cartes mobile + résumé #}
+<div class="space-y-3">
+{% for item in role_cards %}
+<div class="bg-white rounded-2xl border p-4">
+  <p class="font-bold text-slate-800 mb-2">{{ item.label }}</p>
+  <ul class="text-xs text-slate-600 space-y-1.5">
+    {% for line in item.lines %}
+    <li class="flex gap-2"><span class="text-emerald-600 shrink-0">✓</span> <span>{{ line }}</span></li>
+    {% endfor %}
+  </ul>
+</div>
+{% endfor %}
+</div>
+
+<p class="text-xs text-slate-400 mt-4 text-center leading-relaxed">
+  Le menu s’adapte au rôle.<br>
+  Enseignant = ses classes · Parent = ses enfants.
+</p>
+{% endblock %}

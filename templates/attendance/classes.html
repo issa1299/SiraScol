@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Faire l’appel{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="mb-4">
+    <p class="text-xs font-semibold uppercase tracking-wider text-rose-600">Présences</p>
+    <h1 class="text-2xl font-bold text-slate-800 mt-1">Faire l’appel</h1>
+    <p class="text-sm text-slate-500">Choisissez une classe</p>
+  </div>
+  <div class="space-y-2">
+    {% for c in classrooms %}
+    <a href="{% url 'attendance:class_attendance' c.pk %}"
+       class="flex items-center gap-3 bg-white rounded-2xl border p-4 hover:border-rose-400 shadow-sm transition">
+      <div class="w-11 h-11 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center">
+        <i class="fas fa-clipboard-check"></i>
+      </div>
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-slate-800">{{ c.name }}</p>
+        <p class="text-xs text-slate-500">{{ c.level.name }} · {{ c.nb_eleves }} élève(s)</p>
+      </div>
+      <i class="fas fa-chevron-right text-slate-300"></i>
+    </a>
+    {% empty %}
+    <div class="bg-white rounded-2xl border border-dashed p-8 text-center text-slate-400">Aucune classe.</div>
+    {% endfor %}
+  </div>
+  <p class="mt-4 text-center">
+    <a href="{% url 'attendance:history' %}" class="text-sm text-slate-500 underline">Historique des absences</a>
+  </p>
+</div>
+{% endblock %}

@@ -1,0 +1,134 @@
+{% extends "grades/base_cotes.html" %}
+{% block title %}Saisie notes — {{ assessment.title }}{% endblock %}
+{% block header_title %}Saisie des cotes{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'grades:class_assessments' assessment.classroom.pk %}"
+     class="text-sm text-slate-500 hover:text-blue-600">
+    <i class="fas fa-arrow-left"></i> {{ assessment.classroom.name }}
+  </a>
+  <h1 class="text-xl sm:text-2xl font-bold text-slate-800 mt-1">{{ assessment.title }}</h1>
+  <p class="text-xs sm:text-sm text-slate-500 mt-1">
+    {{ assessment.subject.name }} · {{ assessment.assessment_type.name }} · {{ assessment.period.name }}
+    · Note max : <strong>/ {{ max_score }}</strong>
+    {% if is_primary %}<span class="text-emerald-600">(Primaire)</span>{% endif %}
+  </p>
+  <p class="text-[11px] text-slate-400 mt-1">L'appréciation s'affiche automatiquement dès que vous saisissez une note.</p>
+</div>
+
+{% if not rows %}
+<div class="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-slate-500 text-sm">
+  Aucun élève inscrit dans cette classe. Inscrivez d'abord des élèves dans cette classe.
+</div>
+{% else %}
+<form method="post" id="grade-form" class="space-y-3">
+  {% csrf_token %}
+
+  <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+    <div class="divide-y divide-gray-100">
+      {% for row in rows %}
+      <div class="p-4 grade-row" data-student="{{ row.student.id }}">
+        <div class="flex items-start justify-between gap-2 mb-2">
+          <div class="min-w-0">
+            <p class="font-semibold text-slate-800">{{ row.student.last_name }} {{ row.student.first_name }}</p>
+            <p class="text-xs font-mono text-slate-400">{{ row.student.matricule }}</p>
+          </div>
+          <label class="flex items-center gap-2 text-xs text-slate-600 flex-shrink-0">
+            <input type="checkbox" name="absent_{{ row.student.id }}" value="on"
+                   class="w-5 h-5 absent-cb" {% if row.is_absent %}checked{% endif %}>
+            Absent
+          </label>
+        </div>
+        <div class="flex items-center gap-3">
+          <div class="w-28">
+            <label class="text-[10px] text-slate-500">Note / {{ max_score }}</label>
+            <input type="number" name="score_{{ row.student.id }}"
+                   step="0.25" min="0" max="{{ max_score }}"
+                   inputmode="decimal"
+                   value="{% if row.has_grade and not row.is_absent %}{{ row.score }}{% endif %}"
+                   class="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-center text-base font-semibold score-input"
+                   {% if row.is_absent %}disabled{% endif %}>
+          </div>
+          <div class="flex-1">
+            <label class="text-[10px] text-slate-500">Appréciation</label>
+            <p class="appreciation-text text-sm font-medium text-blue-700 bg-blue-50 rounded-xl px-3 py-2.5 min-h-[42px]">
+              {% if row.is_absent %}Absent{% elif row.appreciation %}{{ row.appreciation }}{% else %}—{% endif %}
+            </p>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="sticky bottom-16 md:bottom-4 bg-white border border-gray-200 shadow-lg rounded-2xl p-3 flex flex-col sm:flex-row gap-2 z-20">
+    <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3.5 rounded-xl text-sm font-semibold">
+      <i class="fas fa-save"></i> Enregistrer les notes
+    </button>
+    <a href="{% url 'grades:class_assessments' assessment.classroom.pk %}"
+       class="text-center px-5 py-3 text-sm text-slate-600 rounded-xl border border-gray-200">
+      Retour classe
+    </a>
+  </div>
+</form>
+
+<script>
+(function() {
+  var maxScore = parseFloat('{{ max_score }}') || 20;
+
+  function appreciation(score, absent) {
+    if (absent) return 'Absent';
+    if (score === null || score === '' || isNaN(score)) return '—';
+    var s = parseFloat(score);
+    if (maxScore <= 10) {
+      if (s >= 9) return 'Excellent';
+      if (s >= 8) return 'Très bien';
+      if (s >= 7) return 'Bien';
+      if (s >= 6) return 'Assez bien';
+      if (s >= 5) return 'Passable';
+      if (s >= 4) return 'Insuffisant';
+      return 'Très insuffisant';
+    } else {
+      if (s >= 16) return 'Excellent';
+      if (s >= 14) return 'Bien';
+      if (s >= 12) return 'Assez bien';
+      if (s >= 10) return 'Passable';
+      if (s >= 8) return 'Insuffisant';
+      return 'Très insuffisant';
+    }
+  }
+
+  function updateRow(row) {
+    var cb = row.querySelector('.absent-cb');
+    var inp = row.querySelector('.score-input');
+    var txt = row.querySelector('.appreciation-text');
+    if (!inp || !txt) return;
+    var absent = cb && cb.checked;
+    inp.disabled = absent;
+    if (absent) {
+      txt.textContent = 'Absent';
+      return;
+    }
+    var val = inp.value.trim();
+    txt.textContent = appreciation(val === '' ? null : val, false);
+  }
+
+  document.querySelectorAll('.grade-row').forEach(function(row) {
+    var inp = row.querySelector('.score-input');
+    var cb = row.querySelector('.absent-cb');
+    if (inp) {
+      inp.addEventListener('input', function() { updateRow(row); });
+      inp.addEventListener('change', function() { updateRow(row); });
+    }
+    if (cb) {
+      cb.addEventListener('change', function() {
+        if (cb.checked && inp) inp.value = '';
+        updateRow(row);
+      });
+    }
+    updateRow(row);
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}

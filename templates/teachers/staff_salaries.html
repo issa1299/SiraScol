@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Salaires{% endblock %}
+{% block content %}
+<div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+  <div>
+    <h1 class="text-xl font-bold">💰 Salaires</h1>
+    <p class="text-xs text-slate-500">{{ month }}/{{ year }} · Total net : <b>{{ total_net|floatformat:0 }} FCFA</b></p>
+  </div>
+  <button type="button" onclick="openModalUrl('{% url 'teachers:salaries' %}?modal=1&year={{ year }}&month={{ month }}','Nouveau salaire')"
+          class="bg-indigo-600 text-white text-sm px-4 py-2.5 rounded-xl font-semibold">
+    <i class="fas fa-plus"></i> Nouveau salaire
+  </button>
+</div>
+<form method="get" class="flex flex-wrap gap-2 mb-4">
+  <input type="number" name="year" value="{{ year }}" class="border rounded-lg px-3 py-2 text-sm w-24" min="2020" max="2035">
+  <select name="month" class="border rounded-lg px-3 py-2 text-sm">
+    <option value="1" {% if month == 1 %}selected{% endif %}>Janvier</option>
+    <option value="2" {% if month == 2 %}selected{% endif %}>Février</option>
+    <option value="3" {% if month == 3 %}selected{% endif %}>Mars</option>
+    <option value="4" {% if month == 4 %}selected{% endif %}>Avril</option>
+    <option value="5" {% if month == 5 %}selected{% endif %}>Mai</option>
+    <option value="6" {% if month == 6 %}selected{% endif %}>Juin</option>
+    <option value="7" {% if month == 7 %}selected{% endif %}>Juillet</option>
+    <option value="8" {% if month == 8 %}selected{% endif %}>Août</option>
+    <option value="9" {% if month == 9 %}selected{% endif %}>Septembre</option>
+    <option value="10" {% if month == 10 %}selected{% endif %}>Octobre</option>
+    <option value="11" {% if month == 11 %}selected{% endif %}>Novembre</option>
+    <option value="12" {% if month == 12 %}selected{% endif %}>Décembre</option>
+  </select>
+  <button type="submit" class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm">OK</button>
+</form>
+<div class="bg-white rounded-2xl border overflow-hidden">
+  <table class="w-full text-sm">
+    <thead class="bg-slate-50 text-[10px] uppercase text-left text-slate-500">
+      <tr><th class="px-3 py-2">Personnel</th><th class="px-3 py-2">Base</th><th class="px-3 py-2">Primes</th><th class="px-3 py-2">Retenues</th><th class="px-3 py-2">Net</th><th class="px-3 py-2">Statut</th></tr>
+    </thead>
+    <tbody class="divide-y">
+      {% for s in salaries %}
+      <tr class="hover:bg-slate-50">
+        <td class="px-3 py-2">{{ s.staff }}</td>
+        <td class="px-3 py-2">{{ s.base|floatformat:0 }}</td>
+        <td class="px-3 py-2">{{ s.primes|floatformat:0 }}</td>
+        <td class="px-3 py-2">{{ s.retenues|floatformat:0 }}</td>
+        <td class="px-3 py-2 font-semibold">{{ s.net|floatformat:0 }}</td>
+        <td class="px-3 py-2">{{ s.get_status_display }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" class="px-3 py-8 text-center text-slate-400">Aucun salaire. Cliquez sur <b>Nouveau salaire</b>.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

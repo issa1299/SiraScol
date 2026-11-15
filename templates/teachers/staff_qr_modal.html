@@ -1,0 +1,14 @@
+<div class="text-center py-2">
+  <img src="{{ qr_url }}" alt="QR {{ code }}" class="mx-auto rounded-lg border bg-white">
+  <p class="text-sm font-semibold mt-3">{{ teacher.last_name }} {{ teacher.first_name }}</p>
+  <p class="text-xs text-slate-500">{{ teacher.get_category_display }}{% if teacher.function %} · {{ teacher.function }}{% endif %}</p>
+  <p class="text-xs font-mono text-indigo-600 mt-1">{{ teacher.matricule }}</p>
+  <p class="text-[11px] text-slate-400 mt-1">Code scan : <code class="bg-slate-100 px-1 rounded">{{ code }}</code></p>
+  <p class="text-[11px] text-slate-400">À utiliser dans Scan QR Code → onglet Personnel</p>
+  <div class="flex gap-2 mt-4 justify-center">
+    <a href="{{ qr_url_lg }}" target="_blank" class="bg-blue-600 text-white text-sm px-4 py-2 rounded-xl">
+      <i class="fas fa-download"></i> Télécharger
+    </a>
+    <button type="button" onclick="closeModal('modal-dynamic')" class="border text-sm px-4 py-2 rounded-xl">Fermer</button>
+  </div>
+</div>

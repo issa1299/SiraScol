@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Saisir une absence - SiraScol{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{% url 'attendance:classes' %}" class="text-sm text-slate-500 hover:text-blue-600">
+        <i class="fas fa-arrow-left"></i> Retour aux absences
+    </a>
+</div>
+
+<div class="max-w-xl">
+    <h1 class="text-2xl font-bold text-slate-800 mb-6">Saisir une absence / retard</h1>
+
+    <form method="post" class="bg-white rounded-xl border border-gray-100 shadow-sm p-6 space-y-5">
+        {% csrf_token %}
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Élève *</label>
+            <select name="student" required class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm search-person" data-search-person="1" data-placeholder="Rechercher un élève…">
+                <option value="">— Choisir un élève —</option>
+                {% for s in students %}
+                <option value="{{ s.id }}">{{ s.last_name }} {{ s.first_name }} ({{ s.matricule }})</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Date *</label>
+                <input type="date" name="date" value="{{ today }}" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Type *</label>
+                <select name="type" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                    {% for v, l in type_choices %}
+                    <option value="{{ v }}">{{ l }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Statut</label>
+                <select name="status" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                    {% for v, l in status_choices %}
+                    <option value="{{ v }}">{{ l }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-slate-700 mb-1">Classe (optionnel)</label>
+                <select name="classroom" class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm">
+                    <option value="">— Auto (classe actuelle) —</option>
+                    {% for c in classrooms %}
+                    <option value="{{ c.id }}">{{ c }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-slate-700 mb-1">Motif</label>
+            <textarea name="reason" rows="3" placeholder="Raison de l'absence..."
+                      class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none"></textarea>
+        </div>
+
+        <div class="flex gap-3 pt-2">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium">
+                <i class="fas fa-save"></i> Enregistrer
+            </button>
+            <a href="{% url 'attendance:classes' %}" class="px-5 py-2.5 text-sm text-slate-600 hover:text-slate-800">Annuler</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
