@@ -4,7 +4,8 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
-from core.permissions import get_role, get_parent_students, is_staff_role
+from core.permissions import get_role, get_parent_students, is_staff_role, permission_required, can
+from core.access import filter_students_for_user, get_student_for_user, filter_classrooms_for_user
 from django.db.models import Q
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
@@ -116,16 +117,12 @@ def _apply_enrollment_payment(student, invoices, amount_paid, payment_date, rece
 
 
 @login_required
+@permission_required('students.view')
 def student_list(request):
-    qs = Student.objects.all().order_by('last_name', 'first_name')
     year = get_selected_year(request)
     role = get_role(request.user)
-    if role == 'parent' and not request.user.is_superuser:
-        qs = get_parent_students(request.user)
-    elif role == 'enseignant' and not request.user.is_superuser:
-        from core.permissions import get_teacher_classrooms
-        class_ids = get_teacher_classrooms(request.user).values_list('id', flat=True)
-        qs = qs.filter(id__in=Enrollment.objects.filter(classroom_id__in=class_ids, is_active=True).values_list('student_id', flat=True))
+    # Filtrage serveur selon le rôle (parent / enseignant / élève / staff)
+    qs = filter_students_for_user(request.user).order_by('last_name', 'first_name')
 
     # Année de travail : uniquement les élèves inscrits cette année
     if year:
@@ -239,8 +236,10 @@ def student_list(request):
 
 
 @login_required
+@permission_required('students.view')
 def student_detail(request, pk):
-    student = get_object_or_404(Student, pk=pk)
+    # Anti-contournement URL : parent/élève/enseignant ne voient que leurs élèves
+    student = get_student_for_user(request.user, pk)
     enrollments = student.enrollments.select_related('classroom', 'academic_year').order_by('-academic_year__start_date')
     parents = student.parents.select_related('parent').all()
     recent_grades = student.grades.select_related('assessment__subject', 'assessment').order_by('-assessment__date')[:15]
@@ -282,6 +281,7 @@ def student_detail(request, pk):
 
 
 @login_required
+@permission_required('students.create')
 def student_create(request):
     year = get_selected_year(request)
     qs = ClassRoom.objects.select_related('level', 'academic_year')
@@ -354,8 +354,9 @@ def student_create(request):
 
 
 @login_required
+@permission_required('students.edit')
 def student_edit(request, pk):
-    student = get_object_or_404(Student, pk=pk)
+    student = get_student_for_user(request.user, pk)
     if request.method == 'POST':
         form = StudentForm(request.POST, request.FILES, instance=student)
         if form.is_valid():
@@ -379,7 +380,7 @@ def student_edit(request, pk):
 @login_required
 def student_qr(request, pk):
     """Modal QR code élève (matricule)."""
-    student = get_object_or_404(Student, pk=pk)
+    student = get_student_for_user(request.user, pk)
     ctx = {'student': student}
     if request.GET.get('modal') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return render(request, 'students/student_qr_modal.html', ctx)
@@ -389,7 +390,7 @@ def student_qr(request, pk):
 @login_required
 def student_card(request, pk):
     """Carte scolaire seule — impression / téléchargement PDF (navigateur)."""
-    student = get_object_or_404(Student, pk=pk)
+    student = get_student_for_user(request.user, pk)
     enrollment = student.current_enrollment()
     parents = student.parents.select_related('parent').all()
     parent = parents[0].parent if parents else None
@@ -430,7 +431,7 @@ def student_card_pdf(request, pk):
     from django.http import HttpResponse
     from students.card_mali import draw_card_pdf
 
-    student = get_object_or_404(Student, pk=pk)
+    student = get_student_for_user(request.user, pk)
     enrollment = student.current_enrollment()
     try:
         from core.models import SchoolSettings
@@ -458,7 +459,7 @@ def student_card_image(request, pk):
     from django.http import HttpResponse
     from students.card_mali import render_card_png
 
-    student = get_object_or_404(Student, pk=pk)
+    student = get_student_for_user(request.user, pk)
     enrollment = student.current_enrollment()
     try:
         from core.models import SchoolSettings
@@ -477,7 +478,7 @@ def student_card_image(request, pk):
 @login_required
 def student_card_preview(request, pk):
     """Aperçu carte en modal (image modèle Mali)."""
-    student = get_object_or_404(Student, pk=pk)
+    student = get_student_for_user(request.user, pk)
     return render(request, 'students/student_card_preview_modal.html', {
         'student': student,
         'preview_image_url': f'/eleves/{student.pk}/carte/image/?preview=1',
