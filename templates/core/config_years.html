@@ -17,11 +17,12 @@
   <div class="grid grid-cols-2 gap-2">
     <div>
       <label class="text-xs font-medium text-slate-600">Début</label>
-      <input type="date" name="start_date" class="w-full border rounded-xl px-3 py-2.5 text-sm mt-0.5">
+      <input type="date" name="start_date" formnovalidate class="w-full border rounded-xl px-3 py-2.5 text-sm mt-0.5">
     </div>
     <div>
       <label class="text-xs font-medium text-slate-600">Fin</label>
       <input type="date" name="end_date" class="w-full border rounded-xl px-3 py-2.5 text-sm mt-0.5">
+      <p class="text-[10px] text-slate-400">Optionnel</p>
     </div>
   </div>
   <label class="text-sm flex items-center gap-2"><input type="checkbox" name="is_current" class="rounded"> Définir comme année en cours</label>
@@ -36,7 +37,7 @@
       {{ y.name }}
       {% if y.is_current %}<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-1">En cours ★</span>{% endif %}
     </p>
-    <p class="text-xs text-slate-400">{{ y.start_date|date:"d/m/Y" }} → {{ y.end_date|date:"d/m/Y" }}</p>
+    <p class="text-xs text-slate-400">{% if y.start_date or y.end_date %}{{ y.start_date|date:"d/m/Y"|default:"…" }} → {{ y.end_date|date:"d/m/Y"|default:"…" }}{% else %}Dates non renseignées{% endif %}</p>
   </div>
   {% if not y.is_current %}
   <form method="post" action="{% url 'core:config_year_current' y.pk %}">

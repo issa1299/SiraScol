@@ -4,15 +4,15 @@ from django.db import models
 class AcademicYear(models.Model):
     """Année scolaire (ex: 2025-2026)"""
     name = models.CharField(max_length=20, unique=True, verbose_name='Nom')
-    start_date = models.DateField(verbose_name='Date de début')
-    end_date = models.DateField(verbose_name='Date de fin')
+    start_date = models.DateField(verbose_name='Date de début', null=True, blank=True)
+    end_date = models.DateField(verbose_name='Date de fin', null=True, blank=True)
     is_current = models.BooleanField(default=False, verbose_name='Année en cours')
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         verbose_name = 'Année scolaire'
         verbose_name_plural = 'Années scolaires'
-        ordering = ['-start_date']
+        ordering = ['-is_current', '-start_date', '-id']
 
     def __str__(self):
         return self.name

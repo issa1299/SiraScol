@@ -45,11 +45,17 @@ def year_save(request):
             y.end_date = end
             y.is_current = is_current
             y.save()
+            if is_current:
+                from core.year_context import set_selected_year
+                set_selected_year(request, y.pk)
             messages.success(request, 'Année mise à jour.')
         else:
-            AcademicYear.objects.create(
+            y = AcademicYear.objects.create(
                 name=name, start_date=start, end_date=end, is_current=is_current
             )
+            if is_current:
+                from core.year_context import set_selected_year
+                set_selected_year(request, y.pk)
             messages.success(request, 'Année créée.')
     return redirect('core:config_years')
 
@@ -58,11 +64,14 @@ def year_save(request):
 @require_POST
 def year_set_current(request, pk):
     from academics.models import AcademicYear
+    from core.year_context import set_selected_year
     AcademicYear.objects.update(is_current=False)
     y = get_object_or_404(AcademicYear, pk=pk)
     y.is_current = True
-    y.save()
-    messages.success(request, f"{y.name} est maintenant l'année en cours.")
+    y.save(update_fields=['is_current'])
+    # Appliquer partout : sélecteur d'année = année en cours
+    set_selected_year(request, y.pk)
+    messages.success(request, f"{y.name} est maintenant l'année en cours (appliquée partout).")
     return redirect('core:config_years')
 
 

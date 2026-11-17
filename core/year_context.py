@@ -18,7 +18,7 @@ def get_selected_year(request):
     if not year:
         year = AcademicYear.objects.filter(is_current=True).first()
     if not year:
-        year = AcademicYear.objects.order_by('-start_date').first()
+        year = AcademicYear.objects.order_by('-is_current', '-start_date', '-id').first()
     return year
 
 
@@ -34,7 +34,7 @@ def academic_year_context(request):
     if not getattr(request, 'user', None) or not request.user.is_authenticated:
         return {}
     try:
-        years = list(AcademicYear.objects.order_by('-start_date'))
+        years = list(AcademicYear.objects.order_by('-is_current', '-start_date', '-id'))
         selected = get_selected_year(request)
         return {
             'all_academic_years': years,
