@@ -1,15 +1,15 @@
 {% extends "grades/base_cotes.html" %}
-{% block cotes_title %}Palmarès & Classement{% endblock %}
+{% block title %}Palmarès & Classement — Notes{% endblock %}
 {% block header_title %}Palmarès des élèves{% endblock %}
 {% block header_sub %}Classement officiel de la classe par moyenne décroissante{% endblock %}
-{% block cotes_body %}
+{% block content %}
 
 {# ── SÉLECTION CLASSE & PÉRIODE ── #}
 <div class="bg-white rounded-2xl border border-slate-200 p-4 mb-6 shadow-xs">
   <form method="get" class="flex flex-col sm:flex-row gap-3">
     <div class="flex-1">
       <label class="text-[11px] font-bold uppercase text-slate-500 mb-1 block">Classe *</label>
-      <select name="classroom" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500" required>
+      <select name="classroom" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500" required>
         <option value="">— Choisir une classe —</option>
         {% for c in classrooms %}
         <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
@@ -18,7 +18,7 @@
     </div>
     <div class="flex-1">
       <label class="text-[11px] font-bold uppercase text-slate-500 mb-1 block">Période d'évaluation</label>
-      <select name="period" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-amber-500">
+      <select name="period" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
         <option value="">Toutes les périodes / Annuel</option>
         {% for p in periods %}
         <option value="{{ p.id }}" {% if period_id == p.id|stringformat:"s" %}selected{% endif %}>{{ p.name }}</option>
@@ -26,7 +26,7 @@
       </select>
     </div>
     <div class="sm:self-end">
-      <button type="submit" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-600 text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-colors flex items-center justify-center gap-2">
+      <button type="submit" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-colors flex items-center justify-center gap-2">
         <i class="fas fa-trophy"></i> Afficher le classement
       </button>
     </div>
@@ -35,9 +35,9 @@
 
 {% if classroom %}
 <div class="bg-white rounded-2xl border shadow-sm overflow-hidden mb-6">
-  <div class="px-5 py-4 border-b bg-gradient-to-r from-amber-50/70 to-orange-50/70 flex items-center justify-between">
+  <div class="px-5 py-4 border-b bg-gradient-to-r from-emerald-50/70 to-teal-50/70 flex items-center justify-between">
     <div class="flex items-center gap-3">
-      <div class="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-sm shadow-xs">
+      <div class="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-xs">
         <i class="fas fa-medal"></i>
       </div>
       <div>
@@ -47,7 +47,7 @@
     </div>
     <a href="{% url 'grades:bulletin_class_pdf' %}?classroom={{ classroom.id }}{% if period_id %}&period={{ period_id }}{% endif %}"
        target="_blank"
-       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-amber-300 text-amber-800 text-xs font-semibold hover:bg-amber-50 transition-colors shadow-2xs">
+       class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-emerald-300 text-emerald-800 text-xs font-semibold hover:bg-emerald-50 transition-colors shadow-2xs">
       <i class="fas fa-file-pdf text-red-500"></i> Imprimer bulletins
     </a>
   </div>
@@ -58,7 +58,7 @@
         <tr class="bg-slate-50 border-b text-xs text-slate-500 uppercase tracking-wide">
           <th class="text-center px-4 py-3 font-semibold w-20">Rang</th>
           <th class="text-left px-5 py-3 font-semibold">Élève</th>
-          <th class="text-center px-5 py-3 font-semibold">Moyenne générale</th>
+          <th class="text-center px-5 py-3 font-semibold">Moyenne {% if is_primary %}/10{% else %}/20{% endif %}</th>
           <th class="text-center px-5 py-3 font-semibold">Évaluations</th>
           <th class="text-right px-5 py-3 font-semibold">Action</th>
         </tr>
@@ -83,10 +83,16 @@
           </td>
           <td class="px-5 py-3.5 text-center">
             <span class="inline-block px-3 py-1 rounded-full text-xs font-bold font-mono
-              {% if r.moyenne >= 14 %}bg-emerald-100 text-emerald-800 border border-emerald-200
-              {% elif r.moyenne >= 10 %}bg-blue-100 text-blue-800 border border-blue-200
-              {% else %}bg-red-100 text-red-800 border border-red-200{% endif %}">
-              {{ r.moyenne }}
+              {% if is_primary %}
+                {% if r.moyenne >= 7 %}bg-emerald-100 text-emerald-800 border border-emerald-200
+                {% elif r.moyenne >= 5 %}bg-blue-100 text-blue-800 border border-blue-200
+                {% else %}bg-red-100 text-red-800 border border-red-200{% endif %}
+              {% else %}
+                {% if r.moyenne >= 14 %}bg-emerald-100 text-emerald-800 border border-emerald-200
+                {% elif r.moyenne >= 10 %}bg-blue-100 text-blue-800 border border-blue-200
+                {% else %}bg-red-100 text-red-800 border border-red-200{% endif %}
+              {% endif %}">
+              {{ r.moyenne }}<span class="text-[10px] font-normal opacity-70">/{% if is_primary %}10{% else %}20{% endif %}</span>
             </span>
           </td>
           <td class="px-5 py-3.5 text-center text-xs font-mono text-slate-500">
@@ -112,7 +118,7 @@
 </div>
 {% else %}
 <div class="bg-white rounded-2xl border border-dashed p-12 text-center">
-  <div class="w-14 h-14 rounded-full bg-amber-50 text-amber-500 flex items-center justify-center mx-auto mb-3 text-xl">
+  <div class="w-14 h-14 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 text-xl">
     <i class="fas fa-trophy"></i>
   </div>
   <p class="text-sm font-semibold text-slate-700">Sélectionnez une classe pour afficher le palmarès</p>

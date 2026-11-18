@@ -720,6 +720,7 @@ def saisie_eleve(request):
         'current_year': year,
         'is_modal': is_modal,
         'is_teacher_ui': role == 'enseignant',
+        'section': 'saisie',
         'form_action': request.path + f'?classroom={classroom.id}&student={student.id}&period={period.id}' + ('&modal=1' if is_modal else ''),
     }
     if is_modal:
@@ -942,6 +943,7 @@ def grade_entry(request, pk):
         'rows': rows,
         'is_primary': is_primary,
         'max_score': max_score,
+        'section': 'saisie',
     })
 
 
@@ -1030,7 +1032,14 @@ def cotes_valider(request):
     assessments = (
         Assessment.objects.filter(classroom_id__in=qs.values_list('id', flat=True))
         .select_related('classroom', 'subject', 'period')
-        .annotate(nb_notes=Count('grades'))
+        .annotate(
+            nb_notes=Count('grades', distinct=True),
+            nb_eleves=Count(
+                'classroom__enrollments',
+                filter=Q(classroom__enrollments__is_active=True),
+                distinct=True,
+            ),
+        )
         .filter(nb_notes__gt=0)
         .order_by('-date')
     )
@@ -1081,8 +1090,11 @@ def cotes_palmares(request):
     periods = Period.objects.filter(academic_year=year).order_by('order') if year else Period.objects.none()
 
     ranking = []
+    is_primary = False
     if classroom_id:
+        from .forms import level_is_primary
         classroom = get_object_or_404(ClassRoom, pk=classroom_id)
+        is_primary = level_is_primary(classroom.level)
         enrollments = Enrollment.objects.filter(
             classroom=classroom, is_active=True
         ).select_related('student')
@@ -1111,6 +1123,7 @@ def cotes_palmares(request):
         'period_id': period_id,
         'ranking': ranking,
         'current_year': year,
+        'is_primary': is_primary,
         'section': 'palmares',
     })
 

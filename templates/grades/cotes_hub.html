@@ -1,8 +1,8 @@
 {% extends "grades/base_cotes.html" %}
-{% block cotes_title %}Saisie et gestion des notes{% endblock %}
+{% block title %}Saisie et gestion des notes{% endblock %}
 {% block header_title %}Saisie et gestion des notes{% endblock %}
 {% block header_sub %}Organisation par cycles d'enseignement, classes et périodes scolaires{% endblock %}
-{% block cotes_body %}
+{% block content %}
 
 {# ── BANNIÈRE STATISTIQUES RAPIDES ── #}
 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -154,15 +154,22 @@
       {% endif %}
     </div>
 
-    <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between">
+    <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
       <a href="{% url 'grades:saisie_classe' %}?classroom={{ c.id }}"
          class="inline-flex items-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 px-3.5 py-2 rounded-xl shadow-xs transition-colors">
         <i class="fas fa-pen-nib"></i> Saisir notes
       </a>
-      <a href="{% url 'grades:palmares' %}?classroom={{ c.id }}"
-         class="text-xs font-medium text-slate-600 hover:text-slate-900 px-2 py-1.5 rounded-lg hover:bg-slate-100" title="Voir palmarès">
-        <i class="fas fa-trophy text-amber-500"></i>
-      </a>
+      <div class="flex items-center gap-1">
+        <a href="{% url 'grades:class_assessments' c.pk %}"
+           class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-emerald-700 px-2 py-1.5 rounded-lg hover:bg-emerald-50 transition-colors"
+           title="Voir et créer les évaluations">
+          <i class="fas fa-list-check text-emerald-600"></i>
+        </a>
+        <a href="{% url 'grades:palmares' %}?classroom={{ c.id }}"
+           class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors" title="Voir palmarès">
+          <i class="fas fa-trophy text-amber-500"></i>
+        </a>
+      </div>
     </div>
   </div>
   {% empty %}
@@ -186,10 +193,16 @@
     <h2 class="text-lg font-bold text-slate-900">{{ classroom.name }}</h2>
     <p class="text-xs text-slate-500">{{ classroom.level.name }} · {{ students|length }} élève(s) inscrit(s)</p>
   </div>
-  <a href="{% url 'grades:saisie_classe' %}?classroom={{ classroom.id }}"
-     class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition-colors">
-    <i class="fas fa-pen-nib"></i> Ouvrir la feuille de saisie
-  </a>
+  <div class="flex flex-wrap items-center gap-2">
+    <a href="{% url 'grades:class_assessments' classroom.pk %}"
+       class="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold px-4 py-2.5 rounded-xl shadow-xs transition-colors">
+      <i class="fas fa-list-check text-emerald-600"></i> Évaluations
+    </a>
+    <a href="{% url 'grades:saisie_classe' %}?classroom={{ classroom.id }}"
+       class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-sm transition-colors">
+      <i class="fas fa-pen-nib"></i> Ouvrir la feuille de saisie
+    </a>
+  </div>
 </div>
 
 <div class="bg-white rounded-2xl border shadow-sm overflow-hidden mb-6">

@@ -1,30 +1,90 @@
 {% extends "grades/base_cotes.html" %}
-{% block cotes_title %}Modifier les notes{% endblock %}
+{% block title %}Modifier les notes{% endblock %}
 {% block header_title %}Modifier les notes{% endblock %}
 {% block header_sub %}Évaluations existantes — cliquez pour ajuster ou compléter les notes{% endblock %}
-{% block cotes_body %}
-<form method="get" class="bg-white rounded-2xl border p-4 mb-4 flex gap-2">
-  <select name="classroom" class="border rounded-xl px-3 py-2.5 text-sm flex-1" onchange="this.form.submit()">
-    <option value="">Toutes les classes</option>
-    {% for c in classrooms %}
-    <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
-    {% endfor %}
-  </select>
-</form>
-<div class="bg-white rounded-2xl border overflow-hidden divide-y">
-  {% for a in page %}
-  <a href="{% url 'grades:entry' a.pk %}" class="flex items-center justify-between px-4 py-3 hover:bg-amber-50">
-    <div>
-      <p class="font-medium text-sm">{{ a.title }}</p>
-      <p class="text-xs text-slate-400">{{ a.classroom.name }} · {{ a.subject.name }} · {{ a.period.name }} · {{ a.date|date:"d/m/Y" }}</p>
+{% block content %}
+
+{# ── FILTRE PAR CLASSE ── #}
+<div class="bg-white rounded-2xl border border-slate-200 p-4 mb-5 shadow-xs">
+  <form method="get" class="flex flex-col sm:flex-row gap-3 sm:items-center">
+    <div class="flex items-center gap-2 text-xs font-semibold text-slate-500 uppercase tracking-wide shrink-0">
+      <i class="fas fa-filter text-[11px]"></i> Filtrer
     </div>
-    <div class="flex items-center gap-3">
-      <span class="text-xs bg-slate-100 px-2 py-1 rounded-full">{{ a.nb_notes }} note(s)</span>
-      <i class="fas fa-edit text-amber-600"></i>
-    </div>
-  </a>
-  {% empty %}
-  <p class="px-4 py-12 text-center text-slate-400 text-sm">Aucune évaluation à modifier. Commencez par la <a href="{% url 'grades:classes' %}" class="text-emerald-600 underline font-semibold">Saisie des notes</a>.</p>
-  {% endfor %}
+    <select name="classroom" onchange="this.form.submit()"
+            class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      <option value="">Toutes les classes</option>
+      {% for c in classrooms %}
+      <option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+    {% if classroom_id %}
+    <a href="{% url 'grades:modifier' %}"
+       class="px-3 py-2 text-xs text-slate-500 hover:text-slate-700 border border-slate-200 rounded-xl flex items-center justify-center gap-1.5">
+      <i class="fas fa-xmark text-[10px]"></i> Réinitialiser
+    </a>
+    {% endif %}
+  </form>
 </div>
+
+{# ── LISTE DES ÉVALUATIONS ── #}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+  {% if page %}
+  <div class="divide-y divide-slate-100">
+    {% for a in page %}
+    <a href="{% url 'grades:entry' a.pk %}"
+       class="flex items-center justify-between gap-3 px-4 sm:px-5 py-3.5 hover:bg-emerald-50/60 transition-colors group">
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="w-9 h-9 rounded-xl bg-slate-100 text-slate-500 group-hover:bg-emerald-100 group-hover:text-emerald-700 flex items-center justify-center text-xs shrink-0 transition-colors">
+          <i class="fas fa-pen"></i>
+        </span>
+        <div class="min-w-0">
+          <p class="font-semibold text-slate-800 text-xs sm:text-sm truncate">{{ a.title }}</p>
+          <p class="text-[11px] text-slate-400 truncate">
+            {{ a.classroom.name }} · {{ a.subject.name }} · {{ a.period.name }} · {{ a.date|date:"d/m/Y" }}
+          </p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3 shrink-0">
+        <span class="text-[11px] px-2.5 py-1 rounded-full font-medium
+          {% if a.nb_notes %}bg-blue-50 text-blue-700{% else %}bg-slate-100 text-slate-500{% endif %}">
+          {{ a.nb_notes }} note{{ a.nb_notes|pluralize }}
+        </span>
+        <i class="fas fa-chevron-right text-[10px] text-slate-300 group-hover:text-emerald-600 transition-colors"></i>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="py-14 text-center">
+    <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+      <i class="fas fa-pen-slash text-slate-400"></i>
+    </div>
+    <p class="text-sm font-medium text-slate-700">Aucune évaluation à modifier</p>
+    <p class="text-xs text-slate-400 mt-1">Commencez par créer une évaluation dans la saisie des notes.</p>
+    <a href="{% url 'grades:classes' %}"
+       class="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold transition-colors">
+      <i class="fas fa-pen-nib text-[10px]"></i> Aller à la saisie
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+{% if page.has_other_pages %}
+<div class="flex items-center justify-center gap-3 text-xs mt-5">
+  {% if page.has_previous %}
+  <a href="?page={{ page.previous_page_number }}&classroom={{ classroom_id }}"
+     class="px-3 py-1.5 rounded-lg border bg-white text-slate-700 hover:bg-slate-50 font-medium">
+    ← Précédent
+  </a>
+  {% endif %}
+  <span class="text-slate-500 font-mono">Page {{ page.number }} sur {{ page.paginator.num_pages }}</span>
+  {% if page.has_next %}
+  <a href="?page={{ page.next_page_number }}&classroom={{ classroom_id }}"
+     class="px-3 py-1.5 rounded-lg border bg-white text-slate-700 hover:bg-slate-50 font-medium">
+    Suivant →
+  </a>
+  {% endif %}
+</div>
+{% endif %}
+
 {% endblock %}

@@ -1,68 +1,397 @@
-{% extends "base.html" %}
-{% block title %}{% block cotes_title %}Gestion des notes{% endblock %} — SiraScol{% endblock %}
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#059669">
+  <title>{% block title %}Gestion des notes{% endblock %} — SiraScol</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
 
-{% block content %}
-<div class="mb-6">
-  {# En-tête de la section Notes #}
-  <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-    <div>
-      <h1 class="text-xl sm:text-2xl font-bold text-slate-800 flex items-center gap-2.5">
-        <span class="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center text-sm shadow-xs">
-          <i class="fas fa-chart-line"></i>
-        </span>
-        {% block header_title %}Gestion des notes{% endblock %}
-      </h1>
-      <p class="text-xs text-slate-500 mt-1">
-        {% block header_sub %}Saisie collective, contrôle, palmarès et bulletins officiels{% endblock %}
-      </p>
+    /* ── Navigation du module ── */
+    .notes-nav a.active {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+    }
+    .notes-nav a:not(.active):hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #ffffff;
+    }
+    .notes-nav::-webkit-scrollbar { width: 5px; }
+    .notes-nav::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+
+    /* ── Modales (reprises de base.html pour le module Notes) ── */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(15, 23, 42, 0.55);
+      z-index: 110; display: none; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #fff; border-radius: 1rem; width: 100%; max-width: 36rem;
+      max-height: 90vh; overflow-y: auto; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    }
+    .modal-box.modal-lg { max-width: 42rem; }
+    .form-input {
+      width: 100%; border: 1px solid #d1d5db; border-radius: 0.5rem;
+      padding: 0.625rem 0.75rem; font-size: 0.875rem; outline: none; background: #fff;
+    }
+    .form-input:focus { border-color: #059669; box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.25); }
+    body.modal-open .notes-bottom-nav { display: none !important; }
+
+    /* ── Barre de navigation mobile du module ── */
+    .notes-bottom-nav { display: none; }
+    @media (max-width: 767px) {
+      .notes-bottom-nav {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+        display: flex; justify-content: space-around; align-items: stretch;
+        background: rgba(255, 255, 255, 0.97);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border-top: 1px solid #e2e8f0;
+        padding: 0.25rem 0.25rem env(safe-area-inset-bottom, 0px);
+        box-shadow: 0 -2px 16px rgba(15, 23, 42, 0.08);
+      }
+      .notes-bottom-nav a,
+      .notes-bottom-nav button {
+        flex: 1 1 0; min-width: 0;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 0.15rem; padding: 0.4rem 0.1rem; min-height: 3.25rem;
+        font-size: 0.62rem; line-height: 1.1; color: #64748b;
+        background: transparent; border: 0; cursor: pointer; font-family: inherit;
+      }
+      .notes-bottom-nav a i,
+      .notes-bottom-nav button i { font-size: 1.25rem; }
+      .notes-bottom-nav a.active { color: #047857; font-weight: 700; }
+      .notes-bottom-nav a.active i { color: #059669; }
+      input, select, textarea, button { font-size: 16px !important; }
+    }
+
+    @media print {
+      aside, header, #notes-sidebar, #notes-overlay, .notes-bottom-nav, .no-print { display: none !important; }
+      body { background: white !important; }
+      main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+      .md\:ml-64 { margin-left: 0 !important; }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="h-full flex flex-col text-slate-800 antialiased">
+  <div class="flex flex-1 min-h-screen">
+
+    {# ── SIDEBAR DÉDIÉE GESTION DES NOTES ── #}
+    <aside id="notes-sidebar"
+      class="w-64 bg-slate-900 text-slate-300 flex flex-col fixed inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out shadow-xl no-print">
+
+      {# Logo / En-tête du module Notes #}
+      <div class="px-5 py-5 border-b border-slate-800 flex items-center justify-between">
+        <a href="{% url 'grades:classes' %}" class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white flex items-center justify-center text-lg shadow-md">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div>
+            <p class="font-bold text-white text-base leading-tight tracking-tight">SiraScol</p>
+            <p class="text-[11px] text-emerald-400 font-semibold tracking-wide">Gestion des notes</p>
+          </div>
+        </a>
+        <button class="md:hidden text-slate-400 hover:text-white text-xl p-1" onclick="toggleNotesSidebar()" aria-label="Fermer le menu">
+          &times;
+        </button>
+      </div>
+
+      {# Navigation latérale du module Notes #}
+      <nav class="notes-nav flex-1 overflow-y-auto p-3 text-xs space-y-1">
+        <p class="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-3 pt-3 pb-1.5">Saisie & Évaluations</p>
+
+        <a href="{% url 'grades:classes' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'saisie' %}active{% endif %}">
+          <i class="fas fa-pen-nib w-4 text-center"></i>
+          <span class="text-xs">Saisie des notes</span>
+        </a>
+
+        <a href="{% url 'grades:liste_eleves' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'liste' %}active{% endif %}">
+          <i class="fas fa-user-graduate w-4 text-center"></i>
+          <span class="text-xs">Liste des élèves</span>
+        </a>
+
+        <a href="{% url 'grades:modifier' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'modifier' %}active{% endif %}">
+          <i class="fas fa-edit w-4 text-center"></i>
+          <span class="text-xs">Modifier les notes</span>
+        </a>
+
+        <a href="{% url 'grades:valider' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'valider' %}active{% endif %}">
+          <i class="fas fa-check-double w-4 text-center"></i>
+          <span class="text-xs">Contrôle & Validation</span>
+        </a>
+
+        <p class="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-3 pt-5 pb-1.5">Résultats & Délibération</p>
+
+        <a href="{% url 'grades:palmares' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'palmares' %}active{% endif %}">
+          <i class="fas fa-trophy w-4 text-center text-amber-400"></i>
+          <span class="text-xs">Palmarès & Classement</span>
+        </a>
+
+        <a href="{% url 'grades:niveaux' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'niveaux' %}active{% endif %}">
+          <i class="fas fa-layer-group w-4 text-center"></i>
+          <span class="text-xs">Statistiques par niveau</span>
+        </a>
+
+        <a href="{% url 'grades:bulletin_list' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'bulletins' %}active{% endif %}">
+          <i class="fas fa-file-invoice w-4 text-center text-teal-400"></i>
+          <span class="text-xs">Bulletins de notes</span>
+        </a>
+
+        <a href="{% url 'grades:template_list' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'modeles' %}active{% endif %}">
+          <i class="fas fa-table-columns w-4 text-center"></i>
+          <span class="text-xs">Modèles de bulletin</span>
+        </a>
+
+        <a href="{% url 'grades:historique' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'historique' %}active{% endif %}">
+          <i class="fas fa-clock-rotate-left w-4 text-center"></i>
+          <span class="text-xs">Historique des saisies</span>
+        </a>
+
+        <p class="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-3 pt-5 pb-1.5">Retour Application</p>
+        <a href="{% url 'core:dashboard' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-emerald-400 hover:text-white hover:bg-slate-800 font-semibold">
+          <i class="fas fa-arrow-left w-4 text-center"></i>
+          <span class="text-xs">Tableau de bord principal</span>
+        </a>
+      </nav>
+
+      {# Année de travail (toujours accessible, y compris en mobile) #}
+      {% if all_academic_years %}
+      <form method="get" action="{% url 'core:set_year' %}" class="px-3 pt-3 m-0 border-t border-slate-800 no-print">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <label for="notes-year-side" class="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-1 flex items-center gap-1.5">
+          <i class="fas fa-calendar-check text-emerald-400 text-[10px]"></i> Année de travail
+        </label>
+        <select id="notes-year-side" name="year" onchange="this.form.submit()"
+                class="mt-1.5 w-full bg-slate-800 border border-slate-700 text-slate-100 text-xs font-semibold rounded-xl px-3 py-2 hover:bg-slate-700 cursor-pointer">
+          {% for y in all_academic_years %}
+          <option value="{{ y.id }}" {% if current_year and current_year.id == y.id %}selected{% endif %}>{{ y.name }}{% if y.is_current %} ★{% endif %}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% endif %}
+
+      {# Profil connecté + déconnexion #}
+      <div class="p-3 border-t border-slate-800 bg-slate-950/60 no-print">
+        <div class="flex items-center gap-3 px-2 py-1.5">
+          <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+            {{ user.first_name|first|upper|default:user.username|first|upper }}
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-semibold text-white truncate">{{ user.get_full_name|default:user.username }}</p>
+            <p class="text-[10px] text-slate-400 capitalize truncate">{{ user_role_label|default:"Utilisateur" }}</p>
+          </div>
+        </div>
+        <form method="post" action="{% url 'accounts:logout' %}" class="m-0 mt-1">
+          {% csrf_token %}
+          <button type="submit"
+                  class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-red-300 hover:bg-slate-800 transition-colors text-left">
+            <i class="fas fa-sign-out-alt w-4 text-center"></i>
+            <span class="text-xs">Déconnexion</span>
+          </button>
+        </form>
+      </div>
+    </aside>
+
+    {# Overlay mobile #}
+    <div id="notes-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 hidden md:hidden no-print" onclick="toggleNotesSidebar()"></div>
+
+    {# ── CONTENU PRINCIPAL DE LA GESTION DES NOTES ── #}
+    <div class="flex-1 md:ml-64 min-w-0 flex flex-col min-h-screen bg-slate-50">
+
+      {# Topbar #}
+      <header class="bg-white border-b border-slate-200 sticky top-0 z-20 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3 shadow-xs no-print">
+        <div class="flex items-center gap-3 min-w-0">
+          <button type="button" class="md:hidden text-slate-600 hover:text-slate-900 text-lg p-1.5 rounded-lg hover:bg-slate-100" onclick="toggleNotesSidebar()" aria-label="Ouvrir le menu">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="min-w-0">
+            <h1 class="font-bold text-slate-900 text-sm sm:text-base truncate">{% block header_title %}Gestion des notes{% endblock %}</h1>
+            <p class="text-xs text-slate-500 truncate">{% block header_sub %}Saisie, calcul officiel des moyennes et délibération{% endblock %}</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+          {% if all_academic_years %}
+          <form method="get" action="{% url 'core:set_year' %}" class="hidden sm:block m-0">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <label class="sr-only" for="notes-year">Année de travail</label>
+            <div class="relative">
+              <i class="fas fa-calendar-check absolute left-3 top-1/2 -translate-y-1/2 text-emerald-600 text-[11px] pointer-events-none"></i>
+              <select id="notes-year" name="year" onchange="this.form.submit()"
+                      class="appearance-none pl-8 pr-7 py-1.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 transition-colors cursor-pointer">
+                {% for y in all_academic_years %}
+                <option value="{{ y.id }}" {% if current_year and current_year.id == y.id %}selected{% endif %}>{{ y.name }}{% if y.is_current %} ★{% endif %}</option>
+                {% endfor %}
+              </select>
+              <i class="fas fa-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-emerald-600 pointer-events-none"></i>
+            </div>
+          </form>
+          {% elif current_year %}
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <i class="fas fa-calendar-check text-[10px]"></i>
+            <span>{{ current_year.name }}</span>
+          </div>
+          {% endif %}
+
+          <a href="{% url 'grades:palmares' %}" class="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors">
+            <i class="fas fa-trophy text-[11px]"></i> Palmarès
+          </a>
+          <a href="{% url 'core:dashboard' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors" title="Retourner au menu principal">
+            <i class="fas fa-home text-[11px]"></i> <span class="hidden md:inline">Accueil</span>
+          </a>
+        </div>
+      </header>
+
+      {# Corps de page #}
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 max-w-7xl w-full mx-auto">
+        {% if messages %}
+        <div class="mb-5 space-y-2 no-print">
+          {% for message in messages %}
+          <div class="text-xs sm:text-sm rounded-xl px-4 py-3 flex items-center justify-between shadow-xs
+            {% if 'error' in message.tags %}bg-red-50 text-red-800 border border-red-200
+            {% elif 'success' in message.tags %}bg-emerald-50 text-emerald-800 border border-emerald-200
+            {% elif 'warning' in message.tags %}bg-amber-50 text-amber-800 border border-amber-200
+            {% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+            <div class="flex items-center gap-2">
+              <i class="fas {% if 'error' in message.tags %}fa-circle-exclamation text-red-500{% elif 'success' in message.tags %}fa-circle-check text-emerald-500{% elif 'warning' in message.tags %}fa-triangle-exclamation text-amber-500{% else %}fa-circle-info text-blue-500{% endif %}"></i>
+              <span>{{ message }}</span>
+            </div>
+            <button type="button" onclick="this.closest('div').parentElement.remove()" class="text-slate-400 hover:text-slate-700 px-1" aria-label="Fermer">
+              <i class="fas fa-times text-xs"></i>
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+      </main>
+
+      {# Navigation mobile du module #}
+      <nav class="notes-bottom-nav md:hidden no-print" aria-label="Navigation du module notes">
+        <a href="{% url 'grades:classes' %}" class="{% if section == 'saisie' %}active{% endif %}">
+          <i class="fas fa-pen-nib"></i><span>Saisie</span>
+        </a>
+        <a href="{% url 'grades:liste_eleves' %}" class="{% if section == 'liste' %}active{% endif %}">
+          <i class="fas fa-user-graduate"></i><span>Élèves</span>
+        </a>
+        <a href="{% url 'grades:palmares' %}" class="{% if section == 'palmares' %}active{% endif %}">
+          <i class="fas fa-trophy"></i><span>Palmarès</span>
+        </a>
+        <a href="{% url 'grades:bulletin_list' %}" class="{% if section == 'bulletins' %}active{% endif %}">
+          <i class="fas fa-file-invoice"></i><span>Bulletins</span>
+        </a>
+        <button type="button" onclick="toggleNotesSidebar()">
+          <i class="fas fa-bars"></i><span>Menu</span>
+        </button>
+      </nav>
     </div>
-    {% if current_year %}
-    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 self-start sm:self-auto shadow-2xs">
-      <i class="fas fa-calendar-check text-[10px]"></i>
-      <span>{{ current_year.name }}</span>
-    </div>
-    {% endif %}
+
   </div>
 
-  {# ── ONGLETS DE NAVIGATION DÉDIÉS AUX NOTES ── #}
-  <div class="bg-white rounded-2xl border border-slate-200/80 p-1.5 shadow-xs mb-6 overflow-x-auto">
-    <nav class="flex items-center gap-1 min-w-max text-xs font-medium">
-      <a href="{% url 'grades:classes' %}"
-         class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all {% if section == 'saisie' %}bg-emerald-600 text-white font-semibold shadow-xs{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-        <i class="fas fa-pen-nib text-[11px]"></i> Saisie des notes
-      </a>
-      <a href="{% url 'grades:liste_eleves' %}"
-         class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all {% if section == 'liste' %}bg-emerald-600 text-white font-semibold shadow-xs{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-        <i class="fas fa-user-graduate text-[11px]"></i> Liste des élèves
-      </a>
-      <a href="{% url 'grades:modifier' %}"
-         class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all {% if section == 'modifier' %}bg-emerald-600 text-white font-semibold shadow-xs{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-        <i class="fas fa-edit text-[11px]"></i> Modifier les notes
-      </a>
-      <a href="{% url 'grades:valider' %}"
-         class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all {% if section == 'valider' %}bg-emerald-600 text-white font-semibold shadow-xs{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-        <i class="fas fa-check-double text-[11px]"></i> Contrôle & Validation
-      </a>
-      <a href="{% url 'grades:palmares' %}"
-         class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all {% if section == 'palmares' %}bg-emerald-600 text-white font-semibold shadow-xs{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-        <i class="fas fa-trophy text-[11px] text-amber-500"></i> Palmarès
-      </a>
-      <a href="{% url 'grades:niveaux' %}"
-         class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all {% if section == 'niveaux' %}bg-emerald-600 text-white font-semibold shadow-xs{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-        <i class="fas fa-layer-group text-[11px]"></i> Statistiques niveaux
-      </a>
-      <a href="{% url 'grades:bulletin_list' %}"
-         class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all {% if section == 'bulletins' %}bg-emerald-600 text-white font-semibold shadow-xs{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-        <i class="fas fa-file-invoice text-[11px] text-teal-600"></i> Bulletins
-      </a>
-      <a href="{% url 'grades:historique' %}"
-         class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl transition-all {% if section == 'historique' %}bg-emerald-600 text-white font-semibold shadow-xs{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-100{% endif %}">
-        <i class="fas fa-clock-rotate-left text-[11px]"></i> Historique
-      </a>
-    </nav>
-  </div>
+  <script>
+  function toggleNotesSidebar() {
+    var sb = document.getElementById('notes-sidebar');
+    var ov = document.getElementById('notes-overlay');
+    if (!sb || !ov) return;
+    var open = sb.classList.toggle('-translate-x-full') === false;
+    ov.classList.toggle('hidden', !open);
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
 
-  {# ── CORPS DE LA SOUS-SECTION ── #}
-  {% block cotes_body %}{% endblock %}
-</div>
-{% endblock %}
+  /* ── Système de modale (compatible avec les vues du module) ── */
+  function openModal(id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('open');
+    document.body.classList.add('modal-open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.remove('open');
+    if (!document.querySelector('.modal-overlay.open')) {
+      document.body.classList.remove('modal-open');
+      document.body.style.overflow = '';
+    }
+  }
+
+  /** Ouvre une modale et charge un fragment de formulaire. */
+  function openModalUrl(url, title) {
+    var overlay = document.getElementById('modal-dynamic');
+    if (!overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'modal-dynamic';
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML =
+        '<div class="modal-box modal-lg p-0">' +
+          '<div class="flex items-center justify-between px-5 py-4 border-b sticky top-0 bg-white rounded-t-2xl z-10">' +
+            '<h2 class="text-lg font-bold text-slate-800" id="modal-dynamic-title">Formulaire</h2>' +
+            '<button type="button" onclick="closeModal(\'modal-dynamic\')" class="text-slate-400 hover:text-slate-700 text-xl leading-none">&times;</button>' +
+          '</div>' +
+          '<div id="modal-dynamic-body" class="px-4 pt-4 pb-6 overflow-y-auto"></div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+      overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeModal('modal-dynamic');
+      });
+    }
+    document.getElementById('modal-dynamic-title').textContent = title || 'Formulaire';
+    openModal('modal-dynamic');
+    var body = document.getElementById('modal-dynamic-body');
+    body.innerHTML = '<p class="text-sm text-slate-500 text-center py-8"><i class="fas fa-spinner fa-spin"></i> Chargement…</p>';
+    var sep = url.indexOf('?') >= 0 ? '&' : '?';
+    fetch(url + sep + 'modal=1', {
+      headers: { 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin'
+    })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function (html) {
+        if (html.indexOf('<html') !== -1 || html.indexOf('<!DOCTYPE') !== -1) {
+          var m = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+          if (m) html = m[1];
+        }
+        body.innerHTML = html;
+        body.querySelectorAll('script').forEach(function (oldScript) {
+          var s = document.createElement('script');
+          if (oldScript.src) { s.src = oldScript.src; }
+          else { s.textContent = oldScript.textContent; }
+          oldScript.parentNode.replaceChild(s, oldScript);
+        });
+      })
+      .catch(function (err) {
+        body.innerHTML = '<p class="text-red-600 text-sm">Erreur de chargement. <a class="underline" href="' + url + '">Ouvrir en page</a></p>';
+        console.error(err);
+      });
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      var open = document.querySelector('.modal-overlay.open');
+      if (open) closeModal(open.id);
+    }
+  });
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

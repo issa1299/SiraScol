@@ -1,8 +1,8 @@
 {% extends "grades/base_cotes.html" %}
-{% block cotes_title %}Bulletins scolaires{% endblock %}
+{% block title %}Bulletins scolaires — Notes{% endblock %}
 {% block header_title %}Bulletins scolaires{% endblock %}
 {% block header_sub %}Génération et impression des bulletins par classe et par cycle{% endblock %}
-{% block cotes_body %}
+{% block content %}
 
 {% if not cycle_filter %}
 {# —— Étape 1 : choisir le cycle —— #}
