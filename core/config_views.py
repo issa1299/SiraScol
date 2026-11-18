@@ -36,9 +36,11 @@ def year_save(request):
         if not name:
             messages.error(request, 'Nom requis.')
             return redirect('core:config_years')
-        if is_current:
-            AcademicYear.objects.update(is_current=False)
         if pk:
+            # Edition : vérifier que le nom n'appartient pas à une autre année
+            if AcademicYear.objects.filter(name=name).exclude(pk=pk).exists():
+                messages.error(request, f'Une année scolaire portant le nom « {name} » existe déjà.')
+                return redirect('core:config_years')
             y = get_object_or_404(AcademicYear, pk=pk)
             y.name = name
             y.start_date = start
@@ -50,6 +52,10 @@ def year_save(request):
                 set_selected_year(request, y.pk)
             messages.success(request, 'Année mise à jour.')
         else:
+            # Création : vérifier l'unicité du nom
+            if AcademicYear.objects.filter(name=name).exists():
+                messages.error(request, f'Une année scolaire portant le nom « {name} » existe déjà.')
+                return redirect('core:config_years')
             y = AcademicYear.objects.create(
                 name=name, start_date=start, end_date=end, is_current=is_current
             )
