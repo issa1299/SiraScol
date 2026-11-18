@@ -1,90 +1,187 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="h-full bg-slate-50">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>{% block title %}Gestion des cotes{% endblock %}</title>
+  <title>{% block title %}Gestion des cotes{% endblock %} — SiraScol</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
-    .cotes-nav a.active { background: #059669; color: #fff; }
-    .cotes-nav a:not(.active):hover { background: rgba(255,255,255,.08); }
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .cotes-nav a.active {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #ffffff;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+    }
+    .cotes-nav a:not(.active):hover {
+      background: rgba(255, 255, 255, 0.07);
+      color: #ffffff;
+    }
   </style>
   {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-[#f0f4f8] min-h-screen">
-  <div class="flex min-h-screen">
-    <aside id="cotes-sidebar" class="w-[260px] shrink-0 bg-[#0f172a] text-white flex flex-col fixed inset-y-0 left-0 z-40 -translate-x-full lg:translate-x-0 transition-transform">
-      <div class="px-4 py-4 border-b border-white/10 flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-emerald-600 flex items-center justify-center"><i class="fas fa-chart-line"></i></div>
-        <div>
-          <p class="font-bold text-sm">SiraScol Cotes</p>
-          <p class="text-[10px] text-slate-400">Centre des notes</p>
-        </div>
+<body class="h-full flex flex-col text-slate-800 antialiased">
+  <div class="flex flex-1 min-h-screen">
+
+    {# ── SIDEBAR GESTION DES COTES ── #}
+    <aside id="cotes-sidebar"
+      class="w-64 bg-slate-900 text-slate-300 flex flex-col fixed inset-y-0 left-0 z-40 -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out shadow-xl">
+      
+      {# Logo / En-tête #}
+      <div class="px-5 py-5 border-b border-slate-800 flex items-center justify-between">
+        <a href="{% url 'grades:classes' %}" class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white flex items-center justify-center text-lg shadow-md">
+            <i class="fas fa-chart-line"></i>
+          </div>
+          <div>
+            <p class="font-bold text-white text-base leading-tight tracking-tight">SiraScol</p>
+            <p class="text-[11px] text-emerald-400 font-medium">Gestion des cotes</p>
+          </div>
+        </a>
+        <button class="lg:hidden text-slate-400 hover:text-white text-xl p-1" onclick="toggleCotesSidebar()">
+          &times;
+        </button>
       </div>
-      <nav class="cotes-nav flex-1 overflow-y-auto py-3 px-2 text-sm">
-        <p class="text-[10px] uppercase tracking-wider text-slate-500 px-3 pt-1 pb-2">Centre des notes</p>
-        <a href="{% url 'grades:liste_eleves' %}" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-0.5 {% if section == 'liste' %}active{% endif %}">
-          <i class="fas fa-list w-5 text-center opacity-80"></i> Liste des élèves
-        </a>
-        <a href="{% url 'grades:classes' %}" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-0.5 {% if section == 'saisie' %}active{% endif %}">
-          <i class="fas fa-pen w-5 text-center opacity-80"></i> Saisie des cotes
-        </a>
-        <a href="{% url 'grades:modifier' %}" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-0.5 {% if section == 'modifier' %}active{% endif %}">
-          <i class="fas fa-edit w-5 text-center opacity-80"></i> Modifier les cotes
-        </a>
-        <a href="{% url 'grades:valider' %}" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-0.5 {% if section == 'valider' %}active{% endif %}">
-          <i class="fas fa-check-circle w-5 text-center opacity-80"></i> Valider les cotes
-        </a>
-        <a href="{% url 'grades:niveaux' %}" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-0.5 {% if section == 'niveaux' %}active{% endif %}">
-          <i class="fas fa-layer-group w-5 text-center opacity-80"></i> Niveau des élèves
+
+      {# Navigation latérale #}
+      <nav class="cotes-nav flex-1 overflow-y-auto p-3 text-xs space-y-1">
+        <p class="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-3 pt-3 pb-1.5">Saisie & Évaluations</p>
+        
+        <a href="{% url 'grades:classes' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'saisie' %}active{% endif %}">
+          <i class="fas fa-pen-nib w-4 text-center"></i>
+          <span class="text-xs">Saisie collective</span>
         </a>
 
-        <p class="text-[10px] uppercase tracking-wider text-slate-500 px-3 pt-4 pb-2">Résultats</p>
-        <a href="{% url 'grades:palmares' %}" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-0.5 {% if section == 'palmares' %}active{% endif %}">
-          <i class="fas fa-trophy w-5 text-center opacity-80"></i> Palmarès
-        </a>
-        <a href="{% url 'grades:bulletin_list' %}" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-0.5 {% if section == 'bulletins' %}active{% endif %}">
-          <i class="fas fa-file-alt w-5 text-center opacity-80"></i> Bulletins
-        </a>
-        <a href="{% url 'grades:historique' %}" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl mb-0.5 {% if section == 'historique' %}active{% endif %}">
-          <i class="fas fa-history w-5 text-center opacity-80"></i> Historique
+        <a href="{% url 'grades:liste_eleves' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'liste' %}active{% endif %}">
+          <i class="fas fa-user-graduate w-4 text-center"></i>
+          <span class="text-xs">Liste des élèves</span>
         </a>
 
-        <p class="text-[10px] uppercase tracking-wider text-slate-500 px-3 pt-4 pb-2">Retour</p>
-        <a href="{% url 'core:dashboard' %}" class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-slate-300">
-          <i class="fas fa-home w-5 text-center"></i> App principale
+        <a href="{% url 'grades:modifier' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'modifier' %}active{% endif %}">
+          <i class="fas fa-edit w-4 text-center"></i>
+          <span class="text-xs">Modifier les cotes</span>
+        </a>
+
+        <a href="{% url 'grades:valider' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'valider' %}active{% endif %}">
+          <i class="fas fa-check-double w-4 text-center"></i>
+          <span class="text-xs">Contrôle & Validation</span>
+        </a>
+
+        <p class="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-3 pt-5 pb-1.5">Résultats & Délibération</p>
+
+        <a href="{% url 'grades:palmares' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'palmares' %}active{% endif %}">
+          <i class="fas fa-trophy w-4 text-center text-amber-400"></i>
+          <span class="text-xs">Palmarès & Classement</span>
+        </a>
+
+        <a href="{% url 'grades:niveaux' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'niveaux' %}active{% endif %}">
+          <i class="fas fa-layer-group w-4 text-center"></i>
+          <span class="text-xs">Statistiques par niveau</span>
+        </a>
+
+        <a href="{% url 'grades:bulletin_list' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'bulletins' %}active{% endif %}">
+          <i class="fas fa-file-invoice w-4 text-center text-teal-400"></i>
+          <span class="text-xs">Bulletins de notes</span>
+        </a>
+
+        <a href="{% url 'grades:historique' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300 {% if section == 'historique' %}active{% endif %}">
+          <i class="fas fa-clock-rotate-left w-4 text-center"></i>
+          <span class="text-xs">Historique des saisies</span>
+        </a>
+
+        <p class="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-3 pt-5 pb-1.5">Navigation</p>
+        <a href="{% url 'core:dashboard' %}"
+           class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-400 hover:text-white hover:bg-slate-800">
+          <i class="fas fa-arrow-left w-4 text-center"></i>
+          <span class="text-xs">Tableau de bord</span>
         </a>
       </nav>
-    </aside>
-    <div id="cotes-overlay" class="fixed inset-0 bg-black/40 z-30 hidden lg:hidden" onclick="toggleCotesSidebar()"></div>
-    <div class="flex-1 lg:ml-[260px] min-w-0 flex flex-col min-h-screen">
-      <header class="bg-white border-b sticky top-0 z-20 px-4 py-3 flex items-center gap-3">
-        <button type="button" class="lg:hidden text-slate-600 text-xl" onclick="toggleCotesSidebar()"><i class="fas fa-bars"></i></button>
-        <div class="flex-1 min-w-0">
-          <p class="font-semibold text-slate-800 text-sm sm:text-base truncate">{% block header_title %}Saisie des cotes{% endblock %}</p>
-          <p class="text-[11px] text-slate-400 truncate">{% block header_sub %}Programme scolaire maliien{% endblock %}</p>
+
+      {# Pied de sidebar #}
+      <div class="p-3 border-t border-slate-800 bg-slate-950/50">
+        <div class="flex items-center gap-3 px-2 py-1.5">
+          <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs">
+            {{ user.username|slice:":1"|upper }}
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-semibold text-white truncate">{{ user.get_full_name|default:user.username }}</p>
+            <p class="text-[10px] text-slate-400 capitalize truncate">{{ role|default:"Utilisateur" }}</p>
+          </div>
         </div>
-        {% if current_year %}<span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full hidden sm:inline">{{ current_year.name }}</span>{% endif %}
+      </div>
+    </aside>
+
+    {# Overlay mobile #}
+    <div id="cotes-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 hidden lg:hidden" onclick="toggleCotesSidebar()"></div>
+
+    {# ── CONTENU PRINCIPAL ── #}
+    <div class="flex-1 lg:ml-64 min-w-0 flex flex-col min-h-screen bg-slate-50">
+      
+      {# Topbar #}
+      <header class="bg-white border-b border-slate-200 sticky top-0 z-20 px-4 sm:px-6 py-3.5 flex items-center justify-between shadow-xs">
+        <div class="flex items-center gap-3 min-w-0">
+          <button type="button" class="lg:hidden text-slate-600 hover:text-slate-900 text-lg p-1.5 rounded-lg hover:bg-slate-100" onclick="toggleCotesSidebar()">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="min-w-0">
+            <h1 class="font-bold text-slate-900 text-sm sm:text-base truncate">{% block header_title %}Gestion des cotes{% endblock %}</h1>
+            <p class="text-xs text-slate-500 truncate">{% block header_sub %}Saisie, contrôle et calcul automatique des moyennes{% endblock %}</p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 shrink-0">
+          {% if current_year %}
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <i class="fas fa-calendar-check text-[10px]"></i>
+            <span>{{ current_year.name }}</span>
+          </div>
+          {% endif %}
+          <a href="{% url 'grades:palmares' %}" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 transition-colors">
+            <i class="fas fa-trophy text-[11px]"></i> Palmarès
+          </a>
+        </div>
       </header>
-      <main class="flex-1 p-4 sm:p-6">
+
+      {# Corps de page #}
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
         {% if messages %}
-        <div class="mb-4 space-y-2">
+        <div class="mb-5 space-y-2">
           {% for message in messages %}
-          <div class="text-sm rounded-xl px-4 py-2.5 {% if 'error' in message.tags %}bg-red-50 text-red-700{% elif 'success' in message.tags %}bg-emerald-50 text-emerald-800{% else %}bg-blue-50 text-blue-800{% endif %}">{{ message }}</div>
+          <div class="text-xs sm:text-sm rounded-xl px-4 py-3 flex items-center justify-between shadow-xs
+            {% if 'error' in message.tags %}bg-red-50 text-red-800 border border-red-200
+            {% elif 'success' in message.tags %}bg-emerald-50 text-emerald-800 border border-emerald-200
+            {% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+            <div class="flex items-center gap-2">
+              <i class="fas {% if 'error' in message.tags %}fa-circle-exclamation text-red-500{% elif 'success' in message.tags %}fa-circle-check text-emerald-500{% else %}fa-circle-info text-blue-500{% endif %}"></i>
+              <span>{{ message }}</span>
+            </div>
+          </div>
           {% endfor %}
         </div>
         {% endif %}
+
         {% block content %}{% endblock %}
       </main>
     </div>
+
   </div>
+
   <script>
   function toggleCotesSidebar() {
-    document.getElementById('cotes-sidebar').classList.toggle('-translate-x-full');
-    document.getElementById('cotes-overlay').classList.toggle('hidden');
+    const sb = document.getElementById('cotes-sidebar');
+    const ov = document.getElementById('cotes-overlay');
+    sb.classList.toggle('-translate-x-full');
+    ov.classList.toggle('hidden');
   }
   </script>
   {% block extra_js %}{% endblock %}
