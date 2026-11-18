@@ -1,137 +1,246 @@
 {% extends "base.html" %}
 {% block title %}Utilisateurs & rôles{% endblock %}
 {% block content %}
-<div class="mb-4">
-  <a href="{% url 'core:config_home' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Configuration</a>
-  <h1 class="text-xl font-bold text-slate-800 mt-1">Utilisateurs & rôles</h1>
-  <p class="text-xs text-slate-500">Comptes de connexion à l'application</p>
+
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+  <div>
+    <a href="{% url 'core:config_home' %}" class="text-xs text-slate-400 hover:text-blue-600"><i class="fas fa-arrow-left mr-1"></i>Configuration</a>
+    <h1 class="text-xl font-bold text-slate-800 mt-0.5">Utilisateurs & rôles</h1>
+    <p class="text-xs text-slate-500">Gestion des comptes d'accès, permissions et réinitialisation de mots de passe</p>
+  </div>
+  <button onclick="newUserModal()"
+    class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-sm transition-colors self-start sm:self-auto">
+    <i class="fas fa-user-plus"></i> Nouvel utilisateur
+  </button>
 </div>
 
-{# Rôles rappel #}
-<div class="bg-slate-50 border rounded-2xl p-3 mb-4 text-[11px] text-slate-600 space-y-1">
-  <p><strong>Administrateur / Directeur</strong> — tout + configuration</p>
-  <p><strong>Secrétaire</strong> — élèves, notes, finance, absences</p>
-  <p><strong>Enseignant</strong> — ses classes, notes, absences</p>
-  <p><strong>Parent</strong> — ses enfants, bulletins, paiements</p>
-</div>
-
-{# Créer #}
-<form method="post" action="{% url 'core:config_user_save' %}" class="bg-white rounded-2xl border p-4 mb-4 space-y-3">
-  {% csrf_token %}
-  <input type="hidden" name="id" id="user-edit-id" value="">
-  <p class="text-sm font-semibold text-slate-700" id="user-form-title">Nouvel utilisateur</p>
-  <div class="grid grid-cols-2 gap-2">
-    <div>
-      <label class="text-xs text-slate-500">Identifiant *</label>
-      <input name="username" id="user-username" required class="w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="ex: secretaire1">
+{# ── RAPPEL RÔLES & FILTRES ── #}
+<div class="bg-white rounded-2xl border p-4 shadow-sm mb-5">
+  <form method="get" class="flex flex-col sm:flex-row gap-3">
+    <div class="relative flex-1">
+      <i class="fas fa-search absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+      <input name="q" value="{{ q }}" placeholder="Rechercher par identifiant, nom, email…"
+        class="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
     </div>
-    <div>
-      <label class="text-xs text-slate-500">Mot de passe <span id="pwd-hint">*</span></label>
-      <input name="password" id="user-password" type="password" class="w-full border rounded-xl px-3 py-2.5 text-sm" placeholder="••••••">
+    <div class="sm:w-56">
+      <select name="role" onchange="this.form.submit()"
+        class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+        <option value="">Tous les rôles</option>
+        {% for v, l in roles %}
+        <option value="{{ v }}" {% if role_f == v %}selected{% endif %}>{{ l }}</option>
+        {% endfor %}
+      </select>
     </div>
-  </div>
-  <div class="grid grid-cols-2 gap-2">
-    <div>
-      <label class="text-xs text-slate-500">Prénom</label>
-      <input name="first_name" id="user-first" class="w-full border rounded-xl px-3 py-2.5 text-sm">
-    </div>
-    <div>
-      <label class="text-xs text-slate-500">Nom</label>
-      <input name="last_name" id="user-last" class="w-full border rounded-xl px-3 py-2.5 text-sm">
-    </div>
-  </div>
-  <div>
-    <label class="text-xs text-slate-500">E-mail</label>
-    <input name="email" id="user-email" type="email" class="w-full border rounded-xl px-3 py-2.5 text-sm">
-  </div>
-  <div>
-    <label class="text-xs text-slate-500">Téléphone</label>
-    <input name="phone" id="user-phone" class="w-full border rounded-xl px-3 py-2.5 text-sm">
-  </div>
-  <div>
-    <label class="text-xs text-slate-500">Rôle *</label>
-    <select name="role" id="user-role" class="w-full border rounded-xl px-3 py-2.5 text-sm">
-      {% for v,l in roles %}
-      <option value="{{ v }}">{{ l }}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="flex gap-2">
-    <button type="submit" class="flex-1 bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold">Enregistrer</button>
-    <button type="button" onclick="resetUserForm()" class="px-4 text-sm text-slate-500 border rounded-xl">Nouveau</button>
-  </div>
-</form>
-
-{# Filtres #}
-<form method="get" class="flex gap-2 mb-3">
-  <input name="q" value="{{ q }}" placeholder="Rechercher…" class="flex-1 border rounded-xl px-3 py-2.5 text-sm">
-  <select name="role" onchange="this.form.submit()" class="border rounded-xl px-2 py-2.5 text-sm">
-    <option value="">Tous rôles</option>
-    {% for v,l in roles %}
-    <option value="{{ v }}" {% if role_f == v %}selected{% endif %}>{{ l }}</option>
-    {% endfor %}
-  </select>
-</form>
-
-<div class="space-y-2 pb-8">
-{% for u in users %}
-<div class="bg-white rounded-xl border p-3 {% if not u.is_active %}opacity-60{% endif %}">
-  <div class="flex justify-between items-start gap-2">
-    <div class="min-w-0">
-      <p class="font-semibold text-sm">
-        {{ u.get_full_name|default:u.username }}
-        {% if not u.is_active %}<span class="text-[10px] bg-red-100 text-red-600 px-1.5 py-0.5 rounded">Inactif</span>{% endif %}
-        {% if u.is_superuser %}<span class="text-[10px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded">Super</span>{% endif %}
-      </p>
-      <p class="text-xs text-slate-500 font-mono">{{ u.username }}</p>
-      <p class="text-xs text-slate-400">
-        {% if u.profile %}{{ u.profile.get_role_display }}{% else %}—{% endif %}
-        {% if u.email %} · {{ u.email }}{% endif %}
-      </p>
-    </div>
-  </div>
-  <div class="flex flex-wrap gap-2 mt-2 pt-2 border-t border-slate-50">
-    <button type="button"
-      onclick="editUser({{ u.id }}, '{{ u.username|escapejs }}', '{{ u.first_name|escapejs }}', '{{ u.last_name|escapejs }}', '{{ u.email|escapejs }}', '{% if u.profile %}{{ u.profile.role }}{% endif %}', '{% if u.profile %}{{ u.profile.phone|escapejs }}{% endif %}')"
-      class="text-xs bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg">Modifier</button>
-    <form method="post" action="{% url 'core:config_user_toggle' u.pk %}" class="inline">
-      {% csrf_token %}
-      <button class="text-xs bg-slate-50 text-slate-600 px-3 py-1.5 rounded-lg">
-        {% if u.is_active %}Désactiver{% else %}Activer{% endif %}
-      </button>
-    </form>
-    <button type="button" onclick="document.getElementById('pwd-{{ u.id }}').classList.toggle('hidden')"
-      class="text-xs bg-amber-50 text-amber-700 px-3 py-1.5 rounded-lg">Mot de passe</button>
-  </div>
-  <form method="post" action="{% url 'core:config_user_password' u.pk %}" id="pwd-{{ u.id }}" class="hidden mt-2 flex gap-2">
-    {% csrf_token %}
-    <input type="password" name="password" placeholder="Nouveau mot de passe" required class="flex-1 border rounded-lg px-2 py-1.5 text-sm">
-    <button class="bg-amber-600 text-white px-3 py-1.5 rounded-lg text-xs">OK</button>
+    {% if q or role_f %}
+    <a href="{% url 'core:config_users' %}" class="px-3 py-2 text-xs text-slate-500 hover:text-slate-700 border rounded-xl flex items-center justify-center">
+      Réinitialiser
+    </a>
+    {% endif %}
   </form>
 </div>
-{% empty %}
-<p class="text-center text-slate-400 text-sm py-8">Aucun utilisateur.</p>
-{% endfor %}
+
+{# ── TABLEAU DES UTILISATEURS ── #}
+<div class="bg-white rounded-2xl border shadow-sm overflow-hidden mb-6">
+  {% if users %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-50 border-b text-xs text-slate-500 uppercase tracking-wide">
+          <th class="text-left px-5 py-3 font-semibold">Utilisateur</th>
+          <th class="text-left px-5 py-3 font-semibold">Identifiant</th>
+          <th class="text-left px-5 py-3 font-semibold">Rôle</th>
+          <th class="text-left px-5 py-3 font-semibold">Contact</th>
+          <th class="text-center px-5 py-3 font-semibold">Statut</th>
+          <th class="text-right px-5 py-3 font-semibold">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for u in users %}
+        <tr class="hover:bg-slate-50 transition-colors {% if not u.is_active %}opacity-60 bg-slate-50/50{% endif %}">
+          <td class="px-5 py-3.5">
+            <div class="flex items-center gap-2.5">
+              <span class="w-8 h-8 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center font-bold text-xs">
+                {{ u.first_name|default:u.username|slice:":1"|upper }}
+              </span>
+              <div>
+                <p class="font-semibold text-slate-800 text-xs sm:text-sm">
+                  {{ u.get_full_name|default:u.username }}
+                  {% if u.is_superuser %}
+                  <span class="text-[10px] bg-purple-100 text-purple-700 font-semibold px-1.5 py-0.5 rounded ml-1">Super</span>
+                  {% endif %}
+                </p>
+                {% if u.get_full_name %}
+                <p class="text-[11px] text-slate-400 font-mono">{{ u.username }}</p>
+                {% endif %}
+              </div>
+            </div>
+          </td>
+          <td class="px-5 py-3.5 font-mono text-xs text-slate-600 font-medium">
+            {{ u.username }}
+          </td>
+          <td class="px-5 py-3.5">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium 
+              {% if u.profile.role == 'directeur' or u.profile.role == 'admin' %}bg-purple-50 text-purple-700 border border-purple-200
+              {% elif u.profile.role == 'secretaire' or u.profile.role == 'comptable' %}bg-sky-50 text-sky-700 border border-sky-200
+              {% elif u.profile.role == 'enseignant' %}bg-amber-50 text-amber-700 border border-amber-200
+              {% elif u.profile.role == 'parent' %}bg-emerald-50 text-emerald-700 border border-emerald-200
+              {% else %}bg-slate-100 text-slate-700{% endif %}">
+              {{ u.profile.get_role_display|default:"—" }}
+            </span>
+          </td>
+          <td class="px-5 py-3.5 text-xs text-slate-600">
+            {% if u.email %}<div class="truncate max-w-[180px]"><i class="fas fa-envelope text-slate-400 mr-1 text-[10px]"></i>{{ u.email }}</div>{% endif %}
+            {% if u.profile.phone %}<div><i class="fas fa-phone text-slate-400 mr-1 text-[10px]"></i>{{ u.profile.phone }}</div>{% endif %}
+            {% if not u.email and not u.profile.phone %}<span class="text-slate-300">—</span>{% endif %}
+          </td>
+          <td class="px-5 py-3.5 text-center">
+            {% if u.is_active %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700">Actif</span>
+            {% else %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-medium bg-red-50 text-red-600">Inactif</span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3.5 text-right whitespace-nowrap space-x-1">
+            <button onclick="editUserModal({{ u.id }}, '{{ u.username|escapejs }}', '{{ u.first_name|escapejs }}', '{{ u.last_name|escapejs }}', '{{ u.email|escapejs }}', '{% if u.profile %}{{ u.profile.role }}{% endif %}', '{% if u.profile %}{{ u.profile.phone|escapejs }}{% endif %}')"
+              class="inline-flex items-center gap-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+              <i class="fas fa-pen text-[10px]"></i> Modifier
+            </button>
+            <button onclick="openPasswordModal({{ u.id }}, '{{ u.username|escapejs }}')"
+              class="inline-flex items-center gap-1 text-xs bg-amber-50 hover:bg-amber-100 text-amber-700 px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+              <i class="fas fa-key text-[10px]"></i> MDP
+            </button>
+            <form method="post" action="{% url 'core:config_user_toggle' u.pk %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="inline-flex items-center text-xs px-2.5 py-1.5 rounded-lg font-medium transition-colors {% if u.is_active %}bg-slate-100 hover:bg-red-50 hover:text-red-600 text-slate-600{% else %}bg-emerald-50 text-emerald-700 hover:bg-emerald-100{% endif %}">
+                {% if u.is_active %}Désactiver{% else %}Activer{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="py-12 text-center">
+    <div class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-3">
+      <i class="fas fa-users text-slate-400 text-lg"></i>
+    </div>
+    <p class="text-sm font-medium text-slate-700">Aucun utilisateur trouvé</p>
+    <p class="text-xs text-slate-400 mt-1">Modifiez vos critères de recherche ou créez un nouveau compte.</p>
+  </div>
+  {% endif %}
+</div>
+
+{# ── MODAL UTILISATEUR (CRÉATION / MODIFICATION) ── #}
+<div id="modal-user" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between px-5 py-4 border-b bg-slate-50">
+      <h3 class="font-bold text-slate-800 flex items-center gap-2" id="modal-user-title">
+        <i class="fas fa-user-plus text-blue-600"></i> Nouvel utilisateur
+      </h3>
+      <button onclick="closeUserModal()" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <form method="post" action="{% url 'core:config_user_save' %}" class="p-5 space-y-4 overflow-y-auto">
+      {% csrf_token %}
+      <input type="hidden" name="id" id="user-id" value="">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-700 block mb-1">Identifiant de connexion *</label>
+          <input name="username" id="user-username" required placeholder="ex: jdupont"
+            class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-700 block mb-1">Rôle *</label>
+          <select name="role" id="user-role" class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            {% for v, l in roles %}
+            <option value="{{ v }}">{{ l }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-700 block mb-1">Prénom</label>
+          <input name="first_name" id="user-first" placeholder="ex: Jean"
+            class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-700 block mb-1">Nom</label>
+          <input name="last_name" id="user-last" placeholder="ex: Dupont"
+            class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-700 block mb-1">Adresse E-mail</label>
+          <input name="email" id="user-email" type="email" placeholder="jean.dupont@ecole.com"
+            class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-700 block mb-1">Téléphone</label>
+          <input name="phone" id="user-phone" placeholder="ex: +223 70 00 00 00"
+            class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+      </div>
+
+      <div>
+        <label class="text-xs font-semibold text-slate-700 block mb-1">Mot de passe <span id="pwd-required-badge" class="text-red-500">*</span></label>
+        <input name="password" id="user-password" type="password" placeholder="••••••••"
+          class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        <p class="text-[11px] text-slate-400 mt-1" id="pwd-help">Requis pour un nouveau compte.</p>
+      </div>
+
+      <div class="flex gap-2.5 pt-2 border-t">
+        <button type="button" onclick="closeUserModal()"
+          class="flex-1 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+          Annuler
+        </button>
+        <button type="submit"
+          class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition-colors">
+          <i class="fas fa-save mr-1.5"></i> Enregistrer
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ── MODAL RÉINITIALISATION MOT DE PASSE ── #}
+<div id="modal-password" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b bg-slate-50">
+      <h3 class="font-bold text-slate-800 flex items-center gap-2">
+        <i class="fas fa-key text-amber-500"></i> Modifier le mot de passe
+      </h3>
+      <button onclick="closePasswordModal()" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <form method="post" id="form-password" action="" class="p-5 space-y-4">
+      {% csrf_token %}
+      <p class="text-xs text-slate-600">Réinitialisation pour <strong id="pwd-target-user" class="text-slate-800"></strong></p>
+      <div>
+        <label class="text-xs font-semibold text-slate-700 block mb-1">Nouveau mot de passe *</label>
+        <input type="password" name="password" minlength="4" required placeholder="Minimum 4 caractères"
+          class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent">
+      </div>
+      <div class="flex gap-2.5 pt-1">
+        <button type="button" onclick="closePasswordModal()"
+          class="flex-1 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+          Annuler
+        </button>
+        <button type="submit"
+          class="flex-1 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold shadow-sm transition-colors">
+          Valider
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
 
 <script>
-function editUser(id, username, first, last, email, role, phone) {
-  document.getElementById('user-edit-id').value = id;
-  document.getElementById('user-username').value = username;
-  document.getElementById('user-username').readOnly = true;
-  document.getElementById('user-first').value = first || '';
-  document.getElementById('user-last').value = last || '';
-  document.getElementById('user-email').value = email || '';
-  document.getElementById('user-phone').value = phone || '';
-  document.getElementById('user-password').value = '';
-  document.getElementById('user-password').required = false;
-  document.getElementById('pwd-hint').textContent = '(optionnel)';
-  if (role) document.getElementById('user-role').value = role;
-  document.getElementById('user-form-title').textContent = 'Modifier — ' + username;
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-function resetUserForm() {
-  document.getElementById('user-edit-id').value = '';
+function newUserModal() {
+  document.getElementById('user-id').value = '';
   document.getElementById('user-username').value = '';
   document.getElementById('user-username').readOnly = false;
   document.getElementById('user-first').value = '';
@@ -140,8 +249,51 @@ function resetUserForm() {
   document.getElementById('user-phone').value = '';
   document.getElementById('user-password').value = '';
   document.getElementById('user-password').required = true;
-  document.getElementById('pwd-hint').textContent = '*';
-  document.getElementById('user-form-title').textContent = 'Nouvel utilisateur';
+  document.getElementById('pwd-required-badge').style.display = 'inline';
+  document.getElementById('pwd-help').textContent = 'Requis pour la création du compte.';
+  document.getElementById('modal-user-title').innerHTML = '<i class="fas fa-user-plus text-blue-600"></i> Nouvel utilisateur';
+  document.getElementById('modal-user').classList.remove('hidden');
 }
+
+function editUserModal(id, username, first, last, email, role, phone) {
+  document.getElementById('user-id').value = id;
+  document.getElementById('user-username').value = username;
+  document.getElementById('user-username').readOnly = true;
+  document.getElementById('user-first').value = first || '';
+  document.getElementById('user-last').value = last || '';
+  document.getElementById('user-email').value = email || '';
+  document.getElementById('user-phone').value = phone || '';
+  document.getElementById('user-password').value = '';
+  document.getElementById('user-password').required = false;
+  document.getElementById('pwd-required-badge').style.display = 'none';
+  document.getElementById('pwd-help').textContent = 'Laissez vide pour conserver le mot de passe actuel.';
+  if (role) document.getElementById('user-role').value = role;
+  document.getElementById('modal-user-title').innerHTML = '<i class="fas fa-user-edit text-blue-600"></i> Modifier — ' + username;
+  document.getElementById('modal-user').classList.remove('hidden');
+}
+
+function closeUserModal() {
+  document.getElementById('modal-user').classList.add('hidden');
+}
+
+function openPasswordModal(id, username) {
+  document.getElementById('pwd-target-user').textContent = username;
+  document.getElementById('form-password').action = "{% url 'core:config_users' %}" + id + "/mdp/";
+  document.getElementById('modal-password').classList.remove('hidden');
+}
+
+function closePasswordModal() {
+  document.getElementById('modal-password').classList.add('hidden');
+}
+
+['modal-user', 'modal-password'].forEach(function(id) {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) {
+      if (id === 'modal-user') closeUserModal();
+      if (id === 'modal-password') closePasswordModal();
+    }
+  });
+});
 </script>
+
 {% endblock %}

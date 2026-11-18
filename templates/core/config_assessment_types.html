@@ -1,21 +1,145 @@
 {% extends "base.html" %}
 {% block title %}Types d'évaluation{% endblock %}
 {% block content %}
-<div class="mb-4">
-  <a href="{% url 'core:config_home' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Configuration</a>
-  <h1 class="text-xl font-bold text-slate-800 mt-1">Types d'évaluation</h1>
+
+{# ── En-tête ── #}
+<div class="mb-4 flex items-center justify-between">
+  <div>
+    <a href="{% url 'core:config_home' %}" class="text-sm text-slate-500 hover:text-slate-700">
+      <i class="fas fa-arrow-left mr-1"></i>Configuration
+    </a>
+    <h1 class="text-xl font-bold text-slate-800 mt-1">Types d'évaluation</h1>
+  </div>
+  <button onclick="openModal('modalAdd')"
+          class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2 rounded-xl shadow transition">
+    <i class="fas fa-plus"></i> Ajouter
+  </button>
 </div>
 
-<form method="post" action="{% url 'core:config_assessment_type_save' %}" class="bg-white rounded-2xl border p-4 mb-4 space-y-2">
-  {% csrf_token %}
-  <input name="name" placeholder="Ex: Composition" required class="w-full border rounded-xl px-3 py-2.5 text-sm">
-  <input name="code" placeholder="Code: composition / devoir / interrogation" class="w-full border rounded-xl px-3 py-2.5 text-sm">
-  <button class="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm">Ajouter</button>
-</form>
-<div class="space-y-2">
-{% for t in types %}
-<div class="bg-white rounded-xl border p-3"><p class="font-semibold">{{ t.name }}</p><p class="text-xs text-slate-400">code: {{ t.code }}</p></div>
-{% empty %}<p class="text-slate-500 text-sm">Aucun type.</p>{% endfor %}
+{# ── Tableau ── #}
+<div class="bg-white rounded-2xl border shadow-sm overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-slate-100 text-slate-600 text-left">
+        <th class="px-4 py-3 font-semibold">Nom</th>
+        <th class="px-4 py-3 font-semibold">Code</th>
+        <th class="px-4 py-3 font-semibold text-right">Actions</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% for t in types %}
+      <tr class="hover:bg-slate-50 transition">
+        <td class="px-4 py-3 font-medium text-slate-800">{{ t.name }}</td>
+        <td class="px-4 py-3">
+          {% if t.code %}
+            <span class="inline-block bg-slate-100 text-slate-600 text-xs font-mono px-2 py-0.5 rounded">{{ t.code }}</span>
+          {% else %}
+            <span class="text-slate-300 italic text-xs">—</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-right">
+          <button
+            onclick="openEditModal('modalEdit','{{ t.pk }}','{{ t.name|escapejs }}','{{ t.code|default:''|escapejs }}')"
+            class="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-xs font-medium border border-blue-200 hover:border-blue-400 px-3 py-1.5 rounded-lg transition">
+            <i class="fas fa-pen"></i> Modifier
+          </button>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="3" class="px-4 py-6 text-center text-slate-400 italic">Aucun type d'évaluation enregistré.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
+
+{# ══════════════════════════════════════════════
+   MODAL — Ajouter un type d'évaluation
+══════════════════════════════════════════════ #}
+<div id="modalAdd" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white w-full max-w-sm rounded-2xl shadow-xl">
+    <div class="flex items-center justify-between px-6 py-4 border-b">
+      <h2 class="font-semibold text-slate-800"><i class="fas fa-plus-circle text-blue-600 mr-2"></i>Nouveau type d'évaluation</h2>
+      <button onclick="closeModal('modalAdd')" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <form method="post" action="{% url 'core:config_assessment_type_save' %}" class="px-6 py-4 space-y-3">
+      {% csrf_token %}
+      <input type="hidden" name="id" value="">
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Nom</label>
+        <input name="name" placeholder="Ex: Composition" required
+               class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Code</label>
+        <input name="code" placeholder="Ex: composition / devoir / interrogation"
+               class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
+      </div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" onclick="closeModal('modalAdd')"
+                class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 border rounded-xl">Annuler</button>
+        <button type="submit"
+                class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow transition">
+          <i class="fas fa-save mr-1"></i>Enregistrer
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ══════════════════════════════════════════════
+   MODAL — Modifier un type d'évaluation
+══════════════════════════════════════════════ #}
+<div id="modalEdit" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/50 p-4">
+  <div class="bg-white w-full max-w-sm rounded-2xl shadow-xl">
+    <div class="flex items-center justify-between px-6 py-4 border-b">
+      <h2 class="font-semibold text-slate-800"><i class="fas fa-pen text-blue-600 mr-2"></i>Modifier le type d'évaluation</h2>
+      <button onclick="closeModal('modalEdit')" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <form method="post" action="{% url 'core:config_assessment_type_save' %}" class="px-6 py-4 space-y-3">
+      {% csrf_token %}
+      <input type="hidden" name="id" id="edit_id">
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Nom</label>
+        <input id="edit_name" name="name" required
+               class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400">
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-slate-600 mb-1">Code</label>
+        <input id="edit_code" name="code"
+               class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-blue-400">
+      </div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button type="button" onclick="closeModal('modalEdit')"
+                class="px-4 py-2 text-sm text-slate-600 hover:text-slate-800 border rounded-xl">Annuler</button>
+        <button type="submit"
+                class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl shadow transition">
+          <i class="fas fa-save mr-1"></i>Enregistrer
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openModal(id) {
+  document.getElementById(id).classList.remove('hidden');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+function openEditModal(modalId, pk, name, code) {
+  document.getElementById('edit_id').value = pk;
+  document.getElementById('edit_name').value = name;
+  document.getElementById('edit_code').value = code;
+  openModal(modalId);
+}
+['modalAdd','modalEdit'].forEach(function(id) {
+  document.getElementById(id).addEventListener('click', function(e) {
+    if (e.target === this) closeModal(id);
+  });
+});
+</script>
 
 {% endblock %}

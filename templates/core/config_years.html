@@ -1,53 +1,165 @@
 {% extends "base.html" %}
 {% block title %}Années scolaires{% endblock %}
 {% block content %}
-<div class="mb-4">
-  <a href="{% url 'core:config_home' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Configuration</a>
-  <h1 class="text-xl font-bold text-slate-800 mt-1">Années scolaires</h1>
-  <p class="text-xs text-slate-500">L'année « en cours » est marquée ★ dans le sélecteur</p>
+
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <a href="{% url 'core:config_home' %}" class="text-xs text-slate-400 hover:text-blue-600"><i class="fas fa-arrow-left mr-1"></i>Configuration</a>
+    <h1 class="text-xl font-bold text-slate-800 mt-0.5">Années scolaires</h1>
+    <p class="text-xs text-slate-500">L'année « en cours » est marquée ★ dans le sélecteur</p>
+  </div>
+  <button onclick="openYearModal()"
+    class="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-sm transition-colors">
+    <i class="fas fa-plus"></i> Nouvelle année
+  </button>
 </div>
 
-<form method="post" action="{% url 'core:config_year_save' %}" class="bg-white rounded-2xl border p-4 mb-4 space-y-3">
-  {% csrf_token %}
-  <input type="hidden" name="id" value="">
-  <div>
-    <label class="text-xs font-medium text-slate-600">Nom *</label>
-    <input name="name" placeholder="Ex: 2027-2028" required class="w-full border rounded-xl px-3 py-2.5 text-sm mt-0.5">
+{# ── TABLEAU DES ANNÉES ── #}
+<div class="bg-white rounded-2xl border shadow-sm overflow-hidden mb-6">
+  {% if years %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-50 border-b text-xs text-slate-500 uppercase tracking-wide">
+          <th class="text-left px-5 py-3 font-semibold">Nom</th>
+          <th class="text-left px-5 py-3 font-semibold">Date de début</th>
+          <th class="text-left px-5 py-3 font-semibold">Date de fin</th>
+          <th class="text-center px-5 py-3 font-semibold">Statut</th>
+          <th class="text-right px-5 py-3 font-semibold">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for y in years %}
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="px-5 py-3.5 font-semibold text-slate-800">
+            {{ y.name }}
+            {% if y.is_current %}
+            <span class="inline-flex items-center gap-1 text-[11px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-full ml-2 font-medium">
+              <i class="fas fa-star text-[10px]"></i> En cours
+            </span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3.5 text-slate-600 font-mono text-xs">
+            {{ y.start_date|date:"d/m/Y"|default:"—" }}
+          </td>
+          <td class="px-5 py-3.5 text-slate-600 font-mono text-xs">
+            {{ y.end_date|date:"d/m/Y"|default:"—" }}
+          </td>
+          <td class="px-5 py-3.5 text-center">
+            {% if y.is_current %}
+              <span class="inline-block w-2.5 h-2.5 bg-emerald-500 rounded-full" title="Active"></span>
+            {% else %}
+              <span class="inline-block w-2.5 h-2.5 bg-slate-300 rounded-full" title="Inactive"></span>
+            {% endif %}
+          </td>
+          <td class="px-5 py-3.5 text-right space-x-1.5 whitespace-nowrap">
+            <button onclick="editYear({{ y.id }}, '{{ y.name|escapejs }}', '{{ y.start_date|date:'Y-m-d'|default:'' }}', '{{ y.end_date|date:'Y-m-d'|default:'' }}', {{ y.is_current|yesno:'true,false' }})"
+              class="inline-flex items-center gap-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+              <i class="fas fa-pen text-[10px]"></i> Modifier
+            </button>
+            {% if not y.is_current %}
+            <form method="post" action="{% url 'core:config_year_current' y.pk %}" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="inline-flex items-center gap-1 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+                <i class="fas fa-check text-[10px]"></i> Activer
+              </button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
-  <div class="grid grid-cols-2 gap-2">
-    <div>
-      <label class="text-xs font-medium text-slate-600">Début</label>
-      <input type="date" name="start_date" formnovalidate class="w-full border rounded-xl px-3 py-2.5 text-sm mt-0.5">
+  {% else %}
+  <div class="py-12 text-center">
+    <div class="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-3">
+      <i class="fas fa-calendar-alt text-blue-500 text-lg"></i>
     </div>
-    <div>
-      <label class="text-xs font-medium text-slate-600">Fin</label>
-      <input type="date" name="end_date" class="w-full border rounded-xl px-3 py-2.5 text-sm mt-0.5">
-      <p class="text-[10px] text-slate-400">Optionnel</p>
-    </div>
+    <p class="text-sm font-medium text-slate-700">Aucune année scolaire</p>
+    <p class="text-xs text-slate-400 mt-1">Cliquez sur « Nouvelle année » pour en créer une.</p>
   </div>
-  <label class="text-sm flex items-center gap-2"><input type="checkbox" name="is_current" class="rounded"> Définir comme année en cours</label>
-  <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold">Ajouter l'année</button>
-</form>
-
-<div class="space-y-2">
-{% for y in years %}
-<div class="bg-white rounded-xl border p-3 flex justify-between items-center gap-2">
-  <div class="min-w-0">
-    <p class="font-semibold text-sm">
-      {{ y.name }}
-      {% if y.is_current %}<span class="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full ml-1">En cours ★</span>{% endif %}
-    </p>
-    <p class="text-xs text-slate-400">{% if y.start_date or y.end_date %}{{ y.start_date|date:"d/m/Y"|default:"…" }} → {{ y.end_date|date:"d/m/Y"|default:"…" }}{% else %}Dates non renseignées{% endif %}</p>
-  </div>
-  {% if not y.is_current %}
-  <form method="post" action="{% url 'core:config_year_current' y.pk %}">
-    {% csrf_token %}
-    <button class="text-xs bg-blue-50 text-blue-700 px-3 py-2 rounded-lg whitespace-nowrap">Activer</button>
-  </form>
   {% endif %}
 </div>
-{% empty %}
-<p class="text-center text-slate-400 text-sm py-8">Aucune année. Ajoutez-en une ci-dessus.</p>
-{% endfor %}
+
+{# ── MODAL SAISIE / ÉDITION ANNÉE ── #}
+<div id="modal-year" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b bg-slate-50">
+      <h3 class="font-bold text-slate-800 flex items-center gap-2" id="modal-year-title">
+        <i class="fas fa-calendar-alt text-blue-600"></i> Nouvelle année scolaire
+      </h3>
+      <button onclick="closeYearModal()" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <form method="post" action="{% url 'core:config_year_save' %}" class="p-5 space-y-4">
+      {% csrf_token %}
+      <input type="hidden" name="id" id="year-id" value="">
+      <div>
+        <label class="text-xs font-semibold text-slate-700 block mb-1">Nom de l'année scolaire *</label>
+        <input name="name" id="year-name" placeholder="Ex: 2026-2027" required
+          class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-700 block mb-1">Date de début</label>
+          <input type="date" name="start_date" id="year-start"
+            class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-700 block mb-1">Date de fin</label>
+          <input type="date" name="end_date" id="year-end"
+            class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+        </div>
+      </div>
+      <div class="bg-slate-50 border rounded-xl p-3">
+        <label class="text-sm font-medium text-slate-700 flex items-center gap-2.5 cursor-pointer">
+          <input type="checkbox" name="is_current" id="year-current" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+          <span>Définir comme année en cours</span>
+        </label>
+        <p class="text-[11px] text-slate-400 ml-6 mt-0.5">Définit cette année comme active pour toute l'école</p>
+      </div>
+      <div class="flex gap-2.5 pt-2">
+        <button type="button" onclick="closeYearModal()"
+          class="flex-1 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+          Annuler
+        </button>
+        <button type="submit"
+          class="flex-1 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold shadow-sm transition-colors">
+          <i class="fas fa-save mr-1.5"></i> Enregistrer
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
+
+<script>
+function openYearModal() {
+  document.getElementById('year-id').value = '';
+  document.getElementById('year-name').value = '';
+  document.getElementById('year-start').value = '';
+  document.getElementById('year-end').value = '';
+  document.getElementById('year-current').checked = false;
+  document.getElementById('modal-year-title').innerHTML = '<i class="fas fa-calendar-alt text-blue-600"></i> Nouvelle année scolaire';
+  document.getElementById('modal-year').classList.remove('hidden');
+}
+
+function editYear(id, name, start, end, isCurrent) {
+  document.getElementById('year-id').value = id;
+  document.getElementById('year-name').value = name;
+  document.getElementById('year-start').value = start || '';
+  document.getElementById('year-end').value = end || '';
+  document.getElementById('year-current').checked = isCurrent;
+  document.getElementById('modal-year-title').innerHTML = '<i class="fas fa-calendar-alt text-blue-600"></i> Modifier l\'année scolaire';
+  document.getElementById('modal-year').classList.remove('hidden');
+}
+
+function closeYearModal() {
+  document.getElementById('modal-year').classList.add('hidden');
+}
+
+document.getElementById('modal-year').addEventListener('click', function(e) {
+  if (e.target === this) closeYearModal();
+});
+</script>
+
 {% endblock %}

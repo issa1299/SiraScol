@@ -1,21 +1,128 @@
 {% extends "base.html" %}
 {% block title %}Types de frais{% endblock %}
 {% block content %}
-<div class="mb-4">
-  <a href="{% url 'core:config_home' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Configuration</a>
-  <h1 class="text-xl font-bold text-slate-800 mt-1">Types de frais</h1>
+
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <a href="{% url 'core:config_home' %}" class="text-xs text-slate-400 hover:text-blue-600"><i class="fas fa-arrow-left mr-1"></i>Configuration</a>
+    <h1 class="text-xl font-bold text-slate-800 mt-0.5">Types de frais</h1>
+    <p class="text-xs text-slate-500">Frais scolaires, inscriptions, mensualités et montants par défaut</p>
+  </div>
+  <button onclick="openFeeModal()"
+    class="inline-flex items-center gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-sm transition-colors">
+    <i class="fas fa-plus"></i> Nouveau type de frais
+  </button>
 </div>
 
-<form method="post" action="{% url 'core:config_fee_type_save' %}" class="bg-white rounded-2xl border p-4 mb-4 space-y-2">
-  {% csrf_token %}
-  <input name="name" placeholder="Ex: Inscription" required class="w-full border rounded-xl px-3 py-2.5 text-sm">
-  <input name="default_amount" type="number" step="1" value="0" placeholder="Montant défaut" class="w-full border rounded-xl px-3 py-2.5 text-sm">
-  <button class="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm">Ajouter</button>
-</form>
-<div class="space-y-2">
-{% for t in types %}
-<div class="bg-white rounded-xl border p-3"><p class="font-semibold">{{ t.name }}</p><p class="text-xs text-slate-400">{{ t.default_amount }} FCFA</p></div>
-{% empty %}<p class="text-slate-500 text-sm">Aucun type.</p>{% endfor %}
+{# ── TABLEAU DES TYPES DE FRAIS ── #}
+<div class="bg-white rounded-2xl border shadow-sm overflow-hidden mb-6">
+  {% if types %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-50 border-b text-xs text-slate-500 uppercase tracking-wide">
+          <th class="text-left px-5 py-3 font-semibold">Intitulé du frais</th>
+          <th class="text-right px-5 py-3 font-semibold">Montant par défaut</th>
+          <th class="text-right px-5 py-3 font-semibold">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for t in types %}
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="px-5 py-3.5 font-semibold text-slate-800 flex items-center gap-2.5">
+            <span class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+              <i class="fas fa-coins"></i>
+            </span>
+            {{ t.name }}
+          </td>
+          <td class="px-5 py-3.5 text-right font-mono font-semibold text-slate-800">
+            {{ t.default_amount|default:"0" }} <span class="text-xs text-slate-400 font-sans font-normal">FCFA</span>
+          </td>
+          <td class="px-5 py-3.5 text-right whitespace-nowrap">
+            <button onclick="editFee({{ t.id }}, '{{ t.name|escapejs }}', '{{ t.default_amount|default:0 }}')"
+              class="inline-flex items-center gap-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+              <i class="fas fa-pen text-[10px]"></i> Modifier
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="py-12 text-center">
+    <div class="w-12 h-12 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-3">
+      <i class="fas fa-coins text-emerald-500 text-lg"></i>
+    </div>
+    <p class="text-sm font-medium text-slate-700">Aucun type de frais enregistré</p>
+    <p class="text-xs text-slate-400 mt-1">Cliquez sur « Nouveau type de frais » pour en ajouter.</p>
+  </div>
+  {% endif %}
 </div>
+
+{# ── MODAL SAISIE / ÉDITION TYPE DE FRAIS ── #}
+<div id="modal-fee" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b bg-slate-50">
+      <h3 class="font-bold text-slate-800 flex items-center gap-2" id="modal-fee-title">
+        <i class="fas fa-coins text-emerald-600"></i> Nouveau type de frais
+      </h3>
+      <button onclick="closeFeeModal()" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <form method="post" action="{% url 'core:config_fee_type_save' %}" class="p-5 space-y-4">
+      {% csrf_token %}
+      <input type="hidden" name="id" id="fee-id" value="">
+      <div>
+        <label class="text-xs font-semibold text-slate-700 block mb-1">Nom du frais *</label>
+        <input name="name" id="fee-name" placeholder="Ex: Inscription, Scolarité 1er Trimestre, Cantine…" required
+          class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent">
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-slate-700 block mb-1">Montant par défaut (FCFA)</label>
+        <div class="relative">
+          <input name="default_amount" id="fee-amount" type="number" step="100" min="0" value="0" required
+            class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent pr-16">
+          <span class="absolute right-3 top-2.5 text-xs text-slate-400 font-medium">FCFA</span>
+        </div>
+      </div>
+      <div class="flex gap-2.5 pt-2">
+        <button type="button" onclick="closeFeeModal()"
+          class="flex-1 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+          Annuler
+        </button>
+        <button type="submit"
+          class="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-sm transition-colors">
+          <i class="fas fa-save mr-1.5"></i> Enregistrer
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openFeeModal() {
+  document.getElementById('fee-id').value = '';
+  document.getElementById('fee-name').value = '';
+  document.getElementById('fee-amount').value = '0';
+  document.getElementById('modal-fee-title').innerHTML = '<i class="fas fa-coins text-emerald-600"></i> Nouveau type de frais';
+  document.getElementById('modal-fee').classList.remove('hidden');
+}
+
+function editFee(id, name, amount) {
+  document.getElementById('fee-id').value = id;
+  document.getElementById('fee-name').value = name;
+  document.getElementById('fee-amount').value = amount;
+  document.getElementById('modal-fee-title').innerHTML = '<i class="fas fa-coins text-emerald-600"></i> Modifier le type de frais';
+  document.getElementById('modal-fee').classList.remove('hidden');
+}
+
+function closeFeeModal() {
+  document.getElementById('modal-fee').classList.add('hidden');
+}
+
+document.getElementById('modal-fee').addEventListener('click', function(e) {
+  if (e.target === this) closeFeeModal();
+});
+</script>
 
 {% endblock %}

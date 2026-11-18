@@ -1,27 +1,148 @@
 {% extends "base.html" %}
 {% block title %}Matières{% endblock %}
 {% block content %}
-<div class="mb-4">
-  <a href="{% url 'core:config_home' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Configuration</a>
-  <h1 class="text-xl font-bold text-slate-800 mt-1">Matières</h1>
+
+<div class="flex items-center justify-between mb-5">
+  <div>
+    <a href="{% url 'core:config_home' %}" class="text-xs text-slate-400 hover:text-blue-600"><i class="fas fa-arrow-left mr-1"></i>Configuration</a>
+    <h1 class="text-xl font-bold text-slate-800 mt-0.5">Matières</h1>
+    <p class="text-xs text-slate-500">Matières d'enseignement, codes et coefficients de base</p>
+  </div>
+  <button onclick="openSubjectModal()"
+    class="inline-flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-sm transition-colors">
+    <i class="fas fa-plus"></i> Nouvelle matière
+  </button>
 </div>
 
-<form method="post" action="{% url 'core:config_subject_save' %}" class="bg-white rounded-2xl border p-4 mb-4 space-y-2">
-  {% csrf_token %}
-  <input name="name" placeholder="Nom (ex: Mathématiques)" required class="w-full border rounded-xl px-3 py-2.5 text-sm">
-  <div class="grid grid-cols-2 gap-2">
-    <input name="code" placeholder="Code (ex: MATH)" required class="border rounded-xl px-3 py-2.5 text-sm">
-    <input name="coefficient" type="number" step="0.5" value="1" placeholder="Coef" class="border rounded-xl px-3 py-2.5 text-sm">
+{# ── TABLEAU DES MATIÈRES ── #}
+<div class="bg-white rounded-2xl border shadow-sm overflow-hidden mb-6">
+  {% if subjects %}
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-slate-50 border-b text-xs text-slate-500 uppercase tracking-wide">
+          <th class="text-left px-5 py-3 font-semibold">Nom de la matière</th>
+          <th class="text-left px-5 py-3 font-semibold">Code</th>
+          <th class="text-center px-5 py-3 font-semibold">Coefficient</th>
+          <th class="text-right px-5 py-3 font-semibold">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for s in subjects %}
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="px-5 py-3.5 font-semibold text-slate-800 flex items-center gap-2.5">
+            <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
+              <i class="fas fa-book"></i>
+            </span>
+            {{ s.name }}
+          </td>
+          <td class="px-5 py-3.5">
+            <span class="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-semibold">
+              {{ s.code }}
+            </span>
+          </td>
+          <td class="px-5 py-3.5 text-center">
+            <span class="inline-flex items-center justify-center px-2 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">
+              coef {{ s.coefficient }}
+            </span>
+          </td>
+          <td class="px-5 py-3.5 text-right space-x-1.5 whitespace-nowrap">
+            <button onclick="editSubject({{ s.id }}, '{{ s.name|escapejs }}', '{{ s.code|escapejs }}', '{{ s.coefficient }}')"
+              class="inline-flex items-center gap-1 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+              <i class="fas fa-pen text-[10px]"></i> Modifier
+            </button>
+            <form method="post" action="{% url 'core:config_subject_delete' s.pk %}" onsubmit="return confirm('Supprimer définitivement la matière « {{ s.name|escapejs }} » ?');" class="inline">
+              {% csrf_token %}
+              <button type="submit" class="inline-flex items-center gap-1 text-xs bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1.5 rounded-lg font-medium transition-colors">
+                <i class="fas fa-trash text-[10px]"></i> Suppr.
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
   </div>
-  <button class="w-full bg-blue-600 text-white py-2.5 rounded-xl text-sm">Ajouter</button>
-</form>
-<div class="space-y-2">
-{% for s in subjects %}
-<div class="bg-white rounded-xl border p-3 flex justify-between">
-  <div><p class="font-semibold">{{ s.name }}</p><p class="text-xs text-slate-400">{{ s.code }} · coef {{ s.coefficient }}</p></div>
-  <form method="post" action="{% url 'core:config_subject_delete' s.pk %}">{% csrf_token %}<button class="text-xs text-red-600">Suppr.</button></form>
+  {% else %}
+  <div class="py-12 text-center">
+    <div class="w-12 h-12 rounded-full bg-indigo-50 flex items-center justify-center mx-auto mb-3">
+      <i class="fas fa-book text-indigo-500 text-lg"></i>
+    </div>
+    <p class="text-sm font-medium text-slate-700">Aucune matière enregistrée</p>
+    <p class="text-xs text-slate-400 mt-1">Cliquez sur « Nouvelle matière » pour en ajouter.</p>
+  </div>
+  {% endif %}
 </div>
-{% empty %}<p class="text-slate-500 text-sm">Aucune matière.</p>{% endfor %}
+
+{# ── MODAL SAISIE / ÉDITION MATIÈRE ── #}
+<div id="modal-subject" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+    <div class="flex items-center justify-between px-5 py-4 border-b bg-slate-50">
+      <h3 class="font-bold text-slate-800 flex items-center gap-2" id="modal-subject-title">
+        <i class="fas fa-book text-indigo-600"></i> Nouvelle matière
+      </h3>
+      <button onclick="closeSubjectModal()" class="text-slate-400 hover:text-slate-600 text-xl leading-none">&times;</button>
+    </div>
+    <form method="post" action="{% url 'core:config_subject_save' %}" class="p-5 space-y-4">
+      {% csrf_token %}
+      <input type="hidden" name="id" id="subject-id" value="">
+      <div>
+        <label class="text-xs font-semibold text-slate-700 block mb-1">Nom complet *</label>
+        <input name="name" id="subject-name" placeholder="Ex: Mathématiques, Français, Histoire-Géo" required
+          class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs font-semibold text-slate-700 block mb-1">Code court *</label>
+          <input name="code" id="subject-code" placeholder="Ex: MATH, FR" required
+            class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm uppercase focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-700 block mb-1">Coefficient par défaut</label>
+          <input name="coefficient" id="subject-coef" type="number" step="0.5" min="0.5" value="1.0" required
+            class="w-full border border-slate-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+        </div>
+      </div>
+      <div class="flex gap-2.5 pt-2">
+        <button type="button" onclick="closeSubjectModal()"
+          class="flex-1 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors">
+          Annuler
+        </button>
+        <button type="submit"
+          class="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold shadow-sm transition-colors">
+          <i class="fas fa-save mr-1.5"></i> Enregistrer
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
+
+<script>
+function openSubjectModal() {
+  document.getElementById('subject-id').value = '';
+  document.getElementById('subject-name').value = '';
+  document.getElementById('subject-code').value = '';
+  document.getElementById('subject-coef').value = '1.0';
+  document.getElementById('modal-subject-title').innerHTML = '<i class="fas fa-book text-indigo-600"></i> Nouvelle matière';
+  document.getElementById('modal-subject').classList.remove('hidden');
+}
+
+function editSubject(id, name, code, coef) {
+  document.getElementById('subject-id').value = id;
+  document.getElementById('subject-name').value = name;
+  document.getElementById('subject-code').value = code;
+  document.getElementById('subject-coef').value = coef;
+  document.getElementById('modal-subject-title').innerHTML = '<i class="fas fa-book text-indigo-600"></i> Modifier la matière';
+  document.getElementById('modal-subject').classList.remove('hidden');
+}
+
+function closeSubjectModal() {
+  document.getElementById('modal-subject').classList.add('hidden');
+}
+
+document.getElementById('modal-subject').addEventListener('click', function(e) {
+  if (e.target === this) closeSubjectModal();
+});
+</script>
 
 {% endblock %}
