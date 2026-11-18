@@ -690,7 +690,16 @@ def liaisons_dashboard(request):
         rooms = rooms.filter(academic_year=year)
     rooms_no_subjects = []
     rooms_no_main = []
-    from teachers.views import level_is_institute
+    def level_is_institute(level):
+        """Retourne True si le niveau appartient au cycle primaire (instituteur requis)."""
+        if not level:
+            return False
+        try:
+            code = level.cycle.code if level.cycle_id else ''
+            return code in ('primaire',)
+        except Exception:
+            return False
+
     for c in rooms:
         n_subj = ClassSubject.objects.filter(classroom=c).count()
         if n_subj == 0:
