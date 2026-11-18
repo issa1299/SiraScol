@@ -128,6 +128,116 @@ PERMISSIONS = {
 }
 
 
+# ── Groupes de permissions pour la matrice d'administration ─────────────────
+PERMISSION_GROUPS = [
+    {
+        'title': 'Navigation & Menus',
+        'items': [
+            ('nav.dashboard', 'Tableau de bord'),
+            ('nav.students', 'Menu Élèves'),
+            ('nav.teachers', 'Menu Personnel / Enseignants'),
+            ('nav.classrooms', 'Menu Classes'),
+            ('nav.parents', 'Menu Parents'),
+            ('nav.promotion', 'Fin d\'année & Passage'),
+            ('nav.grades', 'Menu Notes'),
+            ('nav.bulletins', 'Menu Bulletins'),
+            ('nav.finance', 'Menu Finances'),
+            ('nav.attendance', 'Menu Présences & Absences'),
+            ('nav.timetable', 'Menu Emploi du temps'),
+            ('nav.announcements', 'Menu Annonces'),
+            ('nav.messages', 'Menu Messages'),
+            ('nav.config', 'Menu Configuration'),
+            ('nav.settings', 'Paramètres de l\'établissement'),
+            ('nav.reports', 'Rapports & Statistiques'),
+            ('nav.cards', 'Cartes scolaires'),
+        ],
+    },
+    {
+        'title': 'Gestion des Élèves',
+        'items': [
+            ('students.view', 'Consulter la liste et fiches élèves'),
+            ('students.create', 'Inscrire un nouvel élève'),
+            ('students.edit', 'Modifier les informations d\'un élève'),
+            ('students.delete', 'Supprimer un élève'),
+        ],
+    },
+    {
+        'title': 'Personnel & Enseignants',
+        'items': [
+            ('personnel.dashboard', 'Tableau de bord personnel'),
+            ('personnel.list', 'Consulter la liste du personnel'),
+            ('personnel.create', 'Ajouter un membre du personnel'),
+            ('personnel.edit', 'Modifier une fiche personnel'),
+            ('personnel.delete', 'Supprimer un membre du personnel'),
+            ('personnel.salaries', 'Gestion des salaires et paiements'),
+            ('personnel.contracts', 'Gestion des contrats de travail'),
+            ('personnel.assign', 'Affectation des enseignants aux classes'),
+        ],
+    },
+    {
+        'title': 'Structure Scolaire & Matières',
+        'items': [
+            ('academics.year', 'Gestion des années scolaires'),
+            ('academics.classes', 'Gestion des classes'),
+            ('academics.subjects', 'Gestion des matières'),
+            ('academics.coefficients', 'Configuration des coefficients'),
+            ('academics.assignments', 'Affectations des matières'),
+        ],
+    },
+    {
+        'title': 'Notes & Évaluations',
+        'items': [
+            ('grades.view', 'Consulter les notes'),
+            ('grades.entry', 'Saisir les notes et évaluations'),
+            ('grades.validate', 'Valider et verrouiller les notes'),
+            ('grades.bulletin_view', 'Consulter et imprimer les bulletins'),
+            ('grades.bulletin_validate', 'Validation définitive des bulletins'),
+        ],
+    },
+    {
+        'title': 'Finances & Frais de Scolarité',
+        'items': [
+            ('finance.view', 'Consulter les finances et factures'),
+            ('finance.pay', 'Enregistrer un encaissement / paiement'),
+            ('finance.receipts', 'Éditer et imprimer les reçus'),
+            ('finance.unpaid', 'Suivi des impayés et relances'),
+            ('finance.fees_config', 'Configuration des types de frais'),
+            ('finance.expenses', 'Gestion des dépenses de l\'école'),
+            ('finance.reports', 'Rapports financiers et état de caisse'),
+        ],
+    },
+    {
+        'title': 'Présences & Absences',
+        'items': [
+            ('attendance.view', 'Consulter les absences et pointages'),
+            ('attendance.take', 'Pointer les présences / marquer absent'),
+        ],
+    },
+    {
+        'title': 'Emploi du temps',
+        'items': [
+            ('timetable.view', 'Consulter l\'emploi du temps'),
+            ('timetable.edit', 'Modifier et générer les créneaux'),
+        ],
+    },
+    {
+        'title': 'Communication',
+        'items': [
+            ('announcements.view', 'Lire les annonces'),
+            ('announcements.publish', 'Publier des annonces officielles'),
+            ('messages.send', 'Envoyer et recevoir des messages'),
+        ],
+    },
+    {
+        'title': 'Administration & Configuration',
+        'items': [
+            ('config.users', 'Gestion des utilisateurs et rôles'),
+            ('config.school', 'Configuration générale de l\'école'),
+        ],
+    },
+]
+
+
 
 def normalize_role(role):
     """Convertit un rôle stocké en rôle canonique."""

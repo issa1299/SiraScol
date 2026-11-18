@@ -1,8 +1,8 @@
 {% extends "grades/base_cotes.html" %}
-{% block title %}Niveau des élèves{% endblock %}
-{% block header_title %}Niveau des élèves{% endblock %}
-{% block header_sub %}Effectifs et moyennes par classe{% endblock %}
-{% block content %}
+{% block cotes_title %}Statistiques par niveau{% endblock %}
+{% block header_title %}Statistiques & Niveau des élèves{% endblock %}
+{% block header_sub %}Effectifs, notes et moyennes générales par classe{% endblock %}
+{% block cotes_body %}
 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
   {% for r in rows %}
   <div class="bg-white rounded-2xl border p-4">

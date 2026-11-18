@@ -1,8 +1,8 @@
 {% extends "grades/base_cotes.html" %}
-{% block title %}Modifier les cotes{% endblock %}
-{% block header_title %}Modifier les cotes{% endblock %}
-{% block header_sub %}Évaluations existantes — cliquez pour modifier les notes{% endblock %}
-{% block content %}
+{% block cotes_title %}Modifier les notes{% endblock %}
+{% block header_title %}Modifier les notes{% endblock %}
+{% block header_sub %}Évaluations existantes — cliquez pour ajuster ou compléter les notes{% endblock %}
+{% block cotes_body %}
 <form method="get" class="bg-white rounded-2xl border p-4 mb-4 flex gap-2">
   <select name="classroom" class="border rounded-xl px-3 py-2.5 text-sm flex-1" onchange="this.form.submit()">
     <option value="">Toutes les classes</option>
@@ -24,7 +24,7 @@
     </div>
   </a>
   {% empty %}
-  <p class="px-4 py-12 text-center text-slate-400 text-sm">Aucune évaluation à modifier. Commencez par la <a href="{% url 'grades:classes' %}" class="text-emerald-600 underline">Saisie des cotes</a>.</p>
+  <p class="px-4 py-12 text-center text-slate-400 text-sm">Aucune évaluation à modifier. Commencez par la <a href="{% url 'grades:classes' %}" class="text-emerald-600 underline font-semibold">Saisie des notes</a>.</p>
   {% endfor %}
 </div>
 {% endblock %}

@@ -363,9 +363,9 @@
                 </a>
                 {% endif %}
                 {% if can_nav_grades %}
-                <button type="button" onclick="openCotesModal()" class="nav-link w-full text-left {% if '/notes' in request.path or request.resolver_match.app_name == 'grades' %}active{% endif %}">
-                    <i class="fas fa-chart-line w-5 text-center"></i> Gestion des cotes
-                </button>
+                <a href="{% url 'grades:classes' %}" class="nav-link {% if '/notes' in request.path or request.resolver_match.app_name == 'grades' %}active{% endif %}">
+                    <i class="fas fa-chart-line w-5 text-center"></i> Gestion des notes
+                </a>
                 {% endif %}
 
                 {# —— ADMINISTRATION —— #}
@@ -524,9 +524,9 @@
                 <a href="{% url 'students:list' %}" class="{% if request.resolver_match.app_name == 'students' and 'parent' not in request.resolver_match.url_name %}active{% endif %}">
                     <i class="fas fa-user-graduate"></i><span>Élèves</span>
                 </a>
-                <button type="button" onclick="openCotesModal()" class="{% if request.resolver_match.app_name == 'grades' %}active{% endif %}">
-                    <i class="fas fa-clipboard-list"></i><span>Cotes</span>
-                </button>
+                <a href="{% url 'grades:classes' %}" class="{% if request.resolver_match.app_name == 'grades' %}active{% endif %}">
+                    <i class="fas fa-clipboard-list"></i><span>Notes</span>
+                </a>
                 <a href="{% url 'finance:classes' %}" class="{% if request.resolver_match.app_name == 'finance' %}active{% endif %}">
                     <i class="fas fa-wallet"></i><span>Finance</span>
                 </a>
@@ -579,7 +579,7 @@
                         <a href="{% url 'timetable:home' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-book-open w-5 text-center"></i> Gestion Pédagogique</a>
                         {% endif %}
                         {% if can_nav_grades %}
-                        <button type="button" class="nav-link w-full text-left" onclick="closeMobileDrawer(); openCotesModal()"><i class="fas fa-chart-line w-5 text-center"></i> Gestion des cotes</button>
+                        <a href="{% url 'grades:classes' %}" class="nav-link w-full text-left" onclick="closeMobileDrawer()"><i class="fas fa-chart-line w-5 text-center"></i> Gestion des notes</a>
                         {% endif %}
 
                         <div class="nav-section">Administration</div>
@@ -875,11 +875,11 @@
         </script>
         {% block extra_js %}{% endblock %}
 
-{# Modal accès centre des cotes #}
+{# Modal accès centre des notes #}
 <div id="cotes-entry-modal" class="fixed inset-0 z-[200] hidden items-center justify-center bg-black/50 p-4" onclick="if(event.target===this)closeCotesModal()">
   <div class="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
     <div class="bg-emerald-600 text-white px-5 py-4 flex items-center justify-between">
-      <p class="font-bold flex items-center gap-2"><i class="fas fa-chart-line"></i> Gestion des cotes</p>
+      <p class="font-bold flex items-center gap-2"><i class="fas fa-chart-line"></i> Gestion des notes</p>
       <button type="button" onclick="closeCotesModal()" class="text-white/80 hover:text-white text-xl leading-none">&times;</button>
     </div>
     <div class="px-5 py-5">

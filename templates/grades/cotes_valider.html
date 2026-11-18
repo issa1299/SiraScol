@@ -1,8 +1,8 @@
 {% extends "grades/base_cotes.html" %}
-{% block title %}Valider les cotes{% endblock %}
-{% block header_title %}Valider les cotes{% endblock %}
-{% block header_sub %}Évaluations avec notes saisies — contrôle avant bulletin{% endblock %}
-{% block content %}
+{% block cotes_title %}Valider les notes{% endblock %}
+{% block header_title %}Contrôle & Validation des notes{% endblock %}
+{% block header_sub %}Évaluations avec notes saisies — vérification et validation avant bulletin{% endblock %}
+{% block cotes_body %}
 <form method="get" class="bg-white rounded-2xl border p-4 mb-4">
   <select name="classroom" class="border rounded-xl px-3 py-2.5 text-sm w-full sm:w-64" onchange="this.form.submit()">
     <option value="">Toutes les classes</option>
