@@ -118,7 +118,7 @@
 {# ── ÉTAPE 2 : CHOISIR LA CLASSE DU CYCLE ── #}
 <div class="mb-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
   <div>
-    <a href="{% url 'grades:classes' %}" class="inline-flex items-center gap-1.5 text-xs text-emerald-700 hover:text-emerald-800 font-semibold mb-1">
+    <a href="{% url 'grades:classes' %}" class="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs mb-2 transition-colors">
       <i class="fas fa-arrow-left"></i> Changer de cycle
     </a>
     <h2 class="text-lg font-bold text-slate-900">
@@ -180,7 +180,7 @@
 {# ── ÉTAPE 3 : CLASSE SÉLECTIONNÉE ── #}
 <div class="mb-5 flex items-center justify-between">
   <div>
-    <a href="?cycle={{ cycle_filter }}" class="inline-flex items-center gap-1.5 text-xs text-emerald-700 hover:text-emerald-800 font-semibold mb-1">
+    <a href="?cycle={{ cycle_filter }}" class="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs mb-2 transition-colors">
       <i class="fas fa-arrow-left"></i> Retour aux classes
     </a>
     <h2 class="text-lg font-bold text-slate-900">{{ classroom.name }}</h2>

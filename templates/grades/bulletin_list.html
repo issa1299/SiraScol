@@ -44,8 +44,8 @@
 {# —— Étape 2 : classes du cycle —— #}
 <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
   <div>
-    <a href="{% url 'grades:bulletin_list' %}" class="text-xs text-slate-500 hover:text-emerald-600">
-      <i class="fas fa-arrow-left"></i> Cycles
+    <a href="{% url 'grades:bulletin_list' %}" class="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs mb-2 transition-colors">
+      <i class="fas fa-arrow-left"></i> Changer de cycle
     </a>
     <h2 class="text-lg font-bold text-slate-800 mt-1">
       {% if cycle_filter == "primaire" %}1er cycle{% elif cycle_filter == "lycee" %}Lycée{% else %}2ème cycle{% endif %}
@@ -84,8 +84,8 @@
 {% else %}
 {# —— Étape 3 : élèves + périodes appliquées —— #}
 <div class="mb-4">
-  <a href="?cycle={{ cycle_filter }}" class="text-xs text-slate-500 hover:text-emerald-600">
-    <i class="fas fa-arrow-left"></i> Classes
+  <a href="?cycle={{ cycle_filter }}" class="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3.5 py-1.5 rounded-xl text-xs font-semibold shadow-xs mb-2 transition-colors">
+    <i class="fas fa-arrow-left"></i> Retour aux classes
   </a>
   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-1">
     <div>

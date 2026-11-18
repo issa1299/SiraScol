@@ -13,27 +13,38 @@
 {% endblock %}
 
 {% block content %}
-<div class="no-print mb-4 flex flex-wrap gap-3 items-center justify-between">
-    <a href="{% url 'grades:bulletin_list' %}{% if classroom %}?classroom={{ classroom.id }}{% if period %}&period={{ period.id }}{% endif %}{% endif %}"
-       class="text-sm text-violet-600 hover:text-violet-800 font-medium">
-        <i class="fas fa-arrow-left"></i> Retour aux bulletins
-    </a>
+<div class="no-print mb-5 flex flex-wrap gap-3 items-center justify-between">
+    <div class="flex items-center gap-2">
+        <button type="button" onclick="if(window.history.length > 1){history.back();}else{location.href='{% url 'grades:bulletin_list' %}';}"
+           class="inline-flex items-center gap-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-colors cursor-pointer">
+            <i class="fas fa-arrow-left"></i> Retour
+        </button>
+        <a href="{% url 'grades:bulletin_list' %}{% if classroom %}?classroom={{ classroom.id }}{% if period %}&period={{ period.id }}{% endif %}{% endif %}"
+           class="inline-flex items-center gap-1.5 bg-violet-50 border border-violet-200 text-violet-700 hover:bg-violet-100 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors">
+            <i class="fas fa-list-check"></i> Liste des bulletins
+        </a>
+        <a href="{% url 'grades:classes' %}"
+           class="inline-flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 px-3.5 py-2 rounded-xl text-xs font-semibold transition-colors">
+            <i class="fas fa-chart-line"></i> Gestion des notes
+        </a>
+    </div>
     <div class="flex gap-2 items-center">
         <form method="get" class="flex gap-2 items-center">
-            <select name="period" onchange="this.form.submit()" class="border border-gray-300 rounded-lg px-3 py-1.5 text-sm">
+            <select name="period" onchange="this.form.submit()" class="border border-slate-300 rounded-xl px-3 py-2 text-xs bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
                 <option value="">Toutes les périodes</option>
                 {% for p in periods %}
                 <option value="{{ p.id }}" {% if period and period.id == p.id %}selected{% endif %}>{{ p.name }}</option>
                 {% endfor %}
             </select>
         </form>
-        <a href="?period={% if period %}{{ period.id }}{% endif %}&print=1" target="_blank"
-           class="bg-slate-800 text-white px-4 py-1.5 rounded-lg text-sm" onclick="window.print()">
+        <button type="button" onclick="window.print()"
+           class="inline-flex items-center gap-1.5 bg-slate-800 hover:bg-slate-900 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-colors">
             <i class="fas fa-print"></i> Imprimer
         </button>
-        <button type="button" onclick="sirascolExportPdf('.print-area', 'bulletin.pdf')" class="bg-rose-600 text-white px-4 py-1.5 rounded-lg text-sm">
-            <i class="fas fa-file-pdf"></i> PDF
-        </a>
+        <button type="button" onclick="sirascolExportPdf('.print-area', 'bulletin.pdf')"
+           class="inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 text-white px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs transition-colors">
+            <i class="fas fa-file-pdf"></i> Télécharger PDF
+        </button>
     </div>
 </div>
 

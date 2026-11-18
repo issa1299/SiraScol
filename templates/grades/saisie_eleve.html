@@ -2,15 +2,9 @@
 {% block title %}Notes — {{ student.last_name }}{% endblock %}
 {% block content %}
 
-{% if is_teacher_ui %}
-<a href="{% url 'grades:classes' %}?classroom={{ classroom.id }}" class="inline-flex items-center gap-1 text-sm text-violet-600 mb-3">
-  <i class="fas fa-arrow-left"></i> Retour classe
+<a href="{% url 'grades:classes' %}?classroom={{ classroom.id }}" class="inline-flex items-center gap-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 px-3.5 py-2 rounded-xl text-xs font-semibold shadow-xs mb-3 transition-colors">
+  <i class="fas fa-arrow-left"></i> Retour à {{ classroom.name }}
 </a>
-{% else %}
-<a href="{% url 'grades:classes' %}?classroom={{ classroom.id }}" class="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-emerald-600 mb-3">
-  <i class="fas fa-arrow-left"></i> Retour
-</a>
-{% endif %}
 
 <div class="bg-gradient-to-r from-blue-700 to-blue-600 text-white rounded-2xl px-4 py-4 mb-4 flex flex-wrap items-center justify-between gap-3">
   <div class="flex items-center gap-3 min-w-0">
