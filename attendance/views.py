@@ -1,3 +1,5 @@
+from functools import wraps
+
 from core.year_context import get_selected_year
 from datetime import date, timedelta
 from django.contrib.auth.decorators import login_required
@@ -12,7 +14,18 @@ from academics.models import ClassRoom
 from core.permissions import get_role, get_teacher_classrooms, get_parent_students, get_linked_student
 
 
+def _students_use_portal(view_func):
+    """Les élèves consultent leurs présences dans leur espace dédié."""
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if get_role(request.user) == 'eleve' and not request.user.is_superuser:
+            return redirect('eleve:absences')
+        return view_func(request, *args, **kwargs)
+    return _wrapped
+
+
 @login_required
+@_students_use_portal
 def absence_list(request):
     """Historique des présences (pointages QR + absences) — style SiraScol."""
     from datetime import datetime, timedelta
@@ -198,6 +211,7 @@ def absence_list(request):
 
 
 @login_required
+@_students_use_portal
 def absence_create(request):
     """Formulaire simple pour saisir une absence"""
     if request.method == 'POST':
@@ -244,6 +258,7 @@ def absence_create(request):
 
 
 @login_required
+@_students_use_portal
 def attendance_classes(request):
     from academics.models import AcademicYear
     from students.models import Enrollment
@@ -276,6 +291,7 @@ def attendance_classes(request):
 
 
 @login_required
+@_students_use_portal
 def class_attendance(request, classroom_id):
     """Saisie des absences pour une classe (date + checklist)."""
     classroom = get_object_or_404(
@@ -337,6 +353,7 @@ def class_attendance(request, classroom_id):
 
 
 @login_required
+@_students_use_portal
 def scan_qr(request):
     """Page pointeuse QR — style SiraScol."""
     from datetime import date
@@ -377,6 +394,7 @@ def scan_qr(request):
 
 
 @login_required
+@_students_use_portal
 def scan_qr_api(request):
     """POST JSON: code, action (arrivee|depart), kind (eleve|personnel)."""
     from datetime import date
@@ -518,6 +536,7 @@ def scan_qr_api(request):
 
 
 @login_required
+@_students_use_portal
 def absence_list_pdf(request):
     from core.list_pdf import build_list_pdf
     from core.models import SchoolSettings

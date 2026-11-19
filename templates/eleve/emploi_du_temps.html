@@ -1,0 +1,59 @@
+{% extends "eleve/base_eleve.html" %}
+{% block title %}Mon emploi du temps — Espace Élève{% endblock %}
+{% block header_title %}Mon emploi du temps{% endblock %}
+{% block header_sub %}{% if classroom %}{{ classroom.name }} · {{ current_year.name|default:"" }}{% else %}Votre classe n'est pas encore définie{% endif %}{% endblock %}
+{% block content %}
+
+{% if not classroom %}
+<div class="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
+  <div class="w-14 h-14 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-3 text-xl"><i class="fas fa-calendar-days"></i></div>
+  <p class="text-sm font-semibold text-slate-700">Aucune classe associée</p>
+  <p class="text-xs text-slate-400 mt-1">Contactez la secrétariat pour vérifier votre inscription.</p>
+</div>
+{% else %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  {% for day in days %}
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden {% if day.num == today %}ring-2 ring-blue-300{% endif %}">
+    <div class="px-4 py-3 border-b flex items-center justify-between
+      {% if day.num == today %}bg-blue-600 text-white{% else %}bg-slate-50{% endif %}">
+      <h3 class="font-bold text-sm flex items-center gap-2">
+        <i class="fas fa-calendar-day"></i> {{ day.label }}
+        {% if day.num == today %}<span class="text-[10px] px-2 py-0.5 rounded-full bg-white/20">Aujourd'hui</span>{% endif %}
+      </h3>
+      <span class="text-[11px] {% if day.num == today %}text-blue-100{% else %}text-slate-400{% endif %}">{{ day.items|length }} cours</span>
+    </div>
+    {% if day.items %}
+    <div class="divide-y divide-slate-100">
+      {% for it in day.items %}
+      <div class="px-4 py-3 flex items-start gap-3 hover:bg-slate-50 transition-colors">
+        <div class="w-16 shrink-0 text-xs font-bold font-mono text-slate-500 pt-0.5">{{ it.slot.name }}</div>
+        <div class="w-1 self-stretch rounded-full shrink-0 {{ it.color.0 }}"></div>
+        <div class="min-w-0 flex-1">
+          <p class="text-sm font-semibold text-slate-800">{{ it.entry.subject.name }}</p>
+          <p class="text-[11px] text-slate-500 mt-0.5">
+            {% if it.entry.teacher %}<i class="fas fa-chalkboard-user"></i> {{ it.entry.teacher.first_name }} {{ it.entry.teacher.last_name }}{% else %}Enseignant non renseigné{% endif %}
+          </p>
+          {% if it.entry.room %}<p class="text-[11px] text-slate-400 mt-0.5"><i class="fas fa-door-open"></i> Salle {{ it.entry.room.name }}</p>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="py-8 text-center text-xs text-slate-400">Aucun cours programmé</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<div class="mt-6 bg-white rounded-2xl border border-slate-200 p-5 shadow-xs">
+  <h3 class="font-bold text-slate-900 text-sm mb-4 flex items-center gap-2"><i class="fas fa-clock text-blue-600"></i> Créneaux horaires</h3>
+  <div class="flex flex-wrap gap-2">
+    {% for slot in slots %}
+    <span class="px-3 py-1.5 rounded-lg text-xs font-mono bg-slate-100 text-slate-600">{{ slot.name }}</span>
+    {% endfor %}
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}

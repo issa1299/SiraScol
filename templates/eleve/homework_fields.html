@@ -1,0 +1,16 @@
+<form method="post" enctype="multipart/form-data" class="space-y-4">
+  {% csrf_token %}
+  {% for field in form %}
+  <div>
+    <label for="{{ field.id_for_label }}" class="block text-[11px] font-bold uppercase text-slate-500 mb-1">{{ field.label }}</label>
+    {{ field }}
+    {% if field.errors %}<p class="text-[11px] text-red-600 mt-1">{{ field.errors|striptags }}</p>{% endif %}
+  </div>
+  {% endfor %}
+  <div class="flex items-center justify-end gap-2 pt-2">
+    <button type="button" onclick="{% if is_modal %}closeModal('modal-dynamic'){% else %}window.location.href='{% url 'eleve:teacher_homework' %}'{% endif %}" class="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">Annuler</button>
+    <button type="submit" class="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold">
+      <i class="fas fa-save"></i> {% if instance %}Enregistrer{% else %}Publier le devoir{% endif %}
+    </button>
+  </div>
+</form>

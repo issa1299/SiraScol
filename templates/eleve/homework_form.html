@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}{% if instance %}Modifier le devoir{% else %}Nouveau devoir{% endif %} — SiraScol{% endblock %}
+{% block content %}
+
+<div class="max-w-2xl">
+  <div class="mb-5">
+    <a href="{% url 'eleve:teacher_homework' %}" class="text-xs text-blue-600 hover:underline inline-flex items-center gap-1.5">
+      <i class="fas fa-arrow-left"></i> Retour aux devoirs
+    </a>
+    <h2 class="text-xl font-bold text-slate-900 mt-2">
+      {% if instance %}Modifier le devoir{% else %}Nouveau devoir{% endif %}
+    </h2>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6">
+    {% include 'eleve/homework_fields.html' %}
+  </div>
+</div>
+
+{% endblock %}

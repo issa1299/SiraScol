@@ -1,0 +1,86 @@
+{% extends "eleve/base_eleve.html" %}
+{% block title %}Mes devoirs — Espace Élève{% endblock %}
+{% block header_title %}Mes devoirs{% endblock %}
+{% block header_sub %}Consignes, échéances et documents donnés par vos enseignants{% endblock %}
+{% block content %}
+
+{# ── ONGLETS ── #}
+<div class="flex gap-2 mb-6 overflow-x-auto pb-1">
+  <a href="{% url 'eleve:homework' %}" class="shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-colors {% if not tab %}bg-blue-600 text-white{% else %}bg-white border border-slate-200 text-slate-600 hover:bg-slate-50{% endif %}">
+    Tous <span class="opacity-70">({{ done_ids|length }} faits)</span>
+  </a>
+  <a href="{% url 'eleve:homework' %}?tab=a_faire" class="shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-colors {% if tab == 'a_faire' %}bg-blue-600 text-white{% else %}bg-white border border-slate-200 text-slate-600 hover:bg-slate-50{% endif %}">
+    <i class="fas fa-list-check"></i> À faire
+  </a>
+  <a href="{% url 'eleve:homework' %}?tab=faits" class="shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-colors {% if tab == 'faits' %}bg-blue-600 text-white{% else %}bg-white border border-slate-200 text-slate-600 hover:bg-slate-50{% endif %}">
+    <i class="fas fa-check"></i> Faits
+  </a>
+  <a href="{% url 'eleve:homework' %}?tab=passes" class="shrink-0 px-4 py-2 rounded-xl text-xs font-semibold transition-colors {% if tab == 'passes' %}bg-blue-600 text-white{% else %}bg-white border border-slate-200 text-slate-600 hover:bg-slate-50{% endif %}">
+    <i class="fas fa-clock"></i> Passés
+  </a>
+</div>
+
+{% if homeworks %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  {% for h in homeworks %}
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden flex flex-col
+    {% if h.done %}border-emerald-200{% elif h.late %}border-rose-200{% endif %}">
+    <div class="px-5 py-4 border-b flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <div class="flex items-center gap-2 mb-1.5">
+          <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-wide bg-blue-50 text-blue-700">{{ h.homework.subject.name }}</span>
+          {% if h.done %}
+          <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-emerald-50 text-emerald-700"><i class="fas fa-check"></i> Fait</span>
+          {% elif h.late %}
+          <span class="px-2 py-0.5 rounded-lg text-[10px] font-bold bg-rose-50 text-rose-700">En retard</span>
+          {% endif %}
+        </div>
+        <h3 class="font-bold text-slate-900 text-sm">{{ h.homework.title }}</h3>
+        <p class="text-[11px] text-slate-400 mt-1">
+          <i class="fas fa-chalkboard-user"></i> {{ h.homework.teacher.first_name|default:"" }} {{ h.homework.teacher.last_name|default:"Enseignant" }}
+          · {{ h.homework.classroom.name }}
+        </p>
+      </div>
+      <div class="shrink-0 text-right">
+        <p class="text-[10px] uppercase font-bold text-slate-400">Échéance</p>
+        <p class="text-sm font-bold {% if h.late %}text-rose-600{% elif h.days_left <= 2 %}text-amber-600{% else %}text-slate-700{% endif %}">{{ h.homework.due_date|date:"d/m/Y" }}</p>
+        {% if not h.done %}<p class="text-[10px] text-slate-400">{{ h.days_left }} jour(s) restant(s)</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="px-5 py-4 flex-1">
+      <p class="text-[10px] font-bold uppercase tracking-wide text-slate-400 mb-1">Consignes</p>
+      <p class="text-xs text-slate-600 whitespace-pre-line">{{ h.homework.instructions|default:"Aucune consigne particulière." }}</p>
+    </div>
+
+    <div class="px-5 py-3 border-t bg-slate-50/60 flex items-center justify-between gap-3 flex-wrap">
+      <div class="flex items-center gap-3 text-xs">
+        {% if h.homework.document %}
+        <a href="{{ h.homework.document.url }}" target="_blank" class="inline-flex items-center gap-1.5 text-blue-600 font-semibold hover:underline">
+          <i class="fas fa-paperclip"></i> Télécharger le document
+        </a>
+        {% else %}
+        <span class="text-slate-400"><i class="fas fa-paperclip"></i> Aucun document</span>
+        {% endif %}
+      </div>
+      <form method="post" action="{% url 'eleve:homework_toggle' h.homework.id %}" class="m-0">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <input type="hidden" name="done" value="{% if h.done %}0{% else %}1{% endif %}">
+        <button type="submit" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors {% if h.done %}bg-slate-200 text-slate-600 hover:bg-slate-300{% else %}bg-blue-600 text-white hover:bg-blue-700{% endif %}">
+          {% if h.done %}<i class="fas fa-undo"></i> Marquer à faire{% else %}<i class="fas fa-check"></i> Marquer comme fait{% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
+  <div class="w-14 h-14 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-3 text-xl"><i class="fas fa-book-open"></i></div>
+  <p class="text-sm font-semibold text-slate-700">Aucun devoir à afficher</p>
+  <p class="text-xs text-slate-400 mt-1">Vos enseignants publieront ici les devoirs à réaliser.</p>
+</div>
+{% endif %}
+
+{% endblock %}

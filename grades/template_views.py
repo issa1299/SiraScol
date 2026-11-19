@@ -1,9 +1,21 @@
+from functools import wraps
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django import forms
 
+from core.permissions import get_role
 from .models import BulletinTemplate
+
+
+def _students_use_portal(view_func):
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if get_role(request.user) == 'eleve' and not request.user.is_superuser:
+            return redirect('eleve:bulletins')
+        return view_func(request, *args, **kwargs)
+    return _wrapped
 
 
 class BulletinTemplateForm(forms.ModelForm):
@@ -56,6 +68,7 @@ def ensure_default_templates():
 
 
 @login_required
+@_students_use_portal
 def template_list(request):
     ensure_default_templates()
     templates = BulletinTemplate.objects.all()
@@ -63,6 +76,7 @@ def template_list(request):
 
 
 @login_required
+@_students_use_portal
 def template_create(request):
     ensure_default_templates()
     if request.method == 'POST':
@@ -81,6 +95,7 @@ def template_create(request):
 
 
 @login_required
+@_students_use_portal
 def template_edit(request, pk):
     obj = get_object_or_404(BulletinTemplate, pk=pk)
     if request.method == 'POST':
@@ -97,6 +112,8 @@ def template_edit(request, pk):
     return render(request, 'grades/template_form.html', ctx)
 
 
+@login_required
+@_students_use_portal
 def template_set_default(request, pk):
     obj = get_object_or_404(BulletinTemplate, pk=pk)
     obj.is_default = True

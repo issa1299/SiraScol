@@ -14,6 +14,7 @@ urlpatterns = [
     path('finances/', include('finance.urls')),
     path('emploi-du-temps/', include('timetable.urls')),
     path('annonces/', include('communication.urls')),
+    path('mon-espace/', include('eleve.urls')),
     path('', include('core.urls')),
 ]
 

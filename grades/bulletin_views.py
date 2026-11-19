@@ -1,15 +1,31 @@
 from collections import defaultdict
 from decimal import Decimal, ROUND_HALF_UP
+from functools import wraps
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.db.models import Avg
 
+from core.access import (
+    filter_classrooms_for_user, get_classroom_for_user, get_student_for_user,
+)
+from core.permissions import get_role
+from core.year_context import get_selected_year
 from students.models import Student, Enrollment
 from grades.models import Grade, Period
 from academics.models import AcademicYear
 from core.models import SchoolSettings
+
+
+def _students_use_portal(view_func):
+    """Les élèves consultent leurs bulletins depuis leur espace dédié."""
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if get_role(request.user) == 'eleve' and not request.user.is_superuser:
+            return redirect('eleve:bulletins')
+        return view_func(request, *args, **kwargs)
+    return _wrapped
 
 
 def _q2(value):
@@ -258,7 +274,7 @@ def _appreciation_from_avg(avg, out_of=20):
 
 @login_required
 def bulletin(request, student_id):
-    student = get_object_or_404(Student, pk=student_id)
+    student = get_student_for_user(request.user, student_id)
     from core.year_context import get_selected_year
     current_year = get_selected_year(request) or AcademicYear.objects.filter(is_current=True).first()
     period_id = request.GET.get('period')
@@ -307,6 +323,7 @@ def bulletin(request, student_id):
 
 
 @login_required
+@_students_use_portal
 def bulletin_list(request):
     """Bulletins pro : Primaire | Secondaire/Lycée → classes → périodes auto."""
     from academics.models import ClassRoom, Cycle
@@ -328,6 +345,7 @@ def bulletin_list(request):
     )
     if current_year:
         qs = qs.filter(academic_year=current_year)
+    qs = filter_classrooms_for_user(request.user, qs)
     if is_teacher:
         qs = qs.filter(id__in=get_teacher_classrooms(request.user).values_list('id', flat=True))
 
@@ -458,8 +476,8 @@ def bulletin_pdf(request, student_id):
     """PDF d'un seul élève."""
     from .pdf_bulletin import render_bulletin_pdf
 
-    student = get_object_or_404(Student, pk=student_id)
-    current_year = AcademicYear.objects.filter(is_current=True).first()
+    student = get_student_for_user(request.user, student_id)
+    current_year = get_selected_year(request) or AcademicYear.objects.filter(is_current=True).first()
     period_id = request.GET.get('period')
     period = get_object_or_404(Period, pk=period_id) if period_id else None
 
@@ -474,6 +492,7 @@ def bulletin_pdf(request, student_id):
 
 
 @login_required
+@_students_use_portal
 def bulletin_class_pdf(request):
     """PDF de tous les élèves d'une classe (une page par élève)."""
     from .pdf_bulletin import render_bulletin_pdf
@@ -484,8 +503,8 @@ def bulletin_class_pdf(request):
     if not classroom_id:
         return HttpResponse('Classe requise', status=400)
 
-    classroom = get_object_or_404(ClassRoom, pk=classroom_id)
-    current_year = AcademicYear.objects.filter(is_current=True).first()
+    classroom = get_object_or_404(filter_classrooms_for_user(request.user), pk=classroom_id)
+    current_year = get_selected_year(request) or AcademicYear.objects.filter(is_current=True).first()
     period = get_object_or_404(Period, pk=period_id) if period_id else None
 
     enrollments = Enrollment.objects.filter(
@@ -600,6 +619,7 @@ def _build_bulletin_context(student, period, current_year, template=None, templa
 
 
 @login_required
+@_students_use_portal
 def bulletin_preview(request):
     """
     Aperçu d'un ou plusieurs bulletins avant téléchargement PDF.
@@ -624,7 +644,7 @@ def bulletin_preview(request):
     periods = Period.objects.filter(academic_year=current_year).order_by('period_type', 'order') if current_year else Period.objects.none()
     templates = BulletinTemplate.objects.all()
 
-    classroom = get_object_or_404(ClassRoom, pk=classroom_id) if classroom_id else None
+    classroom = get_classroom_for_user(request.user, classroom_id) if classroom_id else None
     period = get_object_or_404(Period, pk=period_id) if period_id else None
     template = get_object_or_404(BulletinTemplate, pk=template_id) if template_id else None
 

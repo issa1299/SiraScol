@@ -1,0 +1,96 @@
+{% extends "eleve/base_eleve.html" %}
+{% block title %}Mes informations — Espace Élève{% endblock %}
+{% block header_title %}Mes informations personnelles{% endblock %}
+{% block header_sub %}Vos coordonnées, votre scolarité et vos parents / tuteurs{% endblock %}
+{% block content %}
+
+{% if not student %}
+<div class="bg-white rounded-2xl border border-dashed border-slate-300 p-12 text-center">
+  <p class="text-sm font-semibold text-slate-700">Aucun dossier élève lié à votre compte.</p>
+  <p class="text-xs text-slate-400 mt-1">Contactez l'administration pour régulariser votre compte.</p>
+</div>
+{% else %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  {# ── IDENTITÉ ── #}
+  <div class="lg:col-span-1 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden text-center">
+    <div class="h-24 bg-gradient-to-r from-blue-700 to-cyan-600"></div>
+    <div class="px-5 pb-5 -mt-12">
+      {% if student.photo %}
+      <img src="{{ student.photo.url }}" alt="Photo de {{ student.full_name }}" class="w-24 h-24 rounded-2xl object-cover mx-auto border-4 border-white shadow-lg">
+      {% else %}
+      <div class="w-24 h-24 rounded-2xl bg-blue-100 text-blue-700 border-4 border-white shadow-lg flex items-center justify-center mx-auto text-2xl font-bold">
+        {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
+      </div>
+      {% endif %}
+      <h2 class="mt-4 text-lg font-bold text-slate-900">{{ student.full_name }}</h2>
+      <p class="text-xs text-slate-500 mt-0.5">{{ student.matricule }}</p>
+      <span class="inline-block mt-3 px-3 py-1 rounded-full text-[11px] font-semibold
+        {% if student.status == 'actif' %}bg-emerald-50 text-emerald-700{% else %}bg-amber-50 text-amber-700{% endif %}">
+        {{ student.get_status_display }}
+      </span>
+    </div>
+  </div>
+
+  <div class="lg:col-span-2 space-y-6">
+    {# ── COORDONNÉES ── #}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm flex items-center gap-2"><i class="fas fa-id-card text-blue-600"></i> Informations personnelles</h3></div>
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 p-5 text-xs">
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Nom</dt><dd class="font-semibold text-slate-800">{{ student.last_name }}</dd></div>
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Prénom</dt><dd class="font-semibold text-slate-800">{{ student.first_name }}</dd></div>
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Date de naissance</dt><dd class="font-semibold text-slate-800">{{ student.date_of_birth|date:"d/m/Y" }}</dd></div>
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Lieu de naissance</dt><dd class="font-semibold text-slate-800">{{ student.place_of_birth|default:"—" }}</dd></div>
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Sexe</dt><dd class="font-semibold text-slate-800">{{ student.get_gender_display }}</dd></div>
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Nationalité</dt><dd class="font-semibold text-slate-800">{{ student.nationality|default:"—" }}</dd></div>
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Téléphone</dt><dd class="font-semibold text-slate-800">{{ student.phone|default:"—" }}</dd></div>
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Adresse e-mail</dt><dd class="font-semibold text-slate-800">{{ student.email|default:"—" }}</dd></div>
+        <div class="sm:col-span-2"><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Adresse</dt><dd class="font-semibold text-slate-800">{{ student.address|default:"—" }}</dd></div>
+      </dl>
+    </div>
+
+    {# ── SCOLARITÉ ── #}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm flex items-center gap-2"><i class="fas fa-graduation-cap text-blue-600"></i> Scolarité</h3></div>
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 p-5 text-xs">
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Matricule</dt><dd class="font-mono font-semibold text-slate-800">{{ student.matricule }}</dd></div>
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Classe actuelle</dt><dd class="font-semibold text-slate-800">{{ enrollment.classroom.name|default:"—" }}</dd></div>
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Niveau</dt><dd class="font-semibold text-slate-800">{{ enrollment.classroom.level.name|default:"—" }}</dd></div>
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Année scolaire</dt><dd class="font-semibold text-slate-800">{{ current_year.name|default:"—" }}</dd></div>
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Date d'inscription</dt><dd class="font-semibold text-slate-800">{{ student.enrollment_date|date:"d/m/Y" }}</dd></div>
+        <div><dt class="text-slate-400 uppercase tracking-wide text-[10px] font-bold mb-1">Cycle</dt><dd class="font-semibold text-slate-800">{{ enrollment.classroom.level.cycle.name|default:"—" }}</dd></div>
+      </dl>
+    </div>
+
+    {# ── PARENTS / TUTEURS ── #}
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+      <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm flex items-center gap-2"><i class="fas fa-users text-blue-600"></i> Parents / Tuteurs</h3></div>
+      {% if parents %}
+      <div class="divide-y divide-slate-100">
+        {% for ps in parents %}
+        <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div class="w-9 h-9 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center text-xs font-bold shrink-0">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="min-w-0 flex-1">
+            <p class="text-sm font-semibold text-slate-800">{{ ps.parent.first_name }} {{ ps.parent.last_name }}</p>
+            <p class="text-[11px] text-slate-500">
+              {{ ps.get_relation_display }}{% if ps.is_primary %} · <span class="text-blue-600 font-semibold">Contact principal</span>{% endif %}
+            </p>
+          </div>
+          <div class="text-xs text-slate-600 sm:text-right">
+            <p><i class="fas fa-phone text-slate-400"></i> {{ ps.parent.phone|default:"—" }}{% if ps.parent.phone2 %} / {{ ps.parent.phone2 }}{% endif %}</p>
+            <p class="mt-0.5"><i class="fas fa-envelope text-slate-400"></i> {{ ps.parent.email|default:"—" }}</p>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="py-10 text-center text-slate-400 text-xs">Aucun parent ou tuteur enregistré.</div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% endif %}
+{% endblock %}

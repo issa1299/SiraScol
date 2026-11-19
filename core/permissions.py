@@ -95,6 +95,10 @@ PERMISSIONS = {
     'grades.bulletin_view': ['directeur', 'enseignant', 'parent', 'eleve'],
     'grades.bulletin_validate': ['directeur'],
 
+    # Devoirs
+    'homework.view': ['directeur', 'enseignant', 'eleve'],
+    'homework.manage': ['directeur', 'enseignant'],
+
     # Finance
     'finance.view': ['directeur', 'secretaire', 'parent'],
     'finance.pay': ['directeur', 'secretaire'],
@@ -192,6 +196,8 @@ PERMISSION_GROUPS = [
             ('grades.validate', 'Valider et verrouiller les notes'),
             ('grades.bulletin_view', 'Consulter et imprimer les bulletins'),
             ('grades.bulletin_validate', 'Validation définitive des bulletins'),
+            ('homework.view', 'Consulter les devoirs'),
+            ('homework.manage', 'Publier et gérer les devoirs'),
         ],
     },
     {

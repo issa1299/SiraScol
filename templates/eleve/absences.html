@@ -1,0 +1,109 @@
+{% extends "eleve/base_eleve.html" %}
+{% block title %}Mes absences et retards — Espace Élève{% endblock %}
+{% block header_title %}Mes absences et retards{% endblock %}
+{% block header_sub %}Historique des présences enregistrées avec motifs et statuts{% endblock %}
+{% block content %}
+
+{# ── STATISTIQUES ── #}
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+  <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+    <p class="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Absences</p>
+    <p class="text-2xl font-bold text-rose-600">{{ stats.absences }}</p>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+    <p class="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Retards</p>
+    <p class="text-2xl font-bold text-amber-600">{{ stats.retards }}</p>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+    <p class="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Justifiées</p>
+    <p class="text-2xl font-bold text-emerald-600">{{ stats.justifiees }}</p>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs">
+    <p class="text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-2">Non justifiées</p>
+    <p class="text-2xl font-bold text-slate-800">{{ stats.non_justifiees }}</p>
+  </div>
+</div>
+
+{# ── FILTRES ── #}
+<div class="bg-white rounded-2xl border border-slate-200 p-4 mb-6 shadow-xs">
+  <form method="get" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div>
+      <label class="text-[11px] font-bold uppercase text-slate-500 mb-1 block">Type</label>
+      <select name="type" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="this.form.submit()">
+        <option value="">Tous</option>
+        <option value="absence" {% if type_filter == 'absence' %}selected{% endif %}>Absences</option>
+        <option value="retard" {% if type_filter == 'retard' %}selected{% endif %}>Retards</option>
+      </select>
+    </div>
+    <div>
+      <label class="text-[11px] font-bold uppercase text-slate-500 mb-1 block">Statut</label>
+      <select name="status" class="w-full border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="this.form.submit()">
+        <option value="">Tous</option>
+        <option value="justifiee" {% if status_filter == 'justifiee' %}selected{% endif %}>Justifiée</option>
+        <option value="non_justifiee" {% if status_filter == 'non_justifiee' %}selected{% endif %}>Non justifiée</option>
+        <option value="en_attente" {% if status_filter == 'en_attente' %}selected{% endif %}>En attente</option>
+      </select>
+    </div>
+  </form>
+</div>
+
+{# ── HISTORIQUE ── #}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+  <div class="px-5 py-4 border-b">
+    <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2"><i class="fas fa-clock-rotate-left text-blue-600"></i> Historique</h3>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm min-w-[560px]">
+      <thead>
+        <tr class="bg-slate-50 border-b text-[11px] text-slate-500 uppercase tracking-wide">
+          <th class="text-left px-5 py-3 font-semibold">Date</th>
+          <th class="text-left px-3 py-3 font-semibold">Type</th>
+          <th class="text-left px-3 py-3 font-semibold">Motif</th>
+          <th class="text-left px-3 py-3 font-semibold">Statut</th>
+          <th class="text-left px-4 py-3 font-semibold">Justificatif</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for a in page %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 text-xs font-semibold text-slate-700 whitespace-nowrap">{{ a.date|date:"d/m/Y" }}</td>
+          <td class="px-3 py-3 text-xs">
+            <span class="px-2 py-1 rounded-lg font-semibold {% if a.type == 'absence' %}bg-rose-50 text-rose-700{% else %}bg-amber-50 text-amber-700{% endif %}">
+              <i class="fas {% if a.type == 'absence' %}fa-circle-xmark{% else %}fa-hourglass-half{% endif %}"></i>
+              {% if a.type == 'absence' %}Absence{% else %}Retard{% endif %}
+            </span>
+          </td>
+          <td class="px-3 py-3 text-xs text-slate-600">{{ a.reason|default:"—" }}</td>
+          <td class="px-3 py-3 text-xs">
+            <span class="px-2 py-1 rounded-lg font-semibold
+              {% if a.status == 'justifiee' %}bg-emerald-50 text-emerald-700
+              {% elif a.status == 'en_attente' %}bg-blue-50 text-blue-700
+              {% else %}bg-slate-100 text-slate-600{% endif %}">
+              {{ a.get_status_display }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-xs">
+            {% if a.justification_file %}
+            <a href="{{ a.justification_file.url }}" target="_blank" class="text-blue-600 hover:underline inline-flex items-center gap-1"><i class="fas fa-paperclip"></i> Voir</a>
+            {% else %}<span class="text-slate-400">—</span>{% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="py-12 text-center text-slate-400 text-xs">Aucune absence ni retard enregistré{% if type_filter or status_filter %} avec ces filtres{% endif %}.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page.paginator.num_pages > 1 %}
+  <div class="px-5 py-3 border-t flex items-center justify-between text-xs">
+    <span class="text-slate-500">Page {{ page.number }} / {{ page.paginator.num_pages }}</span>
+    <div class="flex gap-1">
+      {% if page.has_previous %}<a href="?page={{ page.previous_page_number }}" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200">« Précédent</a>{% endif %}
+      {% if page.has_next %}<a href="?page={{ page.next_page_number }}" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200">Suivant »</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

@@ -1,3 +1,5 @@
+from functools import wraps
+
 from core.year_context import get_selected_year
 from core.permissions import get_role, get_teacher_classrooms
 from django.contrib.auth.decorators import login_required
@@ -26,6 +28,15 @@ COLORS = [
     ('bg-cyan-50', 'border-cyan-200', 'text-cyan-900'),
     ('bg-orange-50', 'border-orange-200', 'text-orange-900'),
 ]
+
+
+def _students_use_portal(view_func):
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if get_role(request.user) == 'eleve' and not request.user.is_superuser:
+            return redirect('eleve:timetable')
+        return view_func(request, *args, **kwargs)
+    return _wrapped
 
 
 def _color_for(name):
@@ -85,6 +96,7 @@ def ensure_default_slots():
 
 
 @login_required
+@_students_use_portal
 def timetable_home(request):
     from datetime import date
     ensure_default_slots()
@@ -172,6 +184,7 @@ def timetable_home(request):
 
 
 @login_required
+@_students_use_portal
 @require_POST
 def slots_save(request):
     """Enregistre les créneaux (un par ligne: HH:MM - HH:MM)."""
@@ -231,6 +244,7 @@ def slots_save(request):
 
 
 @login_required
+@_students_use_portal
 def timetable_entry_save(request, classroom_id):
     classroom = get_object_or_404(ClassRoom, pk=classroom_id)
     role = get_role(request.user)
@@ -266,6 +280,7 @@ def timetable_entry_save(request, classroom_id):
 
 
 @login_required
+@_students_use_portal
 @require_POST
 def timetable_entry_delete(request, pk):
     entry = get_object_or_404(TimetableEntry, pk=pk)
@@ -277,11 +292,13 @@ def timetable_entry_delete(request, pk):
 
 # Ancien formulaire (compat)
 @login_required
+@_students_use_portal
 def timetable_entry_form(request, classroom_id):
     return redirect(f'/emploi-du-temps/?classroom={classroom_id}')
 
 
 @login_required
+@_students_use_portal
 def export_pdf(request, classroom_id):
     """PDF emploi du temps — style propre type modèle école."""
     from io import BytesIO
@@ -407,6 +424,7 @@ def export_pdf(request, classroom_id):
 
 
 @login_required
+@_students_use_portal
 def export_word(request, classroom_id):
     """Word (.doc) — même mise en page que le PDF."""
     classroom = get_object_or_404(

@@ -1,3 +1,5 @@
+from functools import wraps
+
 from core.year_context import get_selected_year
 
 from django.contrib.auth.decorators import login_required
@@ -30,9 +32,18 @@ def _deny_classroom(request):
     return redirect('grades:classes')
 
 
+def _students_use_portal(view_func):
+    """Les élèves utilisent exclusivement leur espace dédié, pas l'interface de gestion."""
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if get_role(request.user) == 'eleve' and not request.user.is_superuser:
+            return redirect('eleve:notes')
+        return view_func(request, *args, **kwargs)
+    return _wrapped
 
 
 @login_required
+@_students_use_portal
 def grades_classes(request):
     """Saisie : 1er cycle | 2ème cycle | Lycée → classes → élèves + périodes."""
     from .forms import level_is_primary, level_cycle_code
@@ -156,6 +167,7 @@ def grades_classes(request):
 
 
 @login_required
+@_students_use_portal
 def saisie_classe(request):
     """
     Saisie collective : classe → période (mois/trimestre) + matière en haut,
@@ -516,6 +528,7 @@ def saisie_classe(request):
 
 
 @login_required
+@_students_use_portal
 def saisie_eleve(request):
     """Saisie des notes d'un élève pour une période (interface type SiraScol)."""
     from .forms import level_is_primary
@@ -729,6 +742,7 @@ def saisie_eleve(request):
 
 
 @login_required
+@_students_use_portal
 def class_assessments(request, classroom_id):
     """Évaluations d'une classe + création adaptée."""
     classroom = get_object_or_404(
@@ -765,12 +779,14 @@ def class_assessments(request, classroom_id):
 
 
 @login_required
+@_students_use_portal
 def assessment_list(request):
     """Redirige vers la vue par classes."""
     return redirect('grades:classes')
 
 
 @login_required
+@_students_use_portal
 def assessment_create(request):
     classroom_id = request.GET.get('classroom') or request.POST.get('classroom')
     classroom = None
@@ -812,6 +828,7 @@ def assessment_create(request):
 
 
 @login_required
+@_students_use_portal
 def grade_entry(request, pk):
     assessment = get_object_or_404(
         Assessment.objects.select_related(
@@ -969,6 +986,7 @@ def _cotes_classrooms(request, year=None):
 
 
 @login_required
+@_students_use_portal
 def cotes_liste_eleves(request):
     """Onglet Liste des élèves — tous les élèves avec classe et lien notes."""
     from students.models import Student
@@ -1003,6 +1021,7 @@ def cotes_liste_eleves(request):
 
 
 @login_required
+@_students_use_portal
 def cotes_modifier(request):
     """Onglet Modifier les cotes — liste des évaluations récentes à modifier."""
     qs, year = _cotes_classrooms(request)
@@ -1026,6 +1045,7 @@ def cotes_modifier(request):
 
 
 @login_required
+@_students_use_portal
 def cotes_valider(request):
     """Onglet Valider les cotes — évaluations avec notes saisies (aperçu validation)."""
     qs, year = _cotes_classrooms(request)
@@ -1057,6 +1077,7 @@ def cotes_valider(request):
 
 
 @login_required
+@_students_use_portal
 def cotes_niveaux(request):
     """Onglet Niveau des élèves — effectifs et moyennes par classe."""
     from django.db.models import Avg
@@ -1080,6 +1101,7 @@ def cotes_niveaux(request):
 
 
 @login_required
+@_students_use_portal
 def cotes_palmares(request):
     """Onglet Palmarès — classement des élèves par moyenne."""
     from django.db.models import Avg
@@ -1129,6 +1151,7 @@ def cotes_palmares(request):
 
 
 @login_required
+@_students_use_portal
 def cotes_historique(request):
     """Onglet Historique — dernières notes saisies."""
     qs, year = _cotes_classrooms(request)

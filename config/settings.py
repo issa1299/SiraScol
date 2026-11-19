@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     'attendance',
     'finance',
     'communication',
+    'eleve',
     'core.apps.CoreConfig',
 ]
 

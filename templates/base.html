@@ -306,6 +306,9 @@
                 <a href="{% url 'grades:classes' %}" class="nav-link {% if '/notes' in request.path and 'bulletin' not in request.path %}active{% endif %}">
                     <i class="fas fa-pen w-5 text-center"></i> Porter les notes
                 </a>
+                <a href="{% url 'eleve:teacher_homework' %}" class="nav-link {% if '/mon-espace/enseignant' in request.path %}active{% endif %}">
+                    <i class="fas fa-book-open w-5 text-center"></i> Devoirs à donner
+                </a>
                 <a href="{% url 'attendance:list' %}" class="nav-link {% if request.resolver_match.app_name == 'attendance' %}active{% endif %}">
                     <i class="fas fa-user-check w-5 text-center"></i> Faire l’appel
                 </a>
@@ -321,6 +324,29 @@
                 </a>
                 <a href="{% url 'communication:inbox' %}" class="nav-link {% if 'messages' in request.path %}active{% endif %}">
                     <i class="fas fa-envelope w-5 text-center"></i> Messages
+                </a>
+                {% elif user_role == 'eleve' %}
+                <div class="nav-section">Mon espace élève</div>
+                <a href="{% url 'eleve:dashboard' %}" class="nav-link {% if request.resolver_match.app_name == 'eleve' %}active{% endif %}">
+                    <i class="fas fa-house-user w-5 text-center"></i> Tableau de bord
+                </a>
+                <a href="{% url 'eleve:notes' %}" class="nav-link">
+                    <i class="fas fa-chart-line w-5 text-center"></i> Mes notes
+                </a>
+                <a href="{% url 'eleve:bulletins' %}" class="nav-link">
+                    <i class="fas fa-file-invoice w-5 text-center"></i> Mes bulletins
+                </a>
+                <a href="{% url 'eleve:timetable' %}" class="nav-link">
+                    <i class="fas fa-calendar-days w-5 text-center"></i> Emploi du temps
+                </a>
+                <a href="{% url 'eleve:absences' %}" class="nav-link">
+                    <i class="fas fa-calendar-day w-5 text-center"></i> Absences & retards
+                </a>
+                <a href="{% url 'eleve:homework' %}" class="nav-link">
+                    <i class="fas fa-book-open w-5 text-center"></i> Mes devoirs
+                </a>
+                <a href="{% url 'eleve:informations' %}" class="nav-link">
+                    <i class="fas fa-id-card w-5 text-center"></i> Mes informations
                 </a>
                 {% else %}
 
@@ -517,6 +543,16 @@
                 <button type="button" onclick="openMobileDrawer()">
                     <i class="fas fa-bars"></i><span>Menu</span>
                 </button>
+                {% elif user_role == 'eleve' %}
+                <a href="{% url 'eleve:dashboard' %}" class="{% if request.resolver_match.app_name == 'eleve' %}active{% endif %}">
+                    <i class="fas fa-house-user"></i><span>Accueil</span>
+                </a>
+                <a href="{% url 'eleve:notes' %}"><i class="fas fa-chart-line"></i><span>Notes</span></a>
+                <a href="{% url 'eleve:bulletins' %}"><i class="fas fa-file-invoice"></i><span>Bulletins</span></a>
+                <a href="{% url 'eleve:homework' %}"><i class="fas fa-book-open"></i><span>Devoirs</span></a>
+                <button type="button" onclick="openMobileDrawer()">
+                    <i class="fas fa-bars"></i><span>Menu</span>
+                </button>
                 {% else %}
                 <a href="{% url 'core:dashboard' %}" class="{% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                     <i class="fas fa-home"></i><span>Accueil</span>
@@ -550,11 +586,22 @@
                         <a href="{% url 'core:dashboard' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-home w-5 text-center"></i> Accueil</a>
                         <a href="{% url 'teachers:portal_classes' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-chalkboard w-5 text-center"></i> Mes classes</a>
                         <a href="{% url 'grades:classes' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-pen w-5 text-center"></i> Porter les notes</a>
+                        <a href="{% url 'eleve:teacher_homework' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-book-open w-5 text-center"></i> Devoirs à donner</a>
                         <a href="{% url 'attendance:list' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-user-check w-5 text-center"></i> Faire l’appel</a>
                         <a href="{% url 'timetable:home' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-calendar-alt w-5 text-center"></i> Emploi du temps</a>
                         <a href="{% url 'grades:bulletin_list' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-file-alt w-5 text-center"></i> Bulletins</a>
                         <div class="nav-section">Infos</div>
                         <a href="{% url 'communication:documents' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-folder-open w-5 text-center"></i> Documents</a>
+                        <a href="{% url 'communication:inbox' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-envelope w-5 text-center"></i> Messages</a>
+                        {% elif user_role == 'eleve' %}
+                        <div class="nav-section">Mon espace élève</div>
+                        <a href="{% url 'eleve:dashboard' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-house-user w-5 text-center"></i> Tableau de bord</a>
+                        <a href="{% url 'eleve:notes' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-chart-line w-5 text-center"></i> Mes notes</a>
+                        <a href="{% url 'eleve:bulletins' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-file-invoice w-5 text-center"></i> Mes bulletins</a>
+                        <a href="{% url 'eleve:timetable' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-calendar-days w-5 text-center"></i> Emploi du temps</a>
+                        <a href="{% url 'eleve:absences' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-calendar-day w-5 text-center"></i> Absences & retards</a>
+                        <a href="{% url 'eleve:homework' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-book-open w-5 text-center"></i> Mes devoirs</a>
+                        <a href="{% url 'eleve:informations' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-id-card w-5 text-center"></i> Mes informations</a>
                         <a href="{% url 'communication:inbox' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-envelope w-5 text-center"></i> Messages</a>
                         {% else %}
 

@@ -1,0 +1,238 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#2563eb">
+  <title>{% block title %}Espace Élève{% endblock %} — SiraScol</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    .eleve-nav a.active {
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: #fff; font-weight: 600;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, .25);
+    }
+    .eleve-nav a:not(.active):hover { background: rgba(255,255,255,.08); color: #fff; }
+    .eleve-nav::-webkit-scrollbar { width: 5px; }
+    .eleve-nav::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+
+    .eleve-bottom-nav { display: none; }
+    @media (max-width: 767px) {
+      .eleve-bottom-nav {
+        position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+        display: flex; justify-content: space-around; align-items: stretch;
+        background: rgba(255,255,255,.97);
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+        border-top: 1px solid #e2e8f0;
+        padding: .25rem .25rem env(safe-area-inset-bottom, 0px);
+        box-shadow: 0 -2px 16px rgba(15,23,42,.08);
+      }
+      .eleve-bottom-nav a, .eleve-bottom-nav button {
+        flex: 1 1 0; min-width: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; gap: .15rem;
+        padding: .4rem .1rem; min-height: 3.25rem;
+        font-size: .62rem; line-height: 1.1; color: #64748b;
+        background: transparent; border: 0; cursor: pointer; font-family: inherit;
+      }
+      .eleve-bottom-nav a i, .eleve-bottom-nav button i { font-size: 1.25rem; }
+      .eleve-bottom-nav a.active { color: #1d4ed8; font-weight: 700; }
+      .eleve-bottom-nav a.active i { color: #2563eb; }
+      input, select, textarea, button { font-size: 16px !important; }
+    }
+    @media print {
+      aside, header, #eleve-sidebar, #eleve-overlay, .eleve-bottom-nav, .no-print { display: none !important; }
+      body { background: #fff !important; }
+      main { padding: 0 !important; margin: 0 !important; max-width: 100% !important; }
+      .md\:ml-64 { margin-left: 0 !important; }
+    }
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="h-full flex flex-col text-slate-800 antialiased">
+  <div class="flex flex-1 min-h-screen">
+
+    {# ── SIDEBARE ESPACE ÉLÈVE ── #}
+    <aside id="eleve-sidebar"
+      class="w-64 bg-slate-900 text-slate-300 flex flex-col fixed inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out shadow-xl no-print">
+      <div class="px-5 py-5 border-b border-slate-800 flex items-center justify-between">
+        <a href="{% url 'eleve:dashboard' %}" class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-400 text-white flex items-center justify-center text-lg shadow-md">
+            <i class="fas fa-user-graduate"></i>
+          </div>
+          <div>
+            <p class="font-bold text-white text-base leading-tight tracking-tight">SiraScol</p>
+            <p class="text-[11px] text-blue-400 font-semibold tracking-wide">Espace Élève</p>
+          </div>
+        </a>
+        <button class="md:hidden text-slate-400 hover:text-white text-xl p-1" onclick="toggleEleveSidebar()" aria-label="Fermer le menu">&times;</button>
+      </div>
+
+      <nav class="eleve-nav flex-1 overflow-y-auto p-3 text-xs space-y-1">
+        <p class="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-3 pt-3 pb-1.5">Mon suivi</p>
+        <a href="{% url 'eleve:dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all {% if section == 'accueil' %}active{% else %}text-slate-300{% endif %}">
+          <i class="fas fa-house-user w-4 text-center"></i><span>Tableau de bord</span>
+        </a>
+        <a href="{% url 'eleve:notes' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all {% if section == 'notes' %}active{% else %}text-slate-300{% endif %}">
+          <i class="fas fa-chart-line w-4 text-center"></i><span>Mes notes</span>
+        </a>
+        <a href="{% url 'eleve:bulletins' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all {% if section == 'bulletins' %}active{% else %}text-slate-300{% endif %}">
+          <i class="fas fa-file-invoice w-4 text-center"></i><span>Mes bulletins</span>
+        </a>
+        <a href="{% url 'eleve:timetable' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all {% if section == 'emploi' %}active{% else %}text-slate-300{% endif %}">
+          <i class="fas fa-calendar-days w-4 text-center"></i><span>Emploi du temps</span>
+        </a>
+
+        <p class="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-3 pt-5 pb-1.5">Ma vie scolaire</p>
+        <a href="{% url 'eleve:absences' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all {% if section == 'absences' %}active{% else %}text-slate-300{% endif %}">
+          <i class="fas fa-calendar-day w-4 text-center"></i><span>Absences & retards</span>
+        </a>
+        <a href="{% url 'eleve:homework' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all {% if section == 'devoirs' %}active{% else %}text-slate-300{% endif %}">
+          <i class="fas fa-book-open w-4 text-center"></i><span>Mes devoirs</span>
+        </a>
+        <a href="{% url 'eleve:informations' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all {% if section == 'profil' %}active{% else %}text-slate-300{% endif %}">
+          <i class="fas fa-id-card w-4 text-center"></i><span>Mes informations</span>
+        </a>
+
+        <p class="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-3 pt-5 pb-1.5">Autre</p>
+        <a href="{% url 'communication:inbox' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-slate-300">
+          <i class="fas fa-envelope w-4 text-center"></i><span>Messages</span>
+        </a>
+        <a href="{% url 'core:dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-blue-400 hover:text-white hover:bg-slate-800 font-semibold">
+          <i class="fas fa-arrow-left w-4 text-center"></i><span>Retour à l'accueil</span>
+        </a>
+      </nav>
+
+      {% if all_academic_years %}
+      <form method="get" action="{% url 'core:set_year' %}" class="px-3 pt-3 m-0 border-t border-slate-800 no-print">
+        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <label for="eleve-year-side" class="text-[10px] uppercase font-bold tracking-wider text-slate-500 px-1 flex items-center gap-1.5">
+          <i class="fas fa-calendar-check text-blue-400 text-[10px]"></i> Année scolaire
+        </label>
+        <select id="eleve-year-side" name="year" onchange="this.form.submit()"
+                class="mt-1.5 w-full bg-slate-800 border border-slate-700 text-slate-100 text-xs font-semibold rounded-xl px-3 py-2 cursor-pointer">
+          {% for y in all_academic_years %}
+          <option value="{{ y.id }}" {% if current_year and current_year.id == y.id %}selected{% endif %}>{{ y.name }}{% if y.is_current %} ★{% endif %}</option>
+          {% endfor %}
+        </select>
+      </form>
+      {% endif %}
+
+      <div class="p-3 border-t border-slate-800 bg-slate-950/60 no-print">
+        <div class="flex items-center gap-3 px-2 py-1.5">
+          {% if student and student.photo %}
+          <img src="{{ student.photo.url }}" alt="" class="w-9 h-9 rounded-full object-cover shrink-0 border border-slate-700">
+          {% else %}
+          <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+            {{ student.first_name|first|upper|default:user.username|first|upper }}
+          </div>
+          {% endif %}
+          <div class="min-w-0 flex-1">
+            <p class="text-xs font-semibold text-white truncate">{{ student.full_name|default:user.get_full_name|default:user.username }}</p>
+            <p class="text-[10px] text-slate-400 truncate">{{ student.matricule|default:"Élève" }}</p>
+          </div>
+        </div>
+        <form method="post" action="{% url 'accounts:logout' %}" class="m-0 mt-1">
+          {% csrf_token %}
+          <button type="submit" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-red-300 hover:bg-slate-800 transition-colors text-left">
+            <i class="fas fa-sign-out-alt w-4 text-center"></i><span class="text-xs">Déconnexion</span>
+          </button>
+        </form>
+      </div>
+    </aside>
+
+    <div id="eleve-overlay" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 hidden md:hidden no-print" onclick="toggleEleveSidebar()"></div>
+
+    {# ── CONTENU ── #}
+    <div class="flex-1 md:ml-64 min-w-0 flex flex-col min-h-screen bg-slate-50">
+      <header class="bg-white border-b border-slate-200 sticky top-0 z-20 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3 shadow-xs no-print">
+        <div class="flex items-center gap-3 min-w-0">
+          <button type="button" class="md:hidden text-slate-600 hover:text-slate-900 text-lg p-1.5 rounded-lg hover:bg-slate-100" onclick="toggleEleveSidebar()" aria-label="Ouvrir le menu">
+            <i class="fas fa-bars"></i>
+          </button>
+          <div class="min-w-0">
+            <h1 class="font-bold text-slate-900 text-sm sm:text-base truncate">{% block header_title %}Espace Élève{% endblock %}</h1>
+            <p class="text-xs text-slate-500 truncate">{% block header_sub %}Mon suivi scolaire{% endblock %}</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+          {% if all_academic_years %}
+          <form method="get" action="{% url 'core:set_year' %}" class="hidden sm:block m-0">
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <label class="sr-only" for="eleve-year">Année scolaire</label>
+            <div class="relative">
+              <i class="fas fa-calendar-check absolute left-3 top-1/2 -translate-y-1/2 text-blue-600 text-[11px] pointer-events-none"></i>
+              <select id="eleve-year" name="year" onchange="this.form.submit()"
+                      class="appearance-none pl-8 pr-7 py-1.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 cursor-pointer">
+                {% for y in all_academic_years %}
+                <option value="{{ y.id }}" {% if current_year and current_year.id == y.id %}selected{% endif %}>{{ y.name }}{% if y.is_current %} ★{% endif %}</option>
+                {% endfor %}
+              </select>
+              <i class="fas fa-chevron-down absolute right-2.5 top-1/2 -translate-y-1/2 text-[9px] text-blue-600 pointer-events-none"></i>
+            </div>
+          </form>
+          {% elif current_year %}
+          <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+            <i class="fas fa-calendar-check text-[10px]"></i><span>{{ current_year.name }}</span>
+          </div>
+          {% endif %}
+          <a href="{% url 'eleve:informations' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors" title="Mes informations">
+            <i class="fas fa-circle-user text-[13px]"></i><span class="hidden md:inline">Mon profil</span>
+          </a>
+          <a href="{% url 'core:dashboard' %}" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors">
+            <i class="fas fa-home text-[11px]"></i><span class="hidden md:inline">Accueil</span>
+          </a>
+        </div>
+      </header>
+
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 max-w-7xl w-full mx-auto">
+        {% if messages %}
+        <div class="mb-5 space-y-2 no-print">
+          {% for message in messages %}
+          <div class="text-xs sm:text-sm rounded-xl px-4 py-3 flex items-center justify-between shadow-xs
+            {% if 'error' in message.tags %}bg-red-50 text-red-800 border border-red-200
+            {% elif 'success' in message.tags %}bg-emerald-50 text-emerald-800 border border-emerald-200
+            {% elif 'warning' in message.tags %}bg-amber-50 text-amber-800 border border-amber-200
+            {% else %}bg-blue-50 text-blue-800 border border-blue-200{% endif %}">
+            <div class="flex items-center gap-2"><i class="fas fa-circle-info"></i><span>{{ message }}</span></div>
+            <button type="button" onclick="this.closest('div').parentElement.remove()" class="text-slate-400 hover:text-slate-700 px-1" aria-label="Fermer"><i class="fas fa-times text-xs"></i></button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% block content %}{% endblock %}
+      </main>
+
+      <nav class="eleve-bottom-nav md:hidden no-print" aria-label="Navigation de l'espace élève">
+        <a href="{% url 'eleve:dashboard' %}" class="{% if section == 'accueil' %}active{% endif %}">
+          <i class="fas fa-house-user"></i><span>Accueil</span>
+        </a>
+        <a href="{% url 'eleve:notes' %}" class="{% if section == 'notes' %}active{% endif %}">
+          <i class="fas fa-chart-line"></i><span>Notes</span>
+        </a>
+        <a href="{% url 'eleve:bulletins' %}" class="{% if section == 'bulletins' %}active{% endif %}">
+          <i class="fas fa-file-invoice"></i><span>Bulletins</span>
+        </a>
+        <a href="{% url 'eleve:homework' %}" class="{% if section == 'devoirs' %}active{% endif %}">
+          <i class="fas fa-book-open"></i><span>Devoirs</span>
+        </a>
+        <button type="button" onclick="toggleEleveSidebar()"><i class="fas fa-bars"></i><span>Menu</span></button>
+      </nav>
+    </div>
+  </div>
+
+  <script>
+  function toggleEleveSidebar() {
+    var sb = document.getElementById('eleve-sidebar');
+    var ov = document.getElementById('eleve-overlay');
+    if (!sb || !ov) return;
+    var open = sb.classList.toggle('-translate-x-full') === false;
+    ov.classList.toggle('hidden', !open);
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+  </script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
