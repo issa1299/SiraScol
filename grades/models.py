@@ -89,6 +89,12 @@ class Grade(models.Model):
     )
     appreciation = models.CharField(max_length=255, blank=True, verbose_name='Appréciation')
     is_absent = models.BooleanField(default=False, verbose_name='Absent')
+    is_validated = models.BooleanField(default=False, verbose_name='Validée')
+    validated_by = models.ForeignKey(
+        'auth.User', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='validated_grades',
+    )
+    validated_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

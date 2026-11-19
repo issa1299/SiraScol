@@ -1,0 +1,51 @@
+{% extends "prof/base_prof.html" %}
+{% block title %}{{ classroom.name }} — Mes classes{% endblock %}
+{% block header_title %}{{ classroom.name }}{% endblock %}
+{% block header_sub %}{{ classroom.level.name }} · {{ year.name|default:"" }}{% endblock %}
+{% block content %}
+
+<div class="mb-5 flex flex-wrap gap-2">
+  <a href="{% url 'prof:classes' %}" class="text-xs text-indigo-600 hover:underline inline-flex items-center gap-1.5"><i class="fas fa-arrow-left"></i> Mes classes</a>
+  <a href="{% url 'grades:saisie_classe' %}?classroom={{ classroom.id }}" class="px-3 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold"><i class="fas fa-pen"></i> Saisir les notes</a>
+  <a href="{% url 'attendance:class_attendance' classroom.id %}" class="px-3 py-2 rounded-xl bg-emerald-600 text-white text-xs font-semibold"><i class="fas fa-user-check"></i> Faire l'appel</a>
+  <a href="{% url 'prof:bulletins' %}?classroom={{ classroom.id }}" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold"><i class="fas fa-file-invoice"></i> Bulletins</a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-users text-indigo-600"></i> Élèves de la classe ({{ students|length }})</h3></div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm min-w-[520px]">
+        <thead><tr class="bg-slate-50 border-b text-[11px] text-slate-500 uppercase"><th class="text-left px-5 py-3">Élève</th><th class="text-left px-3 py-3">Matricule</th><th class="text-left px-3 py-3">Naissance</th><th class="text-right px-5 py-3">Fiche</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for s in students %}
+          <tr class="hover:bg-slate-50">
+            <td class="px-5 py-3 font-semibold text-slate-800">{{ s.last_name }} {{ s.first_name }}</td>
+            <td class="px-3 py-3 font-mono text-xs text-slate-600">{{ s.matricule }}</td>
+            <td class="px-3 py-3 text-xs text-slate-500">{{ s.date_of_birth|date:"d/m/Y" }}</td>
+            <td class="px-5 py-3 text-right"><a href="{% url 'students:detail' s.pk %}" class="text-xs text-indigo-600 hover:underline">Voir →</a></td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="py-10 text-center text-slate-400 text-xs">Aucun élève inscrit.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
+    <h3 class="font-bold text-slate-900 text-sm mb-4"><i class="fas fa-book text-indigo-600"></i> Mes matières dans cette classe</h3>
+    <div class="space-y-2">
+      {% for s in subjects %}
+      <div class="flex items-center justify-between rounded-xl bg-indigo-50 px-3 py-2">
+        <span class="text-sm font-semibold text-indigo-900">{{ s.name }}</span>
+        <span class="text-[10px] text-indigo-600">coef. {{ s.coefficient }}</span>
+      </div>
+      {% empty %}
+      <p class="text-xs text-slate-400">Aucune matière assignée.</p>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}

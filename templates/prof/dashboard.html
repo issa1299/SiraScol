@@ -1,0 +1,72 @@
+{% extends "prof/base_prof.html" %}
+{% block title %}Tableau de bord — Espace Professeur{% endblock %}
+{% block header_title %}Bonjour {{ teacher.first_name|default:"professeur" }} 👋{% endblock %}
+{% block header_sub %}Vue générale de votre activité pédagogique{% endblock %}
+{% block content %}
+
+<div class="bg-gradient-to-br from-indigo-700 via-indigo-600 to-violet-600 rounded-2xl shadow-lg p-5 sm:p-6 text-white mb-6 flex flex-col sm:flex-row sm:items-center gap-5">
+  {% if teacher.photo %}
+  <img src="{{ teacher.photo.url }}" alt="" class="w-20 h-20 rounded-2xl object-cover border-4 border-white/40 shrink-0">
+  {% else %}
+  <div class="w-20 h-20 rounded-2xl bg-white/20 border-4 border-white/40 flex items-center justify-center text-3xl font-bold shrink-0">{{ teacher.first_name|first|upper|default:"?" }}{{ teacher.last_name|first|default:"" }}</div>
+  {% endif %}
+  <div class="min-w-0 flex-1">
+    <p class="text-[11px] uppercase tracking-widest text-indigo-100 font-bold">Espace professeur</p>
+    <h2 class="text-xl sm:text-2xl font-bold truncate">{{ teacher.get_full_name|default:user.username }}</h2>
+    <div class="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-indigo-50">
+      <span><i class="fas fa-book text-indigo-200"></i> {{ subjects|length }} matière(s)</span>
+      <span><i class="fas fa-school text-indigo-200"></i> {{ classrooms|length }} classe(s)</span>
+      <span><i class="fas fa-user-graduate text-indigo-200"></i> {{ nb_students }} élève(s)</span>
+      {% if year %}<span><i class="fas fa-calendar-check text-indigo-200"></i> {{ year.name }}</span>{% endif %}
+    </div>
+  </div>
+  <a href="{% url 'prof:profil' %}" class="shrink-0 self-start px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/30 text-xs font-semibold"><i class="fas fa-id-card"></i> Mon profil</a>
+</div>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+  <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs"><p class="text-[10px] font-bold uppercase text-slate-500 mb-2">Mes classes</p><p class="text-2xl font-bold text-indigo-700">{{ classrooms|length }}</p><a href="{% url 'prof:classes' %}" class="text-[11px] text-indigo-600 hover:underline">Voir →</a></div>
+  <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs"><p class="text-[10px] font-bold uppercase text-slate-500 mb-2">Élèves suivis</p><p class="text-2xl font-bold text-slate-900">{{ nb_students }}</p><a href="{% url 'prof:classes' %}" class="text-[11px] text-indigo-600 hover:underline">Détail →</a></div>
+  <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs"><p class="text-[10px] font-bold uppercase text-slate-500 mb-2">Notes saisies</p><p class="text-2xl font-bold text-slate-900">{{ nb_grades }}</p><p class="text-[11px] text-amber-600">{{ nb_unvalidated }} à valider</p></div>
+  <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-xs"><p class="text-[10px] font-bold uppercase text-slate-500 mb-2">Absences saisies</p><p class="text-2xl font-bold text-slate-900">{{ nb_absences }}</p><a href="{% url 'prof:presence' %}" class="text-[11px] text-indigo-600 hover:underline">Voir →</a></div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="px-5 py-4 border-b flex items-center justify-between"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-calendar-days text-indigo-600"></i> Mes prochains cours</h3><a href="{% url 'prof:timetable' %}" class="text-[11px] text-indigo-600 hover:underline">Tout voir</a></div>
+    {% if upcoming %}
+    <div class="divide-y divide-slate-100">
+      {% for e in upcoming %}
+      <div class="px-5 py-3 flex items-center justify-between gap-3">
+        <div class="min-w-0"><p class="text-sm font-semibold text-slate-800 truncate">{{ e.subject.name }}</p><p class="text-[11px] text-slate-500">{{ e.classroom.name }} · {% for n,l in days %}{% if n == e.day %}{{ l }}{% endif %}{% endfor %} · {{ e.time_slot.name }}</p></div>
+        <span class="shrink-0 text-[11px] px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 font-semibold">{% if e.room %}{{ e.room.name }}{% else %}Salle —{% endif %}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<div class="py-10 text-center text-slate-400 text-xs">Aucun cours planifié.</div>{% endif %}
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-bell text-indigo-600"></i> Notifications</h3></div>
+    {% if notifications %}
+    <div class="divide-y divide-slate-100">
+      {% for n in notifications %}
+      <div class="px-5 py-3"><p class="text-sm font-semibold text-slate-800">{{ n.title }}</p><p class="text-[11px] text-slate-500 mt-0.5">{{ n.message }}</p></div>
+      {% endfor %}
+    </div>
+    {% else %}<div class="py-10 text-center text-slate-400 text-xs">Aucune nouvelle notification.</div>{% endif %}
+    <a href="{% url 'prof:notifications' %}" class="block px-5 py-3 border-t text-[11px] text-indigo-600 hover:bg-indigo-50 font-semibold">Toutes les notifications →</a>
+  </div>
+</div>
+
+<div class="mt-6 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+  <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-bullhorn text-indigo-600"></i> Dernières annonces</h3></div>
+  {% if announcements %}
+  <div class="divide-y divide-slate-100">
+    {% for a in announcements %}
+    <div class="px-5 py-3"><p class="text-sm font-semibold text-slate-800">{{ a.title }}</p><p class="text-[11px] text-slate-500 mt-1">{{ a.content|striptags|truncatechars:130 }}</p></div>
+    {% endfor %}
+  </div>
+  {% else %}<div class="py-8 text-center text-slate-400 text-xs">Aucune annonce récente.</div>{% endif %}
+</div>
+
+{% endblock %}

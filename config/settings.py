@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'finance',
     'communication',
     'eleve',
+    'prof.apps.ProfConfig',
     'core.apps.CoreConfig',
 ]
 

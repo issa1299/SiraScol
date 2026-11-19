@@ -838,6 +838,13 @@ def grade_entry(request, pk):
     )
     if not _teacher_can_classroom(request.user, assessment.classroom):
         return _deny_classroom(request)
+    if (
+        get_role(request.user) == 'enseignant'
+        and not request.user.is_superuser
+        and Grade.objects.filter(assessment=assessment, is_validated=True).exists()
+    ):
+        messages.error(request, "Cette évaluation est déjà validée : modification refusée.")
+        return redirect('grades:list')
     enrollments = (
         Enrollment.objects.filter(classroom=assessment.classroom, is_active=True)
         .select_related('student')

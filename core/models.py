@@ -110,3 +110,38 @@ class SchoolPhoto(models.Model):
         if self.is_primary:
             SchoolPhoto.objects.filter(is_primary=True).exclude(pk=self.pk).update(is_primary=False)
         super().save(*args, **kwargs)
+
+
+class Notification(models.Model):
+    """Notification interne affichée dans les portails dédiés."""
+
+    CATEGORY_CHOICES = [
+        ('note', 'Nouvelle note'),
+        ('absence', 'Absence / retard'),
+        ('annonce', 'Annonce'),
+        ('devoir', 'Devoir'),
+        ('emploi', 'Emploi du temps'),
+        ('bulletin', 'Bulletin'),
+        ('paiement', 'Paiement'),
+        ('info', 'Information'),
+    ]
+
+    user = models.ForeignKey(
+        'auth.User', on_delete=models.CASCADE, related_name='notifications',
+    )
+    title = models.CharField(max_length=200, verbose_name='Titre')
+    message = models.TextField(blank=True, verbose_name='Message')
+    category = models.CharField(
+        max_length=20, choices=CATEGORY_CHOICES, default='info',
+    )
+    link = models.CharField(max_length=255, blank=True, verbose_name='Lien')
+    is_read = models.BooleanField(default=False, verbose_name='Lu')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Notification'
+        verbose_name_plural = 'Notifications'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.title} — {self.user.username}'

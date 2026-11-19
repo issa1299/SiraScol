@@ -63,7 +63,7 @@ def dashboard(request):
     today = date.today()
 
     if role == 'enseignant':
-        return _dashboard_teacher(request, year, school, today)
+        return redirect('prof:dashboard')
     if role == 'parent':
         return _dashboard_parent(request, year, school, today)
     if role == 'eleve':

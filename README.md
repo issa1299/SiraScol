@@ -76,6 +76,10 @@ Deux modèles selon le niveau :
 
 Accès : Fiche élève → bouton **Bulletin** · Filtre par période · Bouton Imprimer
 
+## Espace Professeur
+
+Portail dédié sur `/mon-espace-prof/` (dashboard, classes, notes, présences, emploi du temps, devoirs, supports de cours, bulletins/appréciations, notifications, profil). Les enseignants y voient uniquement leurs classes et matières affectées. La validation finale des notes par la direction se fait sur `/mon-espace-prof/validation/`. Les notes validées ne sont plus modifiables par les enseignants.
+
 ## Emploi du temps par classe
 
 ```bash
