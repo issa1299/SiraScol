@@ -14,6 +14,7 @@ from django.views.decorators.http import require_POST
 from academics.models import ClassRoom, Subject, SubjectAssignment
 from attendance.models import Absence
 from communication.models import Announcement, Message
+from core.messaging import allowed_recipients
 from core.models import Notification
 from django.contrib.auth.models import User
 from core.permissions import (
@@ -385,6 +386,7 @@ def messagerie(request):
                     sender=request.user, recipient=msg.sender,
                     subject=f'Re : {msg.subject}',
                     body=request.POST.get('body', '').strip(),
+                    attachment=request.FILES.get('attachment'),
                 )
                 messages.success(request, 'Réponse envoyée.')
         elif action == 'nouveau':
@@ -397,6 +399,7 @@ def messagerie(request):
                 Message.objects.create(
                     sender=request.user, recipient=recipient,
                     subject=subject, body=body,
+                    attachment=request.FILES.get('attachment'),
                 )
                 messages.success(request, 'Message envoyé.')
             else:
@@ -410,8 +413,7 @@ def messagerie(request):
     unread = qs.filter(recipient=request.user, is_read=False).count()
     return render(request, 'prof/messagerie.html', {
         'conversations': qs[:60], 'unread': unread,
-        'contacts': User.objects.filter(is_active=True).exclude(pk=request.user.pk)
-        .order_by('last_name', 'first_name')[:100],
+        'contacts': allowed_recipients(request.user),
         'section': 'messages',
     })
 

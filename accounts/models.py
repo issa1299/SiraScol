@@ -14,6 +14,7 @@ class Profile(models.Model):
         ('enseignant', 'Enseignant'),
         ('parent', 'Parent'),
         ('eleve', 'Élève'),
+        ('surveillant', 'Surveillant'),
         # Aliases (anciennes valeurs en base)
         ('admin', 'Administrateur'),
         ('comptable', 'Comptable'),

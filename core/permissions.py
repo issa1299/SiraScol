@@ -24,13 +24,17 @@ ROLE_LABELS = {
     'enseignant': 'Enseignant',
     'parent': 'Parent',
     'eleve': 'Élève',
+    'surveillant': 'Surveillant',
     # aliases historiques
     'admin': 'Administrateur',
     'comptable': 'Comptable',
 }
 
 # Rôles « canoniques » (les 5 demandés)
-CANONICAL_ROLES = ('directeur', 'secretaire', 'comptable', 'enseignant', 'parent', 'eleve')
+CANONICAL_ROLES = (
+    'directeur', 'secretaire', 'comptable', 'surveillant',
+    'enseignant', 'parent', 'eleve',
+)
 
 # Alias → rôle canonique (le comptable est désormais un rôle distinct)
 ROLE_ALIASES = {
@@ -43,8 +47,8 @@ ROLE_ALIASES = {
 
 PERMISSIONS = {
     # Navigation
-    'nav.dashboard': ['directeur', 'secretaire', 'comptable', 'enseignant', 'parent', 'eleve'],
-    'nav.students': ['directeur', 'secretaire', 'enseignant', 'parent'],
+    'nav.dashboard': ['directeur', 'secretaire', 'comptable', 'surveillant', 'enseignant', 'parent', 'eleve'],
+    'nav.students': ['directeur', 'secretaire', 'surveillant', 'enseignant', 'parent'],
     'nav.teachers': ['directeur', 'secretaire'],
     'nav.classrooms': ['directeur', 'secretaire', 'enseignant'],
     'nav.parents': ['directeur', 'secretaire'],
@@ -52,10 +56,10 @@ PERMISSIONS = {
     'nav.grades': ['directeur', 'enseignant', 'parent', 'eleve'],  # PAS secrétaire
     'nav.bulletins': ['directeur', 'enseignant', 'parent', 'eleve'],  # PAS secrétaire
     'nav.finance': ['directeur', 'comptable'],
-    'nav.attendance': ['directeur', 'enseignant', 'parent', 'eleve'],
+    'nav.attendance': ['directeur', 'surveillant', 'enseignant', 'parent', 'eleve'],
     'nav.timetable': ['directeur', 'enseignant', 'parent', 'eleve'],
-    'nav.announcements': ['directeur', 'secretaire', 'enseignant', 'parent', 'eleve'],
-    'nav.messages': ['directeur', 'secretaire', 'enseignant', 'parent', 'eleve'],
+    'nav.announcements': ['directeur', 'secretaire', 'comptable', 'surveillant', 'enseignant', 'parent', 'eleve'],
+    'nav.messages': ['directeur', 'secretaire', 'comptable', 'surveillant', 'enseignant', 'parent', 'eleve'],
     'nav.config': ['directeur'],
     'nav.settings': ['directeur'],
     'nav.reports': ['directeur', 'secretaire'],
@@ -64,7 +68,7 @@ PERMISSIONS = {
     'nav.cahier': ['directeur', 'enseignant'],
 
     # Élèves
-    'students.view': ['directeur', 'secretaire', 'enseignant', 'parent'],
+    'students.view': ['directeur', 'secretaire', 'surveillant', 'enseignant', 'parent'],
     'students.create': ['directeur', 'secretaire'],
     'students.edit': ['directeur', 'secretaire'],
     'students.delete': ['directeur'],
@@ -109,8 +113,8 @@ PERMISSIONS = {
     'finance.reports': ['directeur', 'comptable'],
 
     # Présences
-    'attendance.view': ['directeur', 'enseignant', 'parent', 'eleve'],
-    'attendance.take': ['directeur', 'enseignant'],
+    'attendance.view': ['directeur', 'surveillant', 'enseignant', 'parent', 'eleve'],
+    'attendance.take': ['directeur', 'surveillant', 'enseignant'],
 
     # Emploi du temps
     'timetable.view': ['directeur', 'enseignant', 'parent', 'eleve'],
@@ -290,7 +294,7 @@ def can(user, permission):
 
 
 def is_staff_role(user):
-    return get_role(user) in ('directeur', 'secretaire', 'comptable')
+    return get_role(user) in ('directeur', 'secretaire', 'comptable', 'surveillant')
 
 
 def is_config_role(user):

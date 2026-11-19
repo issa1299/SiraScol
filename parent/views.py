@@ -12,6 +12,7 @@ from django.utils import timezone
 
 from communication.models import Announcement, Message
 from core.access import get_student_for_user
+from core.messaging import allowed_recipients
 from core.models import Notification
 from core.permissions import get_linked_parent, get_parent_students, role_required
 from core.year_context import get_selected_year
@@ -252,7 +253,7 @@ def communication(request):
         action = request.POST.get('action')
         if action == 'message':
             recipient = User.objects.filter(
-                profile__role='directeur', is_active=True
+                pk=request.POST.get('recipient'), is_active=True
             ).first()
             subject = request.POST.get('subject', '').strip()
             body = request.POST.get('body', '').strip()
@@ -260,10 +261,11 @@ def communication(request):
                 Message.objects.create(
                     sender=request.user, recipient=recipient,
                     subject=subject, body=body,
+                    attachment=request.FILES.get('attachment'),
                 )
-                messages.success(request, 'Votre message a été envoyé à l’administration.')
+                messages.success(request, 'Votre message a été envoyé.')
             else:
-                messages.error(request, 'Remplissez l’objet et le message.')
+                messages.error(request, 'Destinataire, objet et message sont obligatoires.')
         elif action == 'rendezvous':
             teacher_id = request.POST.get('teacher') or None
             motif = request.POST.get('motif', '').strip()
@@ -289,6 +291,7 @@ def communication(request):
         'parent': ctx['parent'], 'children': ctx['children'], 'child': child,
         'year': ctx['year'], 'announcements': _announcements_for(ctx['children']),
         'conversations': conversations, 'teachers': teachers,
+        'contacts': allowed_recipients(request.user),
         'appointments': appointments, 'section': 'communication',
     })
 

@@ -39,10 +39,12 @@
   <div class="space-y-6">
     <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
       <h3 class="font-bold text-slate-900 text-sm mb-4"><i class="fas fa-paper-plane text-teal-600"></i> Écrire à l'administration</h3>
-      <form method="post" class="space-y-3">
+      <form method="post" enctype="multipart/form-data" class="space-y-3">
         {% csrf_token %}<input type="hidden" name="action" value="message">
+        <select name="recipient" class="form-input" required><option value="">— Destinataire —</option>{% for u in contacts %}<option value="{{ u.id }}">{{ u.get_full_name|default:u.username }}</option>{% endfor %}</select>
         <input type="text" name="subject" placeholder="Objet" class="form-input" required>
         <textarea name="body" placeholder="Votre message…" class="form-input" rows="4" required></textarea>
+        <input type="file" name="attachment" class="form-input">
         <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white py-2.5 rounded-xl text-xs font-semibold"><i class="fas fa-paper-plane"></i> Envoyer</button>
       </form>
     </div>

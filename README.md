@@ -76,6 +76,20 @@ Deux modèles selon le niveau :
 
 Accès : Fiche élève → bouton **Bulletin** · Filtre par période · Bouton Imprimer
 
+## Messagerie privée et rôles
+
+Les destinataires proposés dans chaque portail sont calculés par `core/messaging.py` (`allowed_recipients`) et **vérifiés côté serveur** dans `Message.save()` : toute tentative de contacter un rôle interdit renvoie une erreur 403.
+
+- Directeur : tous les comptes.
+- Secrétaire : direction, comptable, surveillant, enseignants, parents.
+- Comptable : direction, secrétariat, parents.
+- Surveillant : direction, secrétariat, enseignants, élèves, parents.
+- Professeur : direction, secrétariat, surveillant, **ses élèves et leurs parents**.
+- Élève : ses professeurs et le surveillant (pas le comptable).
+- Parent : direction, secrétariat, comptable, surveillant et **les professeurs de ses enfants**.
+
+Les messages acceptent une pièce jointe et génèrent une notification pour le destinataire. Le rôle `surveillant` a été ajouté (droits absences/élèves, ni notes ni finances).
+
 ## Espace Comptable
 
 Portail dédié sur `/mon-espace-comptable/` : tableau de bord financier, configuration des frais et génération de factures (avec réductions/exonérations), paiements (espèces, Mobile Money, virement, chèque) avec reçu PDF, dépenses avec pièce justificative, impayés filtrables avec rappels aux parents, reçus/factures avec annulation tracée, et rapports journaliers/hebdomadaires/mensuels/annuels exportables en Excel et PDF.

@@ -39,6 +39,10 @@ class Message(models.Model):
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
     subject = models.CharField(max_length=200, verbose_name='Sujet')
     body = models.TextField(verbose_name='Message')
+    attachment = models.FileField(
+        upload_to='messages/%Y/%m/', blank=True, null=True,
+        verbose_name='Pièce jointe',
+    )
     is_read = models.BooleanField(default=False)
     sent_at = models.DateTimeField(auto_now_add=True)
 
@@ -49,6 +53,14 @@ class Message(models.Model):
 
     def __str__(self):
         return f"{self.sender} → {self.recipient} : {self.subject}"
+
+    def save(self, *args, **kwargs):
+        if self._state.adding:
+            from django.core.exceptions import PermissionDenied
+            from core.messaging import can_message
+            if not can_message(self.sender, self.recipient):
+                raise PermissionDenied("Vous n'êtes pas autorisé à contacter ce destinataire.")
+        super().save(*args, **kwargs)
 
 
 class SchoolDocument(models.Model):

@@ -17,4 +17,5 @@ urlpatterns = [
     path('recus/<int:pk>/annuler/', views.annuler_paiement, name='annuler'),
     path('rapports/', views.rapports, name='rapports'),
     path('profil/', views.profil, name='profil'),
+    path('messagerie/', views.messagerie, name='messagerie'),
 ]

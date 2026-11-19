@@ -1,0 +1,35 @@
+{% extends "comptabilite/base_comptable.html" %}
+{% block title %}Messages — Espace Comptable{% endblock %}
+{% block header_title %}Messagerie{% endblock %}
+{% block header_sub %}Échanger avec la direction, le secrétariat et les parents{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-inbox text-amber-600"></i> Conversations</h3></div>
+    <div class="divide-y divide-slate-100">
+      {% for m in conversations %}
+      <div class="px-5 py-3">
+        <p class="text-sm font-semibold text-slate-800">{{ m.subject }}</p>
+        <p class="text-[11px] text-slate-500">{% if m.sender_id == user.id %}À {{ m.recipient.get_full_name|default:m.recipient.username }}{% else %}De {{ m.sender.get_full_name|default:m.sender.username }}{% endif %} · {{ m.sent_at|date:"d/m/Y H:i" }}</p>
+        <p class="text-xs text-slate-600 mt-1">{{ m.body }}</p>
+        {% if m.attachment %}<a href="{{ m.attachment.url }}" target="_blank" class="mt-1 inline-flex items-center gap-1 text-[11px] text-amber-700 hover:underline"><i class="fas fa-paperclip"></i> Pièce jointe</a>{% endif %}
+      </div>
+      {% empty %}<div class="py-10 text-center text-slate-400 text-xs">Aucun message.</div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
+    <h3 class="font-bold text-slate-900 text-sm mb-4"><i class="fas fa-paper-plane text-amber-600"></i> Nouveau message</h3>
+    <form method="post" enctype="multipart/form-data" class="space-y-3">
+      {% csrf_token %}
+      <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Destinataire</label><select name="recipient" class="form-input" required><option value="">— Choisir —</option>{% for u in contacts %}<option value="{{ u.id }}">{{ u.get_full_name|default:u.username }}</option>{% endfor %}</select>{% if not contacts %}<p class="text-[10px] text-amber-600 mt-1">Aucun destinataire autorisé.</p>{% endif %}</div>
+      <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Objet</label><input type="text" name="subject" class="form-input" required></div>
+      <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Message</label><textarea name="body" class="form-input" rows="5" required></textarea></div>
+      <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Pièce jointe</label><input type="file" name="attachment" class="form-input"></div>
+      <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl text-xs font-semibold"><i class="fas fa-paper-plane"></i> Envoyer</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

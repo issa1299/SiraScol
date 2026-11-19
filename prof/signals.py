@@ -63,6 +63,8 @@ def message_saved(sender, instance, created, **kwargs):
         'enseignant': '/mon-espace-prof/messagerie/',
         'parent': '/mon-espace-parent/communication/',
         'eleve': '/mon-espace/messagerie/',
+        'comptable': '/mon-espace-comptable/messagerie/',
+        'secretaire': '/mon-espace-secretaire/annonces/',
     }.get(role, '/annonces/messages/')
     notify(
         instance.recipient,

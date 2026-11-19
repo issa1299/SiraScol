@@ -4,6 +4,7 @@
 from datetime import date, timedelta
 
 from django.contrib import messages
+from django.contrib.auth.models import User
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -12,6 +13,7 @@ from django.views.decorators.http import require_POST
 
 from academics.models import AcademicYear, ClassRoom
 from communication.models import Announcement, Message
+from core.messaging import allowed_recipients
 from core.models import Notification
 from core.permissions import get_linked_teacher, role_required
 from core.year_context import get_selected_year
@@ -280,6 +282,23 @@ def _school_name_short():
 
 @role_required('secretaire')
 def annonces(request):
+    if request.method == 'POST' and request.POST.get('action') == 'message':
+        recipient = User.objects.filter(
+            pk=request.POST.get('recipient'), is_active=True
+        ).first()
+        subject = request.POST.get('subject', '').strip()
+        body = request.POST.get('body', '').strip()
+        if recipient and subject and body:
+            Message.objects.create(
+                sender=request.user, recipient=recipient,
+                subject=subject, body=body,
+                attachment=request.FILES.get('attachment'),
+            )
+            messages.success(request, 'Message envoyé.')
+        else:
+            messages.error(request, 'Destinataire, objet et message sont obligatoires.')
+        return redirect('secretariat:annonces')
+
     if request.method == 'POST':
         title = request.POST.get('title', '').strip()
         content = request.POST.get('content', '').strip()
@@ -297,7 +316,8 @@ def annonces(request):
     qs = Announcement.objects.order_by('-published_at')[:30]
     incoming = Message.objects.filter(recipient=request.user).order_by('-sent_at')[:30]
     return render(request, 'secretariat/annonces.html', {
-        'announcements': qs, 'messages': incoming, 'section': 'annonces',
+        'announcements': qs, 'messages': incoming,
+        'contacts': allowed_recipients(request.user), 'section': 'annonces',
     })
 
 

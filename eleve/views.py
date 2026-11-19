@@ -16,6 +16,7 @@ from academics.models import AcademicYear
 from attendance.models import Absence
 from communication.models import Announcement, Message
 from core.access import filter_classrooms_for_user
+from core.messaging import allowed_recipients
 from core.permissions import (
     get_linked_student, get_linked_teacher, get_role,
     get_teacher_classrooms, role_required,
@@ -436,6 +437,7 @@ def messagerie(request):
                     sender=request.user, recipient=msg.sender,
                     subject=f'Re : {msg.subject}',
                     body=request.POST.get('body', '').strip(),
+                    attachment=request.FILES.get('attachment'),
                 )
                 messages.success(request, 'Réponse envoyée.')
         elif action == 'nouveau':
@@ -448,6 +450,7 @@ def messagerie(request):
                 Message.objects.create(
                     sender=request.user, recipient=recipient,
                     subject=subject, body=body,
+                    attachment=request.FILES.get('attachment'),
                 )
                 messages.success(request, 'Message envoyé.')
             else:
@@ -457,8 +460,7 @@ def messagerie(request):
     return render(request, 'eleve/messagerie.html', {
         'conversations': qs[:60],
         'unread': qs.filter(recipient=request.user, is_read=False).count(),
-        'contacts': User.objects.filter(is_active=True).exclude(pk=request.user.pk)
-        .order_by('last_name', 'first_name')[:100],
+        'contacts': allowed_recipients(request.user),
         'section': 'messages',
     })
 

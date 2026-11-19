@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from io import BytesIO
 
 from django.contrib import messages
+from django.contrib.auth.models import User
 from django.db.models import Q, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -14,6 +15,7 @@ from django.views.decorators.http import require_POST
 
 from academics.models import AcademicYear, ClassRoom
 from communication.models import Message
+from core.messaging import allowed_recipients
 from core.models import Notification
 from core.permissions import role_required
 from core.year_context import get_selected_year
@@ -331,6 +333,31 @@ def _excel_report(period, start, end, payments, expenses, recettes, depenses):
     response = HttpResponse(buf.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename="rapport_{period}.xlsx"'
     return response
+
+
+@role_required('comptable')
+def messagerie(request):
+    qs = Message.objects.filter(
+        Q(sender=request.user) | Q(recipient=request.user)
+    ).order_by('-sent_at')
+    if request.method == 'POST':
+        recipient = User.objects.filter(pk=request.POST.get('recipient'), is_active=True).first()
+        subject = request.POST.get('subject', '').strip()
+        body = request.POST.get('body', '').strip()
+        if recipient and subject and body:
+            Message.objects.create(
+                sender=request.user, recipient=recipient,
+                subject=subject, body=body,
+                attachment=request.FILES.get('attachment'),
+            )
+            messages.success(request, 'Message envoyé.')
+        else:
+            messages.error(request, 'Destinataire, objet et message sont obligatoires.')
+        return redirect('comptabilite:messagerie')
+    return render(request, 'comptabilite/messagerie.html', {
+        'conversations': qs[:60], 'contacts': allowed_recipients(request.user),
+        'section': 'messages',
+    })
 
 
 @role_required('comptable')
