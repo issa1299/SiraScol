@@ -26,6 +26,10 @@ class Profile(models.Model):
     photo = models.ImageField(upload_to='profiles/', blank=True, null=True)
     date_of_birth = models.DateField(null=True, blank=True, verbose_name='Date de naissance')
     is_active = models.BooleanField(default=True)
+    must_change_password = models.BooleanField(
+        default=False,
+        verbose_name='Changer le mot de passe à la prochaine connexion',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

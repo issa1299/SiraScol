@@ -108,7 +108,9 @@ def ensure_user_for_student(student):
         last_name=student.last_name or '',
         is_active=True,
     )
-    Profile.objects.update_or_create(user=user, defaults={'role': 'eleve'})
+    Profile.objects.update_or_create(user=user, defaults={
+        'role': 'eleve', 'must_change_password': True,
+    })
     type(student).objects.filter(pk=student.pk).update(user=user)
     student.user = user
     return user, True, raw_password
@@ -144,9 +146,9 @@ def ensure_user_for_parent(parent):
         email=getattr(parent, 'email', '') or '',
         is_active=True,
     )
-    Profile.objects.update_or_create(
-        user=user, defaults={'role': 'parent', 'phone': phone}
-    )
+    Profile.objects.update_or_create(user=user, defaults={
+        'role': 'parent', 'phone': phone, 'must_change_password': True,
+    })
     type(parent).objects.filter(pk=parent.pk).update(user=user)
     parent.user = user
     return user, True, raw_password

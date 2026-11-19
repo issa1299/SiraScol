@@ -56,6 +56,14 @@ python manage.py runserver
 ## Matricule
 Généré automatiquement : `2026-0001`, `2026-0002`...
 
+## Première connexion
+
+Les comptes **élèves et parents** créés par l'application (inscription ou import) doivent changer leur mot de passe initial à la première connexion. Identifiant = matricule avec un point (`2026.0001`), mot de passe initial = matricule (`2026-0001`).
+
+Les comptes déjà existants avant cette fonctionnalité ne sont pas concernés. Pour forcer tous les élèves/parents à changer :
+```bash
+python manage.py shell -c "from accounts.models import Profile; Profile.objects.filter(role__in=['eleve','parent']).update(must_change_password=True)"
+```
 
 ## Bulletins
 

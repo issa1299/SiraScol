@@ -2,7 +2,28 @@
 Middleware SiraScol — mode maintenance.
 Les staff / superuser / admin / directeur passent toujours.
 """
-from django.shortcuts import render
+from django.shortcuts import redirect, render
+
+
+class ForcePasswordChangeMiddleware:
+    """Bloque l'accès à l'application tant que le mot de passe initial n'a pas été changé."""
+
+    EXEMPT_PREFIXES = (
+        '/accounts/', '/admin/', '/static/', '/media/', '/health',
+    )
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        path = request.path or '/'
+        user = getattr(request, 'user', None)
+        if user is not None and user.is_authenticated:
+            profile = getattr(user, 'profile', None)
+            if profile and profile.must_change_password:
+                if not any(path.startswith(p) for p in self.EXEMPT_PREFIXES):
+                    return redirect('accounts:force_password_change')
+        return self.get_response(request)
 
 
 class MaintenanceModeMiddleware:
