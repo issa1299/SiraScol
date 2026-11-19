@@ -4,6 +4,7 @@
 from datetime import date
 
 from django.contrib import messages
+from django.contrib.auth.models import User
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import HttpResponse
@@ -417,6 +418,48 @@ def homework_list(request):
         'tab': tab,
         'today': today,
         'section': 'devoirs',
+    })
+
+
+@role_required('eleve')
+def messagerie(request):
+    qs = Message.objects.filter(
+        Q(sender=request.user) | Q(recipient=request.user)
+    ).order_by('-sent_at')
+
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+        if action == 'repondre':
+            msg = get_object_or_404(Message, pk=request.POST.get('id'), recipient=request.user)
+            if msg.sender_id:
+                Message.objects.create(
+                    sender=request.user, recipient=msg.sender,
+                    subject=f'Re : {msg.subject}',
+                    body=request.POST.get('body', '').strip(),
+                )
+                messages.success(request, 'Réponse envoyée.')
+        elif action == 'nouveau':
+            recipient = User.objects.filter(
+                pk=request.POST.get('recipient'), is_active=True
+            ).first()
+            subject = request.POST.get('subject', '').strip()
+            body = request.POST.get('body', '').strip()
+            if recipient and subject and body:
+                Message.objects.create(
+                    sender=request.user, recipient=recipient,
+                    subject=subject, body=body,
+                )
+                messages.success(request, 'Message envoyé.')
+            else:
+                messages.error(request, 'Destinataire, objet et message sont obligatoires.')
+        return redirect('eleve:messagerie')
+
+    return render(request, 'eleve/messagerie.html', {
+        'conversations': qs[:60],
+        'unread': qs.filter(recipient=request.user, is_read=False).count(),
+        'contacts': User.objects.filter(is_active=True).exclude(pk=request.user.pk)
+        .order_by('last_name', 'first_name')[:100],
+        'section': 'messages',
     })
 
 

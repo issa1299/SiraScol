@@ -13,6 +13,7 @@ urlpatterns = [
     path('devoirs/', views.homework_list, name='homework'),
     path('devoirs/<int:pk>/faire/', views.homework_toggle, name='homework_toggle'),
     path('informations/', views.informations, name='informations'),
+    path('messagerie/', views.messagerie, name='messagerie'),
 
     # Saisie des devoirs par les enseignants
     path('enseignant/devoirs/', views.teacher_homework, name='teacher_homework'),

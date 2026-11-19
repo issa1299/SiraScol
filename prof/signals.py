@@ -62,7 +62,7 @@ def message_saved(sender, instance, created, **kwargs):
     link = {
         'enseignant': '/mon-espace-prof/messagerie/',
         'parent': '/mon-espace-parent/communication/',
-        'eleve': '/mon-espace/',
+        'eleve': '/mon-espace/messagerie/',
     }.get(role, '/annonces/messages/')
     notify(
         instance.recipient,
