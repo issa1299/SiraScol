@@ -1,0 +1,27 @@
+{% extends "parent/base_parent.html" %}
+{% block title %}Devoirs — Espace Parent{% endblock %}
+{% block header_title %}Devoirs et travaux{% endblock %}
+{% block header_sub %}{% if child %}Travaux à réaliser par {{ child.first_name }}{% endif %}{% endblock %}
+{% block content %}
+
+{% if homeworks %}
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+  {% for h in homeworks %}
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5 {% if h.late %}border-rose-200{% endif %}">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <p class="font-bold text-slate-900 text-sm">{{ h.homework.title }}</p>
+        <p class="text-[11px] text-slate-500 mt-0.5">{{ h.homework.subject.name }} · {{ h.homework.classroom.name }}</p>
+      </div>
+      <span class="shrink-0 text-[11px] px-2.5 py-1 rounded-lg {% if h.done %}bg-emerald-50 text-emerald-700{% elif h.late %}bg-rose-50 text-rose-700{% else %}bg-teal-50 text-teal-700{% endif %} font-bold">{% if h.done %}Fait{% elif h.late %}En retard{% else %}{{ h.homework.due_date|date:"d/m" }}{% endif %}</span>
+    </div>
+    {% if h.homework.instructions %}<p class="text-xs text-slate-600 mt-3 whitespace-pre-line">{{ h.homework.instructions }}</p>{% endif %}
+    {% if h.homework.document %}<a href="{{ h.homework.document.url }}" target="_blank" class="inline-flex items-center gap-1.5 mt-3 text-xs text-teal-700 hover:underline"><i class="fas fa-paperclip"></i> Télécharger le document</a>{% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="bg-white rounded-2xl border border-dashed p-12 text-center text-slate-400 text-xs">Aucun devoir pour le moment.</div>
+{% endif %}
+
+{% endblock %}

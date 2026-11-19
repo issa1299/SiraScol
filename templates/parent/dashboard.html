@@ -1,0 +1,72 @@
+{% extends "parent/base_parent.html" %}
+{% block title %}Tableau de bord — Espace Parent{% endblock %}
+{% block header_title %}Bonjour {{ parent.first_name|default:"parent" }} 👋{% endblock %}
+{% block header_sub %}Résumé de la scolarité de vos enfants{% endblock %}
+{% block content %}
+
+<div class="bg-gradient-to-br from-teal-700 via-teal-600 to-emerald-600 rounded-2xl shadow-lg p-5 sm:p-6 text-white mb-6 flex flex-col sm:flex-row sm:items-center gap-5">
+  {% if parent.user and parent.user.profile.photo %}
+  <img src="{{ parent.user.profile.photo.url }}" alt="" class="w-20 h-20 rounded-2xl object-cover border-4 border-white/40 shrink-0">
+  {% else %}
+  <div class="w-20 h-20 rounded-2xl bg-white/20 border-4 border-white/40 flex items-center justify-center text-3xl font-bold shrink-0">{{ parent.first_name|first|upper|default:"?" }}{{ parent.last_name|first|default:"" }}</div>
+  {% endif %}
+  <div class="min-w-0 flex-1">
+    <p class="text-[11px] uppercase tracking-widest text-teal-100 font-bold">Espace parent</p>
+    <h2 class="text-xl sm:text-2xl font-bold truncate">{{ parent.first_name }} {{ parent.last_name }}</h2>
+    <div class="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-teal-50">
+      <span><i class="fas fa-child-reaching text-teal-200"></i> {{ children|length }} enfant(s) inscrit(s)</span>
+      <span><i class="fas fa-bell text-teal-200"></i> {{ unread }} alerte(s) non lue(s)</span>
+      <span><i class="fas fa-envelope text-teal-200"></i> {{ unread_messages }} message(s) non lu(s)</span>
+      {% if year %}<span><i class="fas fa-calendar-check text-teal-200"></i> {{ year.name }}</span>{% endif %}
+    </div>
+  </div>
+  <a href="{% url 'parent:enfants' %}" class="shrink-0 self-start px-4 py-2 rounded-xl bg-white/15 hover:bg-white/25 border border-white/30 text-xs font-semibold"><i class="fas fa-child-reaching"></i> Mes enfants</a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="px-5 py-4 border-b flex items-center justify-between"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-child-reaching text-teal-600"></i> Suivi de vos enfants</h3><a href="{% url 'parent:enfants' %}" class="text-[11px] text-teal-700 hover:underline">Tout voir</a></div>
+    {% if cards %}
+    <div class="divide-y divide-slate-100">
+      {% for c in cards %}
+      <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div class="min-w-0">
+          <p class="font-semibold text-slate-800 text-sm">{{ c.student.first_name }} {{ c.student.last_name }}</p>
+          <p class="text-[11px] text-slate-500 mt-0.5">{{ c.classroom.name|default:"Classe non définie" }} · {{ c.student.matricule }}</p>
+        </div>
+        <div class="flex items-center gap-4 shrink-0">
+          <div class="text-right"><p class="text-lg font-bold text-slate-900">{{ c.average|default:"—" }}</p><p class="text-[10px] text-slate-400 uppercase">Moyenne</p></div>
+          {% if c.balance > 0 %}<span class="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 text-[11px] font-bold">Reste {{ c.balance }}</span>{% else %}<span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[11px] font-bold">À jour</span>{% endif %}
+          <a href="{% url 'parent:notes' %}?enfant={{ c.student.id }}" class="text-[11px] text-teal-700 hover:underline">Voir →</a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}<div class="py-12 text-center text-slate-400 text-xs">Aucun enfant rattaché à votre compte.</div>{% endif %}
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-bell text-teal-600"></i> Dernières alertes</h3></div>
+    {% if notifications %}
+    <div class="divide-y divide-slate-100">
+      {% for n in notifications %}
+      <div class="px-5 py-3"><p class="text-sm font-semibold text-slate-800">{{ n.title }}</p><p class="text-[11px] text-slate-500 mt-0.5">{{ n.message }}</p></div>
+      {% endfor %}
+    </div>
+    {% else %}<div class="py-10 text-center text-slate-400 text-xs">Aucune nouvelle alerte.</div>{% endif %}
+    <a href="{% url 'parent:notifications' %}" class="block px-5 py-3 border-t text-[11px] text-teal-700 hover:bg-teal-50 font-semibold">Toutes les alertes →</a>
+  </div>
+</div>
+
+<div class="mt-6 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+  <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-bullhorn text-teal-600"></i> Annonces de l'établissement</h3></div>
+  {% if announcements %}
+  <div class="divide-y divide-slate-100">
+    {% for a in announcements %}
+    <div class="px-5 py-3"><p class="text-sm font-semibold text-slate-800">{{ a.title }}</p><p class="text-[11px] text-slate-500 mt-1">{{ a.content|striptags|truncatechars:130 }}</p></div>
+    {% endfor %}
+  </div>
+  {% else %}<div class="py-8 text-center text-slate-400 text-xs">Aucune annonce récente.</div>{% endif %}
+</div>
+
+{% endblock %}

@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'communication',
     'eleve',
     'prof.apps.ProfConfig',
+    'parent.apps.ParentConfig',
     'core.apps.CoreConfig',
 ]
 

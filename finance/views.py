@@ -324,12 +324,14 @@ def payment_create(request):
 @login_required
 def payment_receipt(request, pk):
     """Reçu de paiement imprimable / PDF HTML"""
+    from core.access import get_student_for_user
     payment = get_object_or_404(
         Payment.objects.select_related(
             'invoice__student', 'invoice__fee_type', 'invoice__academic_year'
         ),
         pk=pk
     )
+    get_student_for_user(request.user, payment.invoice.student_id)
     try:
         from core.models import SchoolSettings
         school = SchoolSettings.get_solo()

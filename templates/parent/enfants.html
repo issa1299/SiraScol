@@ -1,0 +1,40 @@
+{% extends "parent/base_parent.html" %}
+{% block title %}Mes enfants — Espace Parent{% endblock %}
+{% block header_title %}Mes enfants{% endblock %}
+{% block header_sub %}Informations personnelles et scolarité{% endblock %}
+{% block content %}
+
+{% if cards %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {% for c in cards %}
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
+    <div class="flex items-start gap-4">
+      {% if c.student.photo %}<img src="{{ c.student.photo.url }}" alt="" class="w-16 h-16 rounded-2xl object-cover shrink-0">{% else %}<div class="w-16 h-16 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-xl font-bold shrink-0">{{ c.student.first_name|first|upper }}{{ c.student.last_name|first|upper }}</div>{% endif %}
+      <div class="min-w-0 flex-1">
+        <h3 class="font-bold text-slate-900 text-base">{{ c.student.first_name }} {{ c.student.last_name }}</h3>
+        <p class="text-[11px] text-slate-500 mt-0.5">Matricule {{ c.student.matricule }} · Né(e) le {{ c.student.date_of_birth|date:"d/m/Y" }}</p>
+        <p class="text-[11px] text-teal-700 font-semibold mt-1"><i class="fas fa-school"></i> {{ c.classroom.name|default:"Classe non définie" }}</p>
+      </div>
+    </div>
+    <div class="mt-4 grid grid-cols-3 gap-2 text-center">
+      <div class="rounded-xl bg-slate-50 py-2"><p class="text-sm font-bold text-slate-800">{{ c.average|default:"—" }}</p><p class="text-[10px] text-slate-400">Moyenne</p></div>
+      <div class="rounded-xl bg-slate-50 py-2"><p class="text-sm font-bold text-slate-800">{% if c.rank %}{{ c.rank }}/{{ c.rank_total }}{% else %}—{% endif %}</p><p class="text-[10px] text-slate-400">Rang</p></div>
+      <div class="rounded-xl bg-slate-50 py-2"><p class="text-sm font-bold text-slate-800">{{ c.balance }}</p><p class="text-[10px] text-slate-400">Reste à payer</p></div>
+    </div>
+    <div class="mt-4 flex flex-wrap gap-2">
+      <a href="{% url 'parent:notes' %}?enfant={{ c.student.id }}" class="px-3 py-2 rounded-xl bg-teal-600 text-white text-xs font-semibold"><i class="fas fa-chart-line"></i> Notes</a>
+      <a href="{% url 'parent:bulletins' %}?enfant={{ c.student.id }}" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold"><i class="fas fa-file-invoice"></i> Bulletins</a>
+      <a href="{% url 'parent:absences' %}?enfant={{ c.student.id }}" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold"><i class="fas fa-calendar-day"></i> Absences</a>
+      <a href="{% url 'parent:timetable' %}?enfant={{ c.student.id }}" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold"><i class="fas fa-calendar-days"></i> Emploi du temps</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="bg-white rounded-2xl border border-dashed p-12 text-center">
+  <p class="text-sm font-semibold text-slate-700">Aucun enfant rattaché</p>
+  <p class="text-xs text-slate-400 mt-1">Contactez le secrétariat pour lier vos enfants à votre compte.</p>
+</div>
+{% endif %}
+
+{% endblock %}

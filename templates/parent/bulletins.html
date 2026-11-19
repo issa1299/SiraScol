@@ -1,0 +1,32 @@
+{% extends "parent/base_parent.html" %}
+{% block title %}Bulletins — Espace Parent{% endblock %}
+{% block header_title %}Bulletins scolaires{% endblock %}
+{% block header_sub %}{% if child %}{{ child.first_name }} {{ child.last_name }}{% endif %}{% endblock %}
+{% block content %}
+
+{% if child %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden mb-6">
+  <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-file-invoice text-teal-600"></i> Bulletins de {{ child.first_name }} — {{ year.name }}</h3></div>
+  <div class="divide-y divide-slate-100">
+    {% for r in rows %}
+    <div class="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div><p class="font-semibold text-slate-800 text-sm">{% if r.period %}{{ r.period.name }}{% else %}Bulletin annuel{% endif %}</p><p class="text-[11px] text-slate-500">Moyenne {{ r.average|default:"—" }}{% if r.rank %} · Rang {{ r.rank }}/{{ r.rank_total }}{% endif %}</p></div>
+      <a href="{% url 'grades:bulletin_pdf' child.id %}{% if r.period %}?period={{ r.period.id }}{% endif %}" target="_blank" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 text-xs font-semibold"><i class="fas fa-file-pdf"></i> Télécharger</a>
+    </div>
+    {% empty %}<div class="py-10 text-center text-slate-400 text-xs">Aucun bulletin disponible.</div>{% endfor %}
+  </div>
+</div>
+
+{% if appreciations %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+  <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-comment-dots text-teal-600"></i> Appréciations des enseignants</h3></div>
+  <div class="divide-y divide-slate-100">
+    {% for a in appreciations %}
+    <div class="px-5 py-3"><p class="text-sm text-slate-700">{{ a.appreciation }}</p><p class="text-[10px] text-slate-400 mt-1">{{ a.teacher.get_full_name|default:"Enseignant" }}{% if a.period %} · {{ a.period.name }}{% endif %} · {{ a.updated_at|date:"d/m/Y" }}</p></div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+{% endif %}
+
+{% endblock %}

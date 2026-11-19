@@ -65,7 +65,7 @@ def dashboard(request):
     if role == 'enseignant':
         return redirect('prof:dashboard')
     if role == 'parent':
-        return _dashboard_parent(request, year, school, today)
+        return redirect('parent:dashboard')
     if role == 'eleve':
         # L'élève dispose de son propre espace dédié (interface et navigation propres).
         return redirect('eleve:dashboard')

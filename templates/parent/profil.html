@@ -1,0 +1,40 @@
+{% extends "parent/base_parent.html" %}
+{% block title %}Mon profil — Espace Parent{% endblock %}
+{% block header_title %}Mon profil{% endblock %}
+{% block header_sub %}Informations personnelles et liens de parenté{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-6 text-center">
+    {% if parent.user and parent.user.profile.photo %}<img src="{{ parent.user.profile.photo.url }}" alt="" class="w-24 h-24 rounded-2xl object-cover mx-auto border-4 border-teal-50">{% else %}<div class="w-24 h-24 rounded-2xl bg-teal-100 text-teal-700 border-4 border-teal-50 flex items-center justify-center mx-auto text-3xl font-bold">{{ parent.first_name|first|upper }}{{ parent.last_name|first|upper }}</div>{% endif %}
+    <h3 class="mt-4 text-lg font-bold text-slate-900">{{ parent.first_name }} {{ parent.last_name }}</h3>
+    <p class="text-xs text-slate-500 mt-0.5">{{ parent.get_relation_display|default:"Parent / Tuteur" }}</p>
+  </div>
+
+  <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
+    <h3 class="font-bold text-slate-900 text-sm mb-4"><i class="fas fa-user-circle text-teal-600"></i> Informations personnelles</h3>
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+      <div><dt class="text-slate-400 uppercase text-[10px] font-bold mb-1">Nom</dt><dd class="font-semibold text-slate-800">{{ parent.last_name }}</dd></div>
+      <div><dt class="text-slate-400 uppercase text-[10px] font-bold mb-1">Prénom</dt><dd class="font-semibold text-slate-800">{{ parent.first_name }}</dd></div>
+      <div><dt class="text-slate-400 uppercase text-[10px] font-bold mb-1">Téléphone</dt><dd class="font-semibold text-slate-800">{{ parent.phone|default:"—" }}</dd></div>
+      <div><dt class="text-slate-400 uppercase text-[10px] font-bold mb-1">Téléphone 2</dt><dd class="font-semibold text-slate-800">{{ parent.phone2|default:"—" }}</dd></div>
+      <div><dt class="text-slate-400 uppercase text-[10px] font-bold mb-1">E-mail</dt><dd class="font-semibold text-slate-800">{{ parent.email|default:"—" }}</dd></div>
+      <div><dt class="text-slate-400 uppercase text-[10px] font-bold mb-1">Profession</dt><dd class="font-semibold text-slate-800">{{ parent.profession|default:"—" }}</dd></div>
+      <div class="sm:col-span-2"><dt class="text-slate-400 uppercase text-[10px] font-bold mb-1">Adresse</dt><dd class="font-semibold text-slate-800">{{ parent.address|default:"—" }}</dd></div>
+    </dl>
+  </div>
+
+  <div class="lg:col-span-3 bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
+    <h3 class="font-bold text-slate-900 text-sm mb-4"><i class="fas fa-child-reaching text-teal-600"></i> Mes enfants</h3>
+    <div class="divide-y divide-slate-100">
+      {% for l in links %}
+      <div class="py-3 flex items-center justify-between">
+        <div><p class="text-sm font-semibold text-slate-800">{{ l.student.first_name }} {{ l.student.last_name }}</p><p class="text-[11px] text-slate-500">{{ l.student.matricule }} · {{ l.get_relation_display }}</p></div>
+        {% if l.is_primary %}<span class="px-2 py-1 rounded-lg bg-teal-50 text-teal-700 text-[10px] font-bold">Contact principal</span>{% endif %}
+      </div>
+      {% empty %}<p class="text-xs text-slate-400">Aucun enfant rattaché.</p>{% endfor %}
+    </div>
+  </div>
+</div>
+
+{% endblock %}
