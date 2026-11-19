@@ -18,8 +18,8 @@ class Command(BaseCommand):
 
     def handle(self, *args, **opts):
         classrooms = ClassRoom.objects.select_related('academic_year', 'level', 'level__cycle').annotate(
-            n_entries=Count('timetable_entries'),
-            n_students=Count('enrollments', filter=Q(enrollments__is_active=True)),
+            n_entries=Count('timetable_entries', distinct=True),
+            n_students=Count('enrollments', filter=Q(enrollments__is_active=True), distinct=True),
         ).order_by('academic_year__name', 'level__cycle__order', 'level__order', 'name')
 
         if opts['year']:
@@ -34,7 +34,7 @@ class Command(BaseCommand):
         empty_with_students = []
         empty_without_students = []
         for c in classrooms:
-            status = self.style.OK('OK') if c.n_entries else self.style.WARNING('VIDE')
+            status = self.style.SUCCESS('OK') if c.n_entries else self.style.WARNING('VIDE')
             line = (
                 f"  {c.academic_year.name:12} {c.name:10} "
                 f"{getattr(c.level, 'name', '') or '':22} "
