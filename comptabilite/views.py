@@ -336,6 +336,30 @@ def _excel_report(period, start, end, payments, expenses, recettes, depenses):
 
 
 @role_required('comptable')
+def factures(request):
+    qs = Invoice.objects.select_related(
+        'student', 'fee_type', 'academic_year'
+    ).order_by('-due_date')[:150]
+    return render(request, 'comptabilite/factures.html', {
+        'invoices': qs, 'section': 'factures',
+    })
+
+
+@role_required('comptable')
+def notifications(request):
+    qs = Notification.objects.filter(user=request.user).order_by('-created_at')[:60]
+    if request.method == 'POST':
+        Notification.objects.filter(
+            user=request.user, id__in=request.POST.getlist('ids')
+        ).update(is_read=True)
+        messages.success(request, 'Notifications marquées comme lues.')
+        return redirect('comptabilite:notifications')
+    return render(request, 'comptabilite/notifications.html', {
+        'notifications': qs, 'section': 'notifications',
+    })
+
+
+@role_required('comptable')
 def messagerie(request):
     qs = Message.objects.filter(
         Q(sender=request.user) | Q(recipient=request.user)

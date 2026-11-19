@@ -15,7 +15,7 @@
         {% endfor %}
       </select>
     </div>
-    <a href="{% url 'grades:saisie_classe' %}{% if classroom %}?classroom={{ classroom.id }}{% endif %}" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold text-center"><i class="fas fa-plus"></i> Saisir des notes</a>
+    <a href="{% url 'prof:saisie_notes' %}{% if classroom %}?classroom={{ classroom.id }}{% endif %}" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold text-center"><i class="fas fa-plus"></i> Saisir des notes</a>
   </form>
 </div>
 
@@ -46,7 +46,7 @@
             {% else %}<span class="px-2 py-1 rounded-lg bg-amber-50 text-amber-700 text-[10px] font-bold">À valider</span>{% endif %}
           </td>
           <td class="px-5 py-3 text-right">
-            {% if not g.is_validated %}<a href="{% url 'grades:entry' g.assessment_id %}" class="text-xs text-indigo-600 hover:underline">Modifier</a>{% else %}<span class="text-[10px] text-slate-400">Verrouillée</span>{% endif %}
+            {% if not g.is_validated %}<a href="{% url 'prof:saisie_notes' %}?classroom={{ g.assessment.classroom_id }}&amp;assessment={{ g.assessment_id }}" class="text-xs text-indigo-600 hover:underline">Modifier</a>{% else %}<span class="text-[10px] text-slate-400">Verrouillée</span>{% endif %}
           </td>
         </tr>
         {% empty %}

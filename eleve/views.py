@@ -423,6 +423,37 @@ def homework_list(request):
 
 
 @role_required('eleve')
+def bulletin_detail(request, student_id):
+    student, year, enrollment = _base_context(request)
+    if not student or str(student.pk) != str(student_id):
+        messages.error(request, "Bulletin non autorisé.")
+        return redirect('eleve:bulletins')
+    period_id = request.GET.get('period', '')
+    period = Period.objects.filter(pk=period_id).first() if period_id else None
+    ctx = _build_bulletin_context(student, period, year)
+    return render(request, 'eleve/bulletin_detail.html', {
+        'student': student, 'year': year, 'period': period,
+        'subject_results': ctx.get('subject_results', []),
+        'general_avg': ctx.get('general_avg'),
+        'rank': ctx.get('rank'), 'rank_total': ctx.get('rank_total'),
+        'appreciation': ctx.get('appreciation'),
+        'school': ctx.get('school'),
+        'section': 'bulletins',
+    })
+
+
+@role_required('eleve')
+def annonces(request):
+    student, year, enrollment = _base_context(request)
+    announcements, unread = _student_notifications(request, student, enrollment)
+    return render(request, 'eleve/annonces.html', {
+        'student': student, 'year': year,
+        'announcements': announcements, 'unread': unread,
+        'section': 'annonces',
+    })
+
+
+@role_required('eleve')
 def messagerie(request):
     qs = Message.objects.filter(
         Q(sender=request.user) | Q(recipient=request.user)

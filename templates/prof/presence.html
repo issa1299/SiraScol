@@ -8,7 +8,7 @@
   <p class="text-xs font-bold text-slate-600 mb-3"><i class="fas fa-user-check text-indigo-600"></i> Faire l'appel dans une de vos classes</p>
   <div class="flex flex-wrap gap-2">
     {% for c in classrooms %}
-    <a href="{% url 'attendance:class_attendance' c.id %}" class="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold"><i class="fas fa-school"></i> {{ c.name }}</a>
+    <a href="{% url 'prof:appel' %}?classroom={{ c.id }}" class="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold"><i class="fas fa-school"></i> {{ c.name }}</a>
     {% empty %}<span class="text-xs text-slate-400">Aucune classe affectée.</span>{% endfor %}
   </div>
 </div>

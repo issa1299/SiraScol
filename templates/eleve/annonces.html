@@ -1,0 +1,25 @@
+{% extends "eleve/base_eleve.html" %}
+{% block title %}Annonces — Espace Élève{% endblock %}
+{% block header_title %}Annonces{% endblock %}
+{% block header_sub %}Informations de l'établissement à votre intention{% endblock %}
+{% block content %}
+
+<div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+  <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-bullhorn text-blue-600"></i> Annonces récentes</h3></div>
+  {% if announcements %}
+  <div class="divide-y divide-slate-100">
+    {% for a in announcements %}
+    <div class="px-5 py-4">
+      <p class="font-bold text-slate-800 text-sm">{{ a.title }}</p>
+      <p class="text-xs text-slate-600 mt-1 whitespace-pre-line">{{ a.content|striptags }}</p>
+      <p class="text-[10px] text-slate-400 mt-2">
+        <i class="far fa-clock"></i> {{ a.published_at|date:"d/m/Y H:i" }}
+        {% if a.classroom %} · {{ a.classroom.name }}{% endif %}
+      </p>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}<div class="py-14 text-center text-slate-400 text-xs">Aucune annonce pour le moment.</div>{% endif %}
+</div>
+
+{% endblock %}

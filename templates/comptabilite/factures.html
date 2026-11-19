@@ -1,0 +1,27 @@
+{% extends "comptabilite/base_comptable.html" %}
+{% block title %}Factures — Espace Comptable{% endblock %}
+{% block header_title %}Factures{% endblock %}
+{% block header_sub %}Liste des factures émises{% endblock %}
+{% block content %}
+
+<div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm min-w-[680px]">
+      <thead><tr class="bg-slate-50 border-b text-[11px] text-slate-500 uppercase"><th class="text-left px-5 py-3">Élève</th><th class="text-left px-3 py-3">Frais</th><th class="text-left px-3 py-3">Année</th><th class="text-left px-3 py-3">Échéance</th><th class="text-right px-3 py-3">Montant</th><th class="text-right px-5 py-3">Reste</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for i in invoices %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-5 py-3 font-semibold text-slate-800">{{ i.student.last_name }} {{ i.student.first_name }}<span class="block text-[10px] font-mono text-slate-400">{{ i.student.matricule }}</span></td>
+          <td class="px-3 py-3 text-xs text-slate-600">{{ i.fee_type.name }}</td>
+          <td class="px-3 py-3 text-xs text-slate-500">{{ i.academic_year.name }}</td>
+          <td class="px-3 py-3 text-xs text-slate-500">{{ i.due_date|date:"d/m/Y" }}</td>
+          <td class="px-3 py-3 text-right font-semibold">{{ i.amount }}</td>
+          <td class="px-5 py-3 text-right font-bold {% if i.balance > 0 %}text-rose-600{% else %}text-emerald-600{% endif %}">{{ i.balance }}</td>
+        </tr>
+        {% empty %}<tr><td colspan="6" class="py-12 text-center text-slate-400 text-xs">Aucune facture.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

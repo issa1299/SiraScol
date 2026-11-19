@@ -69,8 +69,6 @@ def dashboard(request):
     if role == 'eleve':
         # L'élève dispose de son propre espace dédié (interface et navigation propres).
         return redirect('eleve:dashboard')
-    if role == 'comptable':
-        return _dashboard_comptable(request, year, school, today)
     if role == 'secretaire':
         return redirect('secretariat:dashboard')
     if role == 'comptable':

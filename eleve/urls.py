@@ -14,6 +14,8 @@ urlpatterns = [
     path('devoirs/<int:pk>/faire/', views.homework_toggle, name='homework_toggle'),
     path('informations/', views.informations, name='informations'),
     path('messagerie/', views.messagerie, name='messagerie'),
+    path('annonces/', views.annonces, name='annonces'),
+    path('bulletin/<int:student_id>/', views.bulletin_detail, name='bulletin_detail'),
 
     # Saisie des devoirs par les enseignants
     path('enseignant/devoirs/', views.teacher_homework, name='teacher_homework'),

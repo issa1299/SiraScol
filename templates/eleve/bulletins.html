@@ -55,8 +55,8 @@
            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 text-xs font-semibold transition-colors">
           <i class="fas fa-file-pdf"></i> PDF
         </a>
-        <a href="{% url 'grades:bulletin' student.id %}{% if row.period %}?period={{ row.period.id }}{% endif %}"
-           target="_blank"
+        <a href="{% url 'eleve:bulletin_detail' student.id %}{% if row.period %}?period={{ row.period.id }}{% endif %}"
+          
            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 text-xs font-semibold transition-colors">
           <i class="fas fa-eye"></i> Aperçu
         </a>

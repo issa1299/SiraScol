@@ -71,7 +71,7 @@
       <span class="w-8 h-8 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center text-xs"><i class="fas fa-envelope"></i></span>
     </div>
     <p class="text-2xl font-bold text-slate-900">{{ unread_messages }}</p>
-    <a href="{% url 'communication:inbox' %}" class="text-[11px] text-blue-600 hover:underline mt-1 inline-block">Ouvrir ma boîte →</a>
+    <a href="{% url 'eleve:messagerie' %}" class="text-[11px] text-blue-600 hover:underline mt-1 inline-block">Ouvrir ma boîte →</a>
   </div>
 </div>
 
@@ -108,7 +108,7 @@
   <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
     <div class="px-5 py-4 border-b flex items-center justify-between">
       <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2"><i class="fas fa-bell text-blue-600"></i> Dernières notifications</h3>
-      <a href="{% url 'communication:list' %}" class="text-[11px] font-semibold text-blue-600 hover:underline">Tout voir</a>
+      <a href="{% url 'eleve:annonces' %}" class="text-[11px] font-semibold text-blue-600 hover:underline">Tout voir</a>
     </div>
     {% if announcements %}
     <div class="divide-y divide-slate-100">

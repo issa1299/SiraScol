@@ -1,0 +1,55 @@
+{% extends "prof/base_prof.html" %}
+{% block title %}Faire l'appel — Espace Professeur{% endblock %}
+{% block header_title %}Faire l'appel{% endblock %}
+{% block header_sub %}Enregistrer les absences et retards de votre classe{% endblock %}
+{% block content %}
+
+<div class="bg-white rounded-2xl border border-slate-200 p-4 mb-6">
+  <form method="get" class="flex flex-col sm:flex-row gap-3">
+    <div class="flex-1">
+      <label class="text-[11px] font-bold uppercase text-slate-500 mb-1 block">Classe</label>
+      <select name="classroom" class="form-input" onchange="this.form.submit()">
+        <option value="">— Choisir —</option>
+        {% for c in classrooms %}<option value="{{ c.id }}" {% if classroom and classroom.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="text-[11px] font-bold uppercase text-slate-500 mb-1 block">Date</label>
+      <input type="date" name="date" value="{{ selected_date|date:'Y-m-d' }}" class="form-input" onchange="this.form.submit()">
+    </div>
+  </form>
+</div>
+
+{% if classroom %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="classroom" value="{{ classroom.id }}">
+    <input type="hidden" name="date" value="{{ selected_date|date:'Y-m-d' }}">
+    <div class="px-5 py-4 border-b flex flex-wrap items-center justify-between gap-3">
+      <h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-user-check text-indigo-600"></i> {{ classroom.name }} — {{ selected_date|date:"d/m/Y" }}</h3>
+      <div class="flex gap-2 text-xs">
+        <select name="type" class="border border-slate-200 rounded-lg px-2 py-1.5"><option value="absence">Absence</option><option value="retard">Retard</option></select>
+        <select name="status" class="border border-slate-200 rounded-lg px-2 py-1.5"><option value="non_justifiee">Non justifiée</option><option value="justifiee">Justifiée</option><option value="en_attente">En attente</option></select>
+        <button type="submit" class="px-4 py-1.5 rounded-lg bg-indigo-600 text-white font-semibold"><i class="fas fa-save"></i> Enregistrer</button>
+      </div>
+    </div>
+    <div class="divide-y divide-slate-100">
+      {% for s in students %}
+      <div class="px-5 py-3 flex flex-wrap items-center gap-3">
+        <label class="flex items-center gap-2 min-w-[190px] flex-1">
+          <input type="checkbox" name="absent_{{ s.pk }}" class="rounded border-slate-300">
+          <span class="text-sm font-semibold text-slate-800">{{ s.last_name }} {{ s.first_name }}</span>
+          <span class="text-[10px] font-mono text-slate-400">{{ s.matricule }}</span>
+        </label>
+        <input type="text" name="reason_{{ s.pk }}" placeholder="Motif (facultatif)" class="flex-1 border border-slate-200 rounded-lg px-3 py-1.5 text-xs">
+      </div>
+      {% empty %}<div class="py-10 text-center text-slate-400 text-xs">Aucun élève dans cette classe.</div>{% endfor %}
+    </div>
+  </form>
+</div>
+{% else %}
+<div class="bg-white rounded-2xl border border-dashed p-12 text-center text-slate-400 text-xs">Choisissez une classe pour faire l'appel.</div>
+{% endif %}
+
+{% endblock %}

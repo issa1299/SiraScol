@@ -1,0 +1,58 @@
+{% extends "prof/base_prof.html" %}
+{% block title %}Saisir les notes — Espace Professeur{% endblock %}
+{% block header_title %}Saisir les notes{% endblock %}
+{% block header_sub %}Sélectionnez une classe puis une évaluation{% endblock %}
+{% block content %}
+
+<div class="bg-white rounded-2xl border border-slate-200 p-4 mb-6">
+  <form method="get" class="flex flex-col sm:flex-row gap-3">
+    <div class="flex-1">
+      <label class="text-[11px] font-bold uppercase text-slate-500 mb-1 block">Classe</label>
+      <select name="classroom" class="form-input" onchange="this.form.submit()">
+        <option value="">— Choisir —</option>
+        {% for c in classrooms %}<option value="{{ c.id }}" {% if classroom and classroom.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="flex-1">
+      <label class="text-[11px] font-bold uppercase text-slate-500 mb-1 block">Évaluation</label>
+      <select name="assessment" class="form-input" onchange="this.form.submit()">
+        <option value="">— Choisir —</option>
+        {% for a in assessments %}<option value="{{ a.id }}" {% if assessment and assessment.id == a.id %}selected{% endif %}>{{ a.date|date:"d/m/Y" }} · {{ a.subject.name }} · {{ a.title }}</option>{% endfor %}
+      </select>
+    </div>
+  </form>
+</div>
+
+{% if assessment %}
+<div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="classroom" value="{{ classroom.id }}">
+    <input type="hidden" name="assessment" value="{{ assessment.id }}">
+    <div class="px-5 py-4 border-b flex items-center justify-between">
+      <div><h3 class="font-bold text-slate-900 text-sm">{{ assessment.title }}</h3><p class="text-[11px] text-slate-500">{{ assessment.subject.name }} · {{ assessment.classroom.name }} · {{ assessment.date|date:"d/m/Y" }}</p></div>
+      <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold"><i class="fas fa-save"></i> Enregistrer les notes</button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm min-w-[620px]">
+        <thead><tr class="bg-slate-50 border-b text-[11px] text-slate-500 uppercase"><th class="text-left px-5 py-3">Élève</th><th class="text-center px-3 py-3">Note /{{ assessment.max_score }}</th><th class="text-center px-3 py-3">Absent</th><th class="text-left px-3 py-3">Appréciation</th><th class="text-center px-5 py-3">Statut</th></tr></thead>
+        <tbody class="divide-y divide-slate-100">
+          {% for r in rows %}
+          <tr class="hover:bg-slate-50">
+            <td class="px-5 py-3 font-semibold text-slate-800">{{ r.student.last_name }} {{ r.student.first_name }}</td>
+            <td class="px-3 py-3 text-center"><input type="text" name="score_{{ r.student.pk }}" value="{{ r.score }}" class="w-20 text-center border border-slate-200 rounded-lg px-2 py-1.5 text-xs" {% if r.validated %}disabled{% endif %}></td>
+            <td class="px-3 py-3 text-center"><input type="checkbox" name="absent_{{ r.student.pk }}" class="rounded border-slate-300" {% if r.is_absent %}checked{% endif %} {% if r.validated %}disabled{% endif %}></td>
+            <td class="px-3 py-3"><input type="text" name="app_{{ r.student.pk }}" value="{{ r.appreciation }}" class="w-full border border-slate-200 rounded-lg px-2 py-1.5 text-xs" {% if r.validated %}disabled{% endif %}></td>
+            <td class="px-5 py-3 text-center">{% if r.validated %}<span class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 text-[10px] font-bold">Validée</span>{% else %}<span class="px-2 py-1 rounded-lg bg-amber-50 text-amber-700 text-[10px] font-bold">À valider</span>{% endif %}</td>
+          </tr>
+          {% empty %}<tr><td colspan="5" class="py-10 text-center text-slate-400 text-xs">Aucun élève inscrit.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </form>
+</div>
+{% else %}
+<div class="bg-white rounded-2xl border border-dashed p-12 text-center text-slate-400 text-xs">Choisissez une classe et une évaluation.</div>
+{% endif %}
+
+{% endblock %}

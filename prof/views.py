@@ -24,7 +24,7 @@ from core.year_context import get_selected_year
 from eleve.forms import HomeworkForm
 from eleve.models import Homework
 from grades.bulletin_views import _build_bulletin_context
-from grades.models import Grade
+from grades.models import Assessment, Grade, Period
 from students.models import Enrollment, Student
 from timetable.models import TimetableEntry
 
@@ -176,6 +176,111 @@ def notes(request):
         'teacher': ctx['teacher'], 'year': ctx['year'],
         'classrooms': ctx['classrooms'], 'classroom': classroom,
         'grades': grades, 'section': 'notes',
+    })
+
+
+@role_required('enseignant')
+def saisie_notes(request):
+    ctx = _base(request)
+    classroom_id = request.GET.get('classroom') or request.POST.get('classroom', '')
+    classroom = next((c for c in ctx['classrooms'] if str(c.pk) == classroom_id), None)
+    assessments = Assessment.objects.none()
+    if classroom:
+        assessments = Assessment.objects.filter(classroom=classroom).select_related(
+            'subject', 'assessment_type', 'period'
+        ).order_by('-date')
+    assessment = assessments.filter(pk=request.GET.get('assessment') or request.POST.get('assessment')).first()
+
+    rows = []
+    if assessment:
+        for enr in Enrollment.objects.filter(
+            classroom=assessment.classroom, is_active=True
+        ).select_related('student').order_by('student__last_name', 'student__first_name'):
+            g = Grade.objects.filter(assessment=assessment, student=enr.student).first()
+            rows.append({
+                'student': enr.student, 'grade': g,
+                'score': g.score if g else '', 'appreciation': g.appreciation if g else '',
+                'is_absent': g.is_absent if g else False,
+                'validated': g.is_validated if g else False,
+            })
+
+    if request.method == 'POST' and assessment:
+        if Grade.objects.filter(assessment=assessment, is_validated=True).exists():
+            messages.error(request, "Évaluation déjà validée : modification refusée.")
+        else:
+            count = 0
+            for row in rows:
+                student = row['student']
+                field = f"score_{student.pk}"
+                if field not in request.POST:
+                    continue
+                raw = request.POST.get(field, '').strip().replace(',', '.')
+                absent = request.POST.get(f'absent_{student.pk}') == 'on'
+                try:
+                    score = 0 if absent else (float(raw) if raw else 0)
+                except ValueError:
+                    continue
+                Grade.objects.update_or_create(
+                    assessment=assessment, student=student,
+                    defaults={
+                        'score': score, 'is_absent': absent,
+                        'appreciation': request.POST.get(f'app_{student.pk}', '')[:255],
+                    },
+                )
+                count += 1
+            messages.success(request, f'{count} note(s) enregistrée(s).')
+        return redirect(f"/mon-espace-prof/saisie-notes/?classroom={classroom.pk}&assessment={assessment.pk}")
+
+    return render(request, 'prof/saisie_notes.html', {
+        'teacher': ctx['teacher'], 'year': ctx['year'],
+        'classrooms': ctx['classrooms'], 'classroom': classroom,
+        'assessments': assessments, 'assessment': assessment,
+        'rows': rows, 'section': 'notes',
+    })
+
+
+@role_required('enseignant')
+def appel(request):
+    ctx = _base(request)
+    classroom_id = request.GET.get('classroom') or request.POST.get('classroom', '')
+    classroom = next((c for c in ctx['classrooms'] if str(c.pk) == classroom_id), None)
+    selected_date = request.GET.get('date') or date.today().isoformat()
+    try:
+        selected_date = date.fromisoformat(str(selected_date))
+    except (ValueError, TypeError):
+        selected_date = date.today()
+
+    students = []
+    if classroom:
+        students = list(Student.objects.filter(
+            enrollments__classroom=classroom, enrollments__is_active=True
+        ).select_related('user').order_by('last_name', 'first_name'))
+
+    if request.method == 'POST' and classroom:
+        kind = request.POST.get('type', 'absence')
+        status = request.POST.get('status', 'non_justifiee')
+        count = 0
+        for student in students:
+            if request.POST.get(f'absent_{student.pk}') != 'on':
+                continue
+            Absence.objects.update_or_create(
+                student=student, date=selected_date, type=kind,
+                defaults={
+                    'status': status,
+                    'reason': request.POST.get(f'reason_{student.pk}', '')[:255],
+                    'classroom': classroom,
+                    'recorded_by': ctx['teacher'],
+                },
+            )
+            count += 1
+        messages.success(request, f'{count} présence(s) enregistrée(s).')
+        return redirect(f"/mon-espace-prof/appel/?classroom={classroom.pk}&date={selected_date}")
+
+    return render(request, 'prof/appel.html', {
+        'teacher': ctx['teacher'], 'year': ctx['year'],
+        'classrooms': ctx['classrooms'], 'classroom': classroom,
+        'selected_date': selected_date, 'students': students,
+        'section': 'presence',
     })
 
 
