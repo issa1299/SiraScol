@@ -20,6 +20,17 @@ def grade_saved(sender, instance, created, **kwargs):
     notify_student_and_parents(student, title, message, 'note', link)
 
 
+def _format_date(value):
+    """Accepte une date, un datetime ou une chaîne ISO (formulaires)."""
+    if hasattr(value, 'strftime'):
+        return value.strftime('%d/%m/%Y')
+    try:
+        from datetime import date
+        return date.fromisoformat(str(value)).strftime('%d/%m/%Y')
+    except (ValueError, TypeError):
+        return str(value)
+
+
 @receiver(post_save, sender='attendance.Absence')
 def absence_saved(sender, instance, created, **kwargs):
     if not created:
@@ -29,7 +40,7 @@ def absence_saved(sender, instance, created, **kwargs):
     notify_student_and_parents(
         student,
         f'{kind} enregistré(e)',
-        f"{instance.date.strftime('%d/%m/%Y')} — {instance.reason or 'motif non précisé'}",
+        f"{_format_date(instance.date)} — {instance.reason or 'motif non précisé'}",
         'absence',
         reverse('eleve:absences'),
     )

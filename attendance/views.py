@@ -311,6 +311,10 @@ def class_attendance(request, classroom_id):
         ).select_related('student').order_by('student__last_name', 'student__first_name')
     ]
     selected_date = request.GET.get('date') or request.POST.get('date') or date.today().isoformat()
+    try:
+        selected_date = date.fromisoformat(str(selected_date))
+    except (ValueError, TypeError):
+        selected_date = date.today()
 
     if request.method == 'POST':
         absence_type = request.POST.get('type', 'absence')
