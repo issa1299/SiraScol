@@ -249,7 +249,6 @@ def timetable_entry_save(request, classroom_id):
     classroom = get_object_or_404(ClassRoom, pk=classroom_id)
     role = get_role(request.user)
     if role in ('enseignant', 'parent', 'eleve') and not request.user.is_superuser:
-        from django.contrib import messages
         messages.error(request, "Modification de l'emploi du temps réservée à l'administration.")
         return redirect('timetable:home')
     if request.method != 'POST':
