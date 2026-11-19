@@ -35,7 +35,9 @@ python manage.py runserver
 | `/` | Tableau de bord |
 | `/accounts/login/` | Connexion |
 | `/eleves/` | Liste élèves |
+| `/eleves/importer/` | Import en masse des élèves (CSV/Excel) — directeur/secrétaire |
 | `/eleves/<id>/` | Fiche élève |
+| `/mon-espace/` | Espace Élève dédié |
 | `/enseignants/` | Liste enseignants |
 | `/enseignants/<id>/` | Fiche enseignant |
 | `/classes/` | Liste classes |
@@ -65,6 +67,25 @@ Deux modèles selon le niveau :
 | **Secondaire / Lycée** | 6ème → 12ème | Détail Devoir / Composition / Trimestre + moyenne + conseil de classe |
 
 Accès : Fiche élève → bouton **Bulletin** · Filtre par période · Bouton Imprimer
+
+## Import en masse des élèves
+
+Menu **Élèves → Importer des élèves** (`/eleves/importer/`) ou, en ligne de commande :
+
+```bash
+python manage.py import_students eleves.csv
+python manage.py import_students eleves.xlsx --year 2026-2027 --class "1ère A"
+python manage.py import_students --sample > modele.csv
+```
+
+Le modèle CSV (séparateur `;`, UTF-8) contient les colonnes :
+`Nom;Prénom;Sexe;Date de naissance;Date d'inscription;Classe;Année scolaire;Téléphone;Lieu de naissance;Adresse;Nom du parent;Téléphone parent;Relation`
+
+- Le **matricule est généré automatiquement** (`2026-0001`).
+- Un **compte élève** est créé : identifiant `2026.0001`, mot de passe `2026-0001` (à faire changer ensuite).
+- Une **inscription** est créée pour la classe et l'année indiquées, avec les factures si les frais sont configurés.
+- Les **parents/tuteurs** et leurs comptes sont créés si les colonnes sont remplies.
+- Les lignes invalides sont ignorées et signalées dans le rapport ; aucune importation partielle d'une ligne.
 
 ## Production
 

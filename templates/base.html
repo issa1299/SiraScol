@@ -369,9 +369,14 @@
                 {# —— PÉDAGOGIE —— #}
                 <div class="nav-section">Pédagogie</div>
                 {% if can_nav_students %}
-                <a href="{% url 'students:list' %}" class="nav-link {% if request.resolver_match.app_name == 'students' and 'parent' not in request.path and 'cartes' not in request.path and 'fin-annee' not in request.path and 'promotion' not in request.path %}active{% endif %}">
+                <a href="{% url 'students:list' %}" class="nav-link {% if request.resolver_match.app_name == 'students' and 'parent' not in request.path and 'cartes' not in request.path and 'fin-annee' not in request.path and 'promotion' not in request.path and 'importer' not in request.path %}active{% endif %}">
                     <i class="fas fa-user-graduate w-5 text-center"></i> Gestion des élèves
                 </a>
+                {% if can_nav_students %}
+                <a href="{% url 'students:import' %}" class="nav-link {% if 'importer' in request.path %}active{% endif %}">
+                    <i class="fas fa-file-import w-5 text-center"></i> Importer des élèves
+                </a>
+                {% endif %}
                 {% if can_nav_students %}
                 <a href="{% url 'students:cards_home' %}" class="nav-link {% if '/cartes' in request.path %}active{% endif %}">
                     <i class="fas fa-id-card w-5 text-center"></i> Cartes scolaires
@@ -617,6 +622,7 @@
                         <div class="nav-section">Pédagogie</div>
                         {% if can_nav_students %}
                         <a href="{% url 'students:list' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-user-graduate w-5 text-center"></i> Gestion des élèves</a>
+                        <a href="{% url 'students:import' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-file-import w-5 text-center"></i> Importer des élèves</a>
                         <a href="{% url 'students:cards_home' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-id-card w-5 text-center"></i> Cartes scolaires</a>
                         {% endif %}
                         {% if can_nav_classrooms %}

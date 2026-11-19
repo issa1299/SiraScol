@@ -18,6 +18,7 @@ urlpatterns = [
     path('', views.student_list, name='list'),
     path('pdf/', views.student_list_pdf, name='list_pdf'),
     path('ajouter/', views.student_create, name='create'),
+    path('importer/', views.student_import, name='import'),
     path('<int:pk>/', views.student_detail, name='detail'),
     path('<int:pk>/qr/', views.student_qr, name='qr'),
     path('<int:pk>/carte/', views.student_card, name='card'),

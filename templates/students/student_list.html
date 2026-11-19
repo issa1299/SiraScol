@@ -79,6 +79,11 @@
           class="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
     <i class="fas fa-plus"></i> Inscrire
   </button>
+  {% if can_nav_students %}
+  <a href="{% url 'students:import' %}" class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl">
+    <i class="fas fa-file-import"></i> Importer (CSV/Excel)
+  </a>
+  {% endif %}
   <button type="button" onclick="window.print()" class="inline-flex items-center gap-2 border text-sm px-4 py-2.5 rounded-xl text-slate-700">
     <i class="fas fa-print"></i> Imprimer
   </button>
