@@ -17,6 +17,7 @@ urlpatterns = [
     path('bulletins/', views.bulletins, name='bulletins'),
     path('notifications/', views.notifications, name='notifications'),
     path('rendezvous/', views.rendezvous, name='rendezvous'),
+    path('messagerie/', views.messagerie, name='messages'),
     path('profil/', views.profil, name='profil'),
     path('validation/', views.validation, name='validation'),
 ]

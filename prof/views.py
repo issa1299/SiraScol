@@ -13,8 +13,9 @@ from django.views.decorators.http import require_POST
 
 from academics.models import ClassRoom, Subject, SubjectAssignment
 from attendance.models import Absence
-from communication.models import Announcement
+from communication.models import Announcement, Message
 from core.models import Notification
+from django.contrib.auth.models import User
 from core.permissions import (
     get_linked_teacher, get_teacher_classrooms, role_required,
 )
@@ -366,6 +367,52 @@ def profil(request):
         'teacher': teacher, 'year': ctx['year'],
         'classrooms': ctx['classrooms'], 'subjects': ctx['subjects'],
         'section': 'profil',
+    })
+
+
+@role_required('enseignant')
+def messagerie(request):
+    qs = Message.objects.filter(
+        Q(sender=request.user) | Q(recipient=request.user)
+    ).order_by('-sent_at')
+
+    if request.method == 'POST':
+        action = request.POST.get('action', '')
+        if action == 'repondre':
+            msg = get_object_or_404(Message, pk=request.POST.get('id'), recipient=request.user)
+            if msg.sender_id:
+                Message.objects.create(
+                    sender=request.user, recipient=msg.sender,
+                    subject=f'Re : {msg.subject}',
+                    body=request.POST.get('body', '').strip(),
+                )
+                messages.success(request, 'Réponse envoyée.')
+        elif action == 'nouveau':
+            recipient = User.objects.filter(
+                pk=request.POST.get('recipient'), is_active=True
+            ).first()
+            subject = request.POST.get('subject', '').strip()
+            body = request.POST.get('body', '').strip()
+            if recipient and subject and body:
+                Message.objects.create(
+                    sender=request.user, recipient=recipient,
+                    subject=subject, body=body,
+                )
+                messages.success(request, 'Message envoyé.')
+            else:
+                messages.error(request, 'Destinataire, objet et message sont obligatoires.')
+        elif action == 'lu':
+            Message.objects.filter(
+                recipient=request.user, id__in=request.POST.getlist('ids')
+            ).update(is_read=True)
+        return redirect('prof:messages')
+
+    unread = qs.filter(recipient=request.user, is_read=False).count()
+    return render(request, 'prof/messagerie.html', {
+        'conversations': qs[:60], 'unread': unread,
+        'contacts': User.objects.filter(is_active=True).exclude(pk=request.user.pk)
+        .order_by('last_name', 'first_name')[:100],
+        'section': 'messages',
     })
 
 

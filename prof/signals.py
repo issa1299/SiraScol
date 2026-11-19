@@ -47,12 +47,18 @@ def announcement_saved(sender, instance, created, **kwargs):
 def message_saved(sender, instance, created, **kwargs):
     if not created:
         return
+    role = getattr(getattr(instance.recipient, 'profile', None), 'role', '')
+    link = {
+        'enseignant': '/mon-espace-prof/messagerie/',
+        'parent': '/mon-espace-parent/communication/',
+        'eleve': '/mon-espace/',
+    }.get(role, '/annonces/messages/')
     notify(
         instance.recipient,
         f'Nouveau message de {instance.sender.get_full_name() or instance.sender.username}',
         instance.subject,
         'info',
-        '/annonces/messages/',
+        link,
     )
 
 
