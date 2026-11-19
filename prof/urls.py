@@ -16,6 +16,7 @@ urlpatterns = [
     path('supports/<int:pk>/supprimer/', views.support_delete, name='support_delete'),
     path('bulletins/', views.bulletins, name='bulletins'),
     path('notifications/', views.notifications, name='notifications'),
+    path('rendezvous/', views.rendezvous, name='rendezvous'),
     path('profil/', views.profil, name='profil'),
     path('validation/', views.validation, name='validation'),
 ]

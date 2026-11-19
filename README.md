@@ -82,7 +82,7 @@ Portail dédié sur `/mon-espace-parent/` (dashboard multi-enfants, notes, bulle
 
 ## Espace Professeur
 
-Portail dédié sur `/mon-espace-prof/` (dashboard, classes, notes, présences, emploi du temps, devoirs, supports de cours, bulletins/appréciations, notifications, profil). Les enseignants y voient uniquement leurs classes et matières affectées. La validation finale des notes par la direction se fait sur `/mon-espace-prof/validation/`. Les notes validées ne sont plus modifiables par les enseignants.
+Portail dédié sur `/mon-espace-prof/` (dashboard, classes, notes, présences, emploi du temps, devoirs, supports de cours, bulletins/appréciations, notifications, rendez-vous, messages, profil). Les nouveaux messages et demandes de rendez-vous créent une notification pour leur destinataire (professeur ou direction). Les enseignants y voient uniquement leurs classes et matières affectées. La validation finale des notes par la direction se fait sur `/mon-espace-prof/validation/`. Les notes validées ne sont plus modifiables par les enseignants.
 
 ## Emploi du temps par classe
 

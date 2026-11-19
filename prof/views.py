@@ -369,6 +369,32 @@ def profil(request):
     })
 
 
+@role_required('enseignant')
+def rendezvous(request):
+    teacher = get_linked_teacher(request.user)
+    qs = Appointment.objects.all() if teacher is None else Appointment.objects.filter(teacher=teacher)
+    qs = qs.select_related('parent', 'student', 'teacher').order_by('-created_at')
+
+    if request.method == 'POST':
+        pk = request.POST.get('id')
+        statut = request.POST.get('status', 'traite')
+        reponse = request.POST.get('response', '').strip()
+        obj = get_object_or_404(Appointment, pk=pk)
+        if teacher is None or obj.teacher_id == teacher.pk:
+            obj.status = statut
+            obj.response = reponse
+            obj.save(update_fields=['status', 'response', 'updated_at'])
+            messages.success(request, 'Réponse enregistrée.')
+        else:
+            messages.error(request, 'Cette demande ne vous est pas adressée.')
+        return redirect('prof:rendezvous')
+
+    return render(request, 'prof/rendezvous.html', {
+        'appointments': qs[:80], 'teacher': teacher,
+        'section': 'rendezvous',
+    })
+
+
 @role_required('directeur')
 def validation(request):
     grades = Grade.objects.filter(is_validated=False).select_related(

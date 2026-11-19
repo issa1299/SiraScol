@@ -1,0 +1,46 @@
+{% extends "prof/base_prof.html" %}
+{% block title %}Rendez-vous — Espace Professeur{% endblock %}
+{% block header_title %}Demandes de rendez-vous{% endblock %}
+{% block header_sub %}Demandes envoyées par les parents{% endblock %}
+{% block content %}
+
+<div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+  <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-calendar-check text-indigo-600"></i> Demandes reçues</h3></div>
+  {% if appointments %}
+  <div class="divide-y divide-slate-100">
+    {% for a in appointments %}
+    <div class="px-5 py-4">
+      <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+        <div class="min-w-0">
+          <p class="font-semibold text-slate-800 text-sm">{{ a.motif }}</p>
+          <p class="text-[11px] text-slate-500 mt-0.5">
+            {{ a.parent.first_name }} {{ a.parent.last_name }} · {{ a.student.full_name }}
+            {% if a.proposed_date %} · souhaité le {{ a.proposed_date|date:"d/m/Y" }}{% endif %}
+          </p>
+          {% if a.message %}<p class="text-xs text-slate-600 mt-2">{{ a.message }}</p>{% endif %}
+        </div>
+        <span class="shrink-0 px-2.5 py-1 rounded-lg text-[10px] font-bold
+          {% if a.status == 'en_attente' %}bg-amber-50 text-amber-700
+          {% elif a.status == 'accepte' %}bg-emerald-50 text-emerald-700
+          {% elif a.status == 'refuse' %}bg-rose-50 text-rose-700
+          {% else %}bg-slate-100 text-slate-600{% endif %}">{{ a.get_status_display }}</span>
+      </div>
+      <form method="post" class="mt-3 flex flex-col sm:flex-row gap-2">
+        {% csrf_token %}
+        <input type="hidden" name="id" value="{{ a.id }}">
+        <input type="text" name="response" value="{{ a.response }}" placeholder="Votre réponse…" class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-xs">
+        <select name="status" class="border border-slate-200 rounded-xl px-3 py-2 text-xs">
+          <option value="accepte" {% if a.status == 'accepte' %}selected{% endif %}>Accepté</option>
+          <option value="refuse" {% if a.status == 'refuse' %}selected{% endif %}>Refusé</option>
+          <option value="traite" {% if a.status == 'traite' %}selected{% endif %}>Traité</option>
+          <option value="en_attente" {% if a.status == 'en_attente' %}selected{% endif %}>En attente</option>
+        </select>
+        <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-semibold"><i class="fas fa-save"></i> Répondre</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}<div class="py-14 text-center text-slate-400 text-xs">Aucune demande de rendez-vous.</div>{% endif %}
+</div>
+
+{% endblock %}

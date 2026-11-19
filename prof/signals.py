@@ -43,6 +43,33 @@ def announcement_saved(sender, instance, created, **kwargs):
         notify_role(role, instance.title, 'Nouvelle annonce de l’établissement.', 'annonce', '/annonces/')
 
 
+@receiver(post_save, sender='communication.Message')
+def message_saved(sender, instance, created, **kwargs):
+    if not created:
+        return
+    notify(
+        instance.recipient,
+        f'Nouveau message de {instance.sender.get_full_name() or instance.sender.username}',
+        instance.subject,
+        'info',
+        '/annonces/messages/',
+    )
+
+
+@receiver(post_save, sender='prof.Appointment')
+def appointment_saved(sender, instance, created, **kwargs):
+    if not created:
+        return
+    parent_name = instance.parent.get_full_name() if hasattr(instance.parent, 'get_full_name') else \
+        f'{instance.parent.first_name} {instance.parent.last_name}'
+    title = f'Demande de rendez-vous — {instance.motif}'
+    message = f'{parent_name} · {instance.student.full_name}'
+    if instance.teacher_id and instance.teacher.user_id:
+        notify(instance.teacher.user, title, message, 'info', '/mon-espace-prof/rendezvous/')
+    else:
+        notify_role('directeur', title, message, 'info', '/mon-espace-prof/rendezvous/')
+
+
 @receiver(post_save, sender='timetable.TimetableEntry')
 def timetable_saved(sender, instance, created, **kwargs):
     if not created:
