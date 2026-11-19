@@ -1,7 +1,7 @@
 from functools import wraps
 
 from core.year_context import get_selected_year
-from core.permissions import get_role, get_teacher_classrooms
+from core.permissions import get_role, get_teacher_classrooms, can, permission_required
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
@@ -9,6 +9,7 @@ from django.views.decorators.http import require_POST
 from django.http import HttpResponse
 
 from .models import TimetableEntry, TimeSlot, Room
+from .edt_generator import generate_for_class
 from academics.models import ClassRoom, AcademicYear, Subject
 from teachers.models import Teacher
 
@@ -166,6 +167,7 @@ def timetable_home(request):
     read_only = role in ('enseignant', 'parent', 'eleve') and not request.user.is_superuser
     return render(request, 'timetable/pedagogique.html', {
         'read_only': read_only,
+        'can_generate': can(request.user, 'timetable.edit'),
         'classrooms': classrooms,
         'classroom_id': str(classroom_id),
         'classroom': classroom,
@@ -181,6 +183,66 @@ def timetable_home(request):
         'stats': stats,
         'today': date.today(),
     })
+
+
+@login_required
+@_students_use_portal
+@permission_required('timetable.edit')
+@require_POST
+def generate_edt(request):
+    """Génère la grille de base pour une classe ou les classes avec élèves."""
+    from django.db.models import Count, Q
+
+    year = get_selected_year(request)
+    qs = ClassRoom.objects.filter(academic_year=year).annotate(
+        n_students=Count(
+            'enrollments', filter=Q(enrollments__is_active=True), distinct=True
+        )
+    )
+
+    classroom_id = request.POST.get('classroom', '')
+    scope = request.POST.get('scope', 'class')
+    if classroom_id:
+        qs = qs.filter(pk=classroom_id)
+    elif scope == 'year':
+        pass
+    else:
+        qs = qs.filter(n_students__gt=0)
+
+    classrooms = list(qs)
+    if not classrooms:
+        messages.warning(request, "Aucune classe à traiter pour cette année.")
+        return redirect('timetable:home')
+
+    overwrite = request.POST.get('overwrite') == 'on'
+    days = (1, 2, 3, 4, 5, 6) if request.POST.get('saturday') == 'on' else (1, 2, 3, 4, 5)
+
+    created = updated = skipped = 0
+    errors = []
+    for classroom in classrooms:
+        try:
+            report = generate_for_class(classroom, days=days, overwrite=overwrite)
+        except Exception as exc:
+            errors.append(f"{classroom.name} : {exc}")
+            continue
+        created += report['created']
+        updated += report['updated']
+        skipped += report['skipped']
+
+    if created or updated:
+        messages.success(
+            request,
+            f"Emploi du temps généré : {created} cours créé(s), {updated} modifié(s), "
+            f"{skipped} créneau(x) déjà occupé(s).",
+        )
+    else:
+        messages.info(request, f"Aucun créneau à générer ({skipped} déjà occupé(s)).")
+    for err in errors:
+        messages.error(request, err)
+
+    if len(classrooms) == 1 and classroom_id:
+        return redirect(f'/emploi-du-temps/?classroom={classroom_id}')
+    return redirect('timetable:home')
 
 
 @login_required

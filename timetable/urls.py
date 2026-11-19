@@ -5,6 +5,7 @@ app_name = 'timetable'
 
 urlpatterns = [
     path('', views.timetable_home, name='home'),
+    path('generer/', views.generate_edt, name='generate'),
     path('creneaux/sauver/', views.slots_save, name='slots_save'),
     path('classe/<int:classroom_id>/sauver/', views.timetable_entry_save, name='save_entry'),
     path('entree/<int:pk>/supprimer/', views.timetable_entry_delete, name='delete_entry'),

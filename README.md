@@ -68,6 +68,18 @@ Deux modèles selon le niveau :
 
 Accès : Fiche élève → bouton **Bulletin** · Filtre par période · Bouton Imprimer
 
+## Emploi du temps par classe
+
+```bash
+python manage.py check_edt                      # contrôle classe par classe
+python manage.py generate_edt                   # classes avec élèves (idempotent)
+python manage.py generate_edt --all             # toutes les classes de l'année
+python manage.py generate_edt --class "1ère A"  # une seule classe
+python manage.py generate_edt --overwrite       # reconstruire les grilles
+```
+
+La grille de base est aussi générable depuis l'interface `/emploi-du-temps/` (bouton « Générer la grille »), pour les admins. Les créneaux déjà occupés ne sont pas écrasés sauf avec `--overwrite`.
+
 ## Import en masse des élèves
 
 Menu **Élèves → Importer des élèves** (`/eleves/importer/`) ou, en ligne de commande :
