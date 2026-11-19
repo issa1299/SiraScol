@@ -9,7 +9,6 @@ from datetime import date, datetime
 
 from django.db import transaction
 
-from academics.models import AcademicYear, ClassRoom
 from core.account_sync import ensure_user_for_parent, ensure_user_for_student
 
 from .models import Enrollment, Parent, ParentStudent, Student
@@ -144,8 +143,12 @@ def _split_parent(name):
 
 
 @transaction.atomic
-def _import_one(row, year, default_classroom, create_parents, create_invoices):
-    """Importe une ligne dans une transaction ; lève ValueError si invalide."""
+def _import_one(row, year, classroom, create_parents, create_invoices):
+    """Importe une ligne dans une transaction ; lève ValueError si invalide.
+
+    La classe est imposée par l'import (une classe à la fois) : la colonne
+    « Classe » du fichier, si elle existe, est ignorée.
+    """
     last_name = str(row.get('last_name') or '').strip()
     first_name = str(row.get('first_name') or '').strip()
     if not last_name or not first_name:
@@ -156,15 +159,6 @@ def _import_one(row, year, default_classroom, create_parents, create_invoices):
     if not dob:
         raise ValueError('Date de naissance obligatoire')
     enrollment_date = _parse_date(row.get('enrollment_date')) or date.today()
-
-    class_name = str(row.get('classroom') or '').strip() or default_classroom
-    if not class_name:
-        raise ValueError('Classe obligatoire (colonne « Classe » ou option --class)')
-    classroom = ClassRoom.objects.filter(
-        academic_year=year, name__iexact=class_name
-    ).select_related('level').first()
-    if not classroom:
-        raise ValueError(f"Classe « {class_name} » introuvable pour {year.name}")
 
     # Évite les doublons : même nom + prénom + date de naissance
     student = Student.objects.filter(
@@ -258,31 +252,27 @@ def _import_one(row, year, default_classroom, create_parents, create_invoices):
     }
 
 
-def import_rows(rows, year=None, default_classroom='', create_parents=True,
-                create_invoices=True):
-    """Importe les lignes et retourne un rapport détaillé."""
-    if year is None:
-        year = AcademicYear.objects.filter(is_current=True).first() or \
-            AcademicYear.objects.order_by('-start_date', '-id').first()
-    if year is None:
-        raise ValueError("Aucune année scolaire configurée.")
+def import_rows(rows, classroom, create_parents=True, create_invoices=True):
+    """Importe les lignes D'UNE SEULE CLASSE et retourne un rapport détaillé."""
+    if classroom is None:
+        raise ValueError("Aucune classe sélectionnée.")
+    year = classroom.academic_year
 
     report = {
-        'year': year, 'total': len(rows), 'created': 0, 'exists': 0,
-        'errors': [], 'credentials': [], 'classrooms': set(),
+        'year': year, 'classroom': classroom, 'total': len(rows),
+        'created': 0, 'exists': 0, 'errors': [], 'credentials': [],
     }
     for row in rows:
         line = row.get('_line', '?')
         try:
             result = _import_one(
-                row, year, default_classroom, create_parents, create_invoices
+                row, year, classroom, create_parents, create_invoices
             )
             if result['created']:
                 report['created'] += 1
             else:
                 report['exists'] += 1
             report['credentials'].extend(result['credentials'])
-            report['classrooms'].add(result['classroom'].name)
         except Exception as exc:
             report['errors'].append({'line': line, 'message': str(exc)})
     return report
@@ -290,19 +280,22 @@ def import_rows(rows, year=None, default_classroom='', create_parents=True,
 
 SAMPLE_HEADER = [
     'Nom', 'Prénom', 'Sexe', 'Date de naissance', "Date d'inscription",
-    'Classe', 'Année scolaire', 'Téléphone', 'Lieu de naissance',
-    'Adresse', 'Nom du parent', 'Téléphone parent', 'Relation',
+    'Téléphone', 'Lieu de naissance', 'Adresse',
+    'Nom du parent', 'Téléphone parent', 'Relation',
 ]
 
 
 def sample_csv():
-    """Modèle CSV prêt à remplir (séparateur ';', BOM UTF-8 pour Excel)."""
+    """Modèle CSV d'une classe (séparateur ';', BOM UTF-8 pour Excel).
+
+    La classe et l'année sont choisies dans le formulaire, pas dans le fichier.
+    """
     buf = io.StringIO()
     writer = csv.writer(buf, delimiter=';')
     writer.writerow(SAMPLE_HEADER)
     writer.writerow([
         'Bah', 'Ibrahim', 'M', '2010-05-12', '2026-09-01',
-        '1ère A', '2026-2027', '0700000000', 'Abidjan',
-        '', 'Moussa Bah', '0700000001', 'Père',
+        '0700000000', 'Abidjan', '',
+        'Moussa Bah', '0700000001', 'Père',
     ])
     return '\ufeff' + buf.getvalue()

@@ -72,14 +72,18 @@ Accès : Fiche élève → bouton **Bulletin** · Filtre par période · Bouton 
 
 Menu **Élèves → Importer des élèves** (`/eleves/importer/`) ou, en ligne de commande :
 
+L'import se fait **classe par classe** : on choisit d'abord la classe (et l'année), puis on dépose le fichier des élèves de cette classe.
+
 ```bash
-python manage.py import_students eleves.csv
-python manage.py import_students eleves.xlsx --year 2026-2027 --class "1ère A"
+python manage.py import_students eleves.csv --class "1ère A"
+python manage.py import_students eleves.xlsx --class "1ère A" --year 2026-2027
 python manage.py import_students --sample > modele.csv
 ```
 
 Le modèle CSV (séparateur `;`, UTF-8) contient les colonnes :
-`Nom;Prénom;Sexe;Date de naissance;Date d'inscription;Classe;Année scolaire;Téléphone;Lieu de naissance;Adresse;Nom du parent;Téléphone parent;Relation`
+`Nom;Prénom;Sexe;Date de naissance;Date d'inscription;Téléphone;Lieu de naissance;Adresse;Nom du parent;Téléphone parent;Relation`
+
+La classe et l'année ne sont **pas** dans le fichier : elles sont fournies au formulaire ou à la commande (`--class`).
 
 - Le **matricule est généré automatiquement** (`2026-0001`).
 - Un **compte élève** est créé : identifiant `2026.0001`, mot de passe `2026-0001` (à faire changer ensuite).

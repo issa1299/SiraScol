@@ -6,9 +6,9 @@
   <a href="{% url 'students:list' %}" class="text-xs text-blue-600 hover:underline inline-flex items-center gap-1.5">
     <i class="fas fa-arrow-left"></i> Liste des élèves
   </a>
-  <h2 class="text-xl font-bold text-slate-900 mt-2">Importer des élèves en masse</h2>
+  <h2 class="text-xl font-bold text-slate-900 mt-2">Importer les élèves d'une classe</h2>
   <p class="text-xs text-slate-500 mt-1">
-    Remplissez le modèle, déposez le fichier, et SiraScol crée les élèves, leurs comptes de connexion et leurs inscriptions.
+    Choisissez d'abord la classe, puis déposez le fichier des élèves de cette classe. SiraScol crée les élèves, leurs comptes de connexion et leurs inscriptions.
   </p>
 </div>
 
@@ -23,29 +23,52 @@
     <form method="post" enctype="multipart/form-data" class="space-y-5">
       {% csrf_token %}
 
+      <div class="rounded-xl border border-blue-200 bg-blue-50/50 p-4 space-y-4">
+        <p class="text-xs font-bold text-blue-800 flex items-center gap-2">
+          <i class="fas fa-layer-group"></i> Étape 1 — Choisissez la classe
+        </p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1.5">Année scolaire</label>
+            <select name="academic_year" onchange="this.form.action='?year='+this.value; this.form.submit()"
+                    class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white">
+              {% for y in years %}
+              <option value="{{ y.id }}" {% if selected_year and selected_year.id == y.id %}selected{% endif %}>{{ y.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1.5">Classe *</label>
+            <select name="classroom" required
+                    class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white">
+              <option value="">— Choisir une classe —</option>
+              {% for c in classrooms %}
+              <option value="{{ c.id }}" {% if selected_classroom and selected_classroom.id == c.id %}selected{% endif %}>
+                {{ c.name }}{% if c.level %} — {{ c.level.name }}{% endif %}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+        {% if selected_classroom %}
+        <p class="text-[11px] text-emerald-700 font-semibold">
+          <i class="fas fa-check-circle"></i> Import dans <strong>{{ selected_classroom.name }}</strong>
+          ({{ selected_year.name }}) · {{ existing_count }} élève(s) déjà inscrit(s)
+        </p>
+        {% else %}
+        <p class="text-[11px] text-amber-700"><i class="fas fa-triangle-exclamation"></i> Sélectionnez une classe avant de lancer l'import.</p>
+        {% endif %}
+      </div>
+
       <div>
-        <label class="block text-xs font-bold text-slate-600 mb-1.5">Fichier (.csv, .xlsx)</label>
+        <label class="block text-xs font-bold text-slate-600 mb-1.5">
+          <i class="fas fa-layer-group text-blue-600"></i> Étape 2 — Fichier des élèves de cette classe (.csv, .xlsx)
+        </label>
         <input type="file" name="file" accept=".csv,.xlsx,.xlsm,.txt" required
                class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2.5 bg-white file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:text-xs file:cursor-pointer">
         <p class="text-[11px] text-slate-400 mt-1.5">
           Séparateur « ; » ou « , » accepté. Encodage UTF-8 recommandé (Excel : enregistrer en « CSV UTF-8 »).
         </p>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1.5">Année scolaire</label>
-          <select name="academic_year" class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs">
-            {% for y in years %}
-            <option value="{{ y.id }}" {% if default_year and default_year.id == y.id %}selected{% endif %}>{{ y.name }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label class="block text-xs font-bold text-slate-600 mb-1.5">Classe par défaut (si absente du fichier)</label>
-          <input type="text" name="classroom" placeholder="Ex. 1ère A"
-                 class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs">
-        </div>
       </div>
 
       <div class="flex flex-wrap gap-5">
@@ -63,7 +86,7 @@
         <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm">
           <i class="fas fa-file-import"></i> Lancer l'import
         </button>
-        <a href="{% url 'students:import' %}?sample=1"
+        <a href="{% url 'students:import' %}?sample=1&amp;year={{ selected_year.id }}{% if selected_classroom %}&amp;classroom={{ selected_classroom.id }}{% endif %}"
            class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">
           <i class="fas fa-download"></i> Télécharger le modèle
         </a>
@@ -73,13 +96,14 @@
 
   <div class="bg-blue-50/60 rounded-2xl border border-blue-200 p-5 text-xs text-slate-700 space-y-3">
     <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2"><i class="fas fa-circle-info text-blue-600"></i> Comment ça marche</h3>
-    <p><strong>1.</strong> Téléchargez le modèle CSV et remplissez une ligne par élève.</p>
-    <p><strong>2.</strong> Le <strong>matricule est généré automatiquement</strong> (ex. <code>2026-0001</code>).</p>
-    <p><strong>3.</strong> Un compte est créé : identifiant <code>2026.0001</code>, mot de passe <code>2026-0001</code>.</p>
-    <p><strong>4.</strong> L'élève est inscrit dans la classe indiquée pour l'année choisie.</p>
+    <p><strong>1.</strong> Choisissez l'année puis la <strong>classe</strong> (un seul import par classe).</p>
+    <p><strong>2.</strong> Téléchargez le modèle et remplissez une ligne par élève de cette classe.</p>
+    <p><strong>3.</strong> Le <strong>matricule est généré automatiquement</strong> (ex. <code>2026-0001</code>).</p>
+    <p><strong>4.</strong> Un compte est créé : identifiant <code>2026.0001</code>, mot de passe <code>2026-0001</code>, et l'élève est inscrit dans la classe choisie.</p>
     <p class="text-red-700"><i class="fas fa-triangle-exclamation"></i> Les lignes en erreur sont ignorées et signalées dans le rapport ; les autres sont importées.</p>
     <p class="text-slate-500 pt-2 border-t border-blue-200">
-      Colonnes reconnues : Nom, Prénom, Sexe (M/F), Date de naissance, Date d'inscription, Classe, Année scolaire, Téléphone, Lieu de naissance, Adresse, Nom du parent (« Prénom Nom »), Téléphone parent, Relation (Père/Mère/Tuteur).
+      Colonnes du fichier : Nom, Prénom, Sexe (M/F), Date de naissance, Date d'inscription, Téléphone, Lieu de naissance, Adresse, Nom du parent (« Prénom Nom »), Téléphone parent, Relation (Père/Mère/Tuteur).<br>
+      <strong>La classe et l'année ne sont pas dans le fichier</strong> : elles sont prises dans le formulaire.
     </p>
   </div>
 </div>
@@ -87,7 +111,7 @@
 {% if report %}
 <div class="mt-6 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
   <div class="px-5 py-4 border-b flex items-center justify-between flex-wrap gap-2">
-    <h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-list-check text-blue-600"></i> Rapport d'import — {{ report.year.name }}</h3>
+    <h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-list-check text-blue-600"></i> Rapport d'import — {{ report.classroom.name }} ({{ report.year.name }})</h3>
     <div class="flex gap-2 text-[11px]">
       <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold">{{ report.created }} créé(s)</span>
       <span class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-bold">{{ report.exists }} existant(s)</span>

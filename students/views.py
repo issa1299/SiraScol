@@ -1,3 +1,5 @@
+import re
+
 from core.account_sync import ensure_user_for_student, ensure_user_for_parent
 from core.year_context import get_selected_year
 from datetime import timedelta
@@ -672,54 +674,81 @@ def student_list_pdf(request):
 
 @role_required('directeur', 'secretaire')
 def student_import(request):
-    """Import en masse d'élèves depuis un CSV ou un classeur Excel."""
+    """Import d'élèves CLASSE PAR CLASSE depuis un CSV ou un classeur Excel."""
     from django.contrib import messages
     from core.year_context import get_selected_year
 
+    years = AcademicYear.objects.order_by('-is_current', '-start_date', '-id')
+    default_year = get_selected_year(request)
+
+    year_id = request.GET.get('year') or request.POST.get('academic_year') or ''
+    selected_year = (
+        AcademicYear.objects.filter(pk=year_id).first() if year_id else default_year
+    ) or default_year
+
+    classrooms = ClassRoom.objects.select_related('level', 'level__cycle').filter(
+        academic_year=selected_year
+    ).order_by('level__cycle__order', 'level__order', 'name')
+    classrooms = filter_classrooms_for_user(request.user, classrooms)
+
+    selected_classroom = None
+    class_id = request.POST.get('classroom') or request.GET.get('classroom', '')
+    if class_id:
+        selected_classroom = classrooms.filter(pk=class_id).first()
+
     if request.GET.get('sample') == '1':
         response = HttpResponse(sample_csv(), content_type='text/csv; charset=utf-8')
-        response['Content-Disposition'] = 'attachment; filename="modele_import_eleves.csv"'
+        suffix = f"_{selected_classroom.name}" if selected_classroom else ''
+        suffix = re.sub(r'[^A-Za-z0-9]+', '_', suffix).strip('_')
+        response['Content-Disposition'] = (
+            f'attachment; filename="modele_import{suffix}.csv"'
+        )
         return response
 
     report = None
     error = ''
-    years = AcademicYear.objects.order_by('-is_current', '-start_date', '-id')
-    default_year = get_selected_year(request)
-
     if request.method == 'POST':
-        uploaded = request.FILES.get('file')
-        if not uploaded:
-            error = "Veuillez choisir un fichier CSV ou Excel (.csv, .xlsx)."
+        if not selected_classroom:
+            error = "Veuillez choisir la classe dans laquelle importer les élèves."
         else:
-            try:
-                rows = parse_file(uploaded, uploaded.name)
-            except Exception as exc:
-                error = f"Lecture du fichier impossible : {exc}"
+            uploaded = request.FILES.get('file')
+            if not uploaded:
+                error = "Veuillez choisir un fichier CSV ou Excel (.csv, .xlsx)."
             else:
-                if not rows:
-                    error = "Le fichier ne contient aucune ligne d'élève."
+                try:
+                    rows = parse_file(uploaded, uploaded.name)
+                except Exception as exc:
+                    error = f"Lecture du fichier impossible : {exc}"
                 else:
-                    year = None
-                    year_id = request.POST.get('academic_year', '')
-                    if year_id:
-                        year = AcademicYear.objects.filter(pk=year_id).first()
-                    report = import_rows(
-                        rows,
-                        year=year or default_year,
-                        default_classroom=request.POST.get('classroom', '').strip(),
-                        create_parents=request.POST.get('create_parents') == 'on',
-                        create_invoices=request.POST.get('create_invoices') == 'on',
-                    )
-                    messages.success(
-                        request,
-                        f"Import terminé : {report['created']} élève(s) créé(s), "
-                        f"{report['exists']} déjà existant(s), "
-                        f"{len(report['errors'])} erreur(s).",
-                    )
+                    if not rows:
+                        error = "Le fichier ne contient aucune ligne d'élève."
+                    else:
+                        report = import_rows(
+                            rows,
+                            classroom=selected_classroom,
+                            create_parents=request.POST.get('create_parents') == 'on',
+                            create_invoices=request.POST.get('create_invoices') == 'on',
+                        )
+                        messages.success(
+                            request,
+                            f"Import dans {selected_classroom.name} terminé : "
+                            f"{report['created']} élève(s) créé(s), "
+                            f"{report['exists']} déjà existant(s), "
+                            f"{len(report['errors'])} erreur(s).",
+                        )
+
+    existing_count = 0
+    if selected_classroom:
+        existing_count = Enrollment.objects.filter(
+            classroom=selected_classroom, is_active=True
+        ).count()
 
     return render(request, 'students/student_import.html', {
         'report': report,
         'error': error,
         'years': years,
-        'default_year': default_year,
+        'selected_year': selected_year,
+        'classrooms': classrooms,
+        'selected_classroom': selected_classroom,
+        'existing_count': existing_count,
     })
