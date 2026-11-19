@@ -1,0 +1,43 @@
+{% extends "comptabilite/base_comptable.html" %}
+{% block title %}Frais scolaires — Comptabilité{% endblock %}
+{% block header_title %}Frais scolaires{% endblock %}
+{% block header_sub %}Tarifs, échéances, réductions et exonérations{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
+    <h3 class="font-bold text-slate-900 text-sm mb-4"><i class="fas fa-sliders text-amber-600"></i> Tarifs des frais</h3>
+    <div class="space-y-3">
+      {% for f in fees %}
+      <form method="post" class="flex items-end gap-2">
+        {% csrf_token %}<input type="hidden" name="action" value="tarif"><input type="hidden" name="fee_type" value="{{ f.id }}">
+        <div class="flex-1"><label class="block text-[11px] text-slate-500">{{ f.name }}</label><input type="text" name="amount" value="{{ f.default_amount }}" class="form-input"></div>
+        <button type="submit" class="px-3 py-2 rounded-xl bg-amber-600 text-white text-xs font-semibold">Enregistrer</button>
+      </form>
+      {% empty %}<p class="text-xs text-slate-400">Aucun type de frais. Créez-en via l'administration.</p>{% endfor %}
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
+    <h3 class="font-bold text-slate-900 text-sm mb-4"><i class="fas fa-file-invoice-dollar text-amber-600"></i> Générer les factures d'une classe</h3>
+    <form method="post" class="space-y-3">
+      {% csrf_token %}<input type="hidden" name="action" value="generer">
+      <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Type de frais</label><select name="fee_type" class="form-input" required>{% for f in fees %}<option value="{{ f.id }}">{{ f.name }} ({{ f.default_amount }})</option>{% endfor %}</select></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Classe</label><select name="classroom" class="form-input" onchange="this.form.submit()" required><option value="">— Choisir —</option>{% for c in classrooms %}<option value="{{ c.id }}" {% if classroom and classroom.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+        <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Date d'échéance</label><input type="date" name="due_date" class="form-input" value="{{ today|date:'Y-m-d' }}"></div>
+      </div>
+      <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Réduction par élève (facultatif)</label><input type="text" name="remise" value="0" class="form-input"></div>
+      {% if students %}
+      <div><p class="text-[11px] font-bold uppercase text-slate-500 mb-1">Exonérations (cocher les élèves concernés)</p>
+        <div class="max-h-40 overflow-y-auto border rounded-xl divide-y divide-slate-100">
+          {% for s in students %}<label class="flex items-center gap-2 px-3 py-2 text-xs"><input type="checkbox" name="exempt" value="{{ s.id }}"> {{ s.last_name }} {{ s.first_name }}</label>{% endfor %}
+        </div>
+      </div>
+      {% endif %}
+      <button type="submit" class="w-full bg-amber-600 hover:bg-amber-700 text-white py-2.5 rounded-xl text-xs font-semibold"><i class="fas fa-save"></i> Générer les factures</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

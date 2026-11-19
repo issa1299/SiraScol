@@ -1,0 +1,87 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="theme-color" content="#b45309">
+  <title>{% block title %}Espace Comptable{% endblock %} — SiraScol</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+    .compta-nav a.active{background:linear-gradient(135deg,#d97706,#b45309);color:#fff;font-weight:600;box-shadow:0 4px 12px rgba(217,119,6,.25)}
+    .compta-nav a:not(.active):hover{background:rgba(255,255,255,.08);color:#fff}
+    .compta-nav::-webkit-scrollbar{width:5px}.compta-nav::-webkit-scrollbar-thumb{background:#334155;border-radius:9999px}
+    .compta-bottom-nav{display:none}
+    .form-input{width:100%;border:1px solid #cbd5e1;border-radius:.5rem;padding:.625rem .75rem;font-size:.875rem;outline:none}
+    .form-input:focus{border-color:#d97706;box-shadow:0 0 0 2px rgba(217,119,6,.2)}
+    @media(max-width:767px){.compta-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;justify-content:space-around;background:rgba(255,255,255,.97);border-top:1px solid #e2e8f0;padding:.25rem .25rem env(safe-area-inset-bottom,0px)}
+    .compta-bottom-nav a,.compta-bottom-nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:.15rem;padding:.4rem .1rem;font-size:.6rem;color:#64748b;background:transparent;border:0}
+    .compta-bottom-nav a i,.compta-bottom-nav button i{font-size:1.2rem}.compta-bottom-nav a.active{color:#b45309;font-weight:700}
+    input,select,textarea,button{font-size:16px !important}}
+    @media print{aside,header,#compta-sidebar,#compta-overlay,.compta-bottom-nav,.no-print{display:none !important}main{padding:0 !important;margin:0 !important}.md\:ml-64{margin-left:0 !important}}
+  </style>
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="h-full flex flex-col text-slate-800 antialiased">
+<div class="flex flex-1 min-h-screen">
+  <aside id="compta-sidebar" class="w-64 bg-slate-900 text-slate-300 flex flex-col fixed inset-y-0 left-0 z-40 -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out shadow-xl no-print">
+    <div class="px-5 py-5 border-b border-slate-800 flex items-center justify-between">
+      <a href="{% url 'comptabilite:dashboard' %}" class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-orange-600 text-white flex items-center justify-center text-lg shadow-md"><i class="fas fa-coins"></i></div>
+        <div><p class="font-bold text-white text-base leading-tight">SiraScol</p><p class="text-[11px] text-amber-400 font-semibold tracking-wide">Comptabilité</p></div>
+      </a>
+      <button class="md:hidden text-slate-400 text-xl p-1" onclick="toggleComptaSidebar()">&times;</button>
+    </div>
+    <nav class="compta-nav flex-1 overflow-y-auto p-3 text-xs space-y-1">
+      <a href="{% url 'comptabilite:dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {% if section == 'accueil' %}active{% else %}text-slate-300{% endif %}"><i class="fas fa-house-user w-4 text-center"></i><span>Tableau de bord</span></a>
+      <a href="{% url 'comptabilite:frais' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {% if section == 'frais' %}active{% else %}text-slate-300{% endif %}"><i class="fas fa-sliders w-4 text-center"></i><span>Frais scolaires</span></a>
+      <a href="{% url 'comptabilite:paiements' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {% if section == 'paiements' %}active{% else %}text-slate-300{% endif %}"><i class="fas fa-credit-card w-4 text-center"></i><span>Paiements</span></a>
+      <a href="{% url 'finance:invoices' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300"><i class="fas fa-file-invoice w-4 text-center"></i><span>Factures</span></a>
+      <a href="{% url 'comptabilite:recus' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {% if section == 'recus' %}active{% else %}text-slate-300{% endif %}"><i class="fas fa-receipt w-4 text-center"></i><span>Reçus</span></a>
+      <a href="{% url 'comptabilite:depenses' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {% if section == 'depenses' %}active{% else %}text-slate-300{% endif %}"><i class="fas fa-money-bill-wave w-4 text-center"></i><span>Dépenses</span></a>
+      <a href="{% url 'comptabilite:impayes' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {% if section == 'impayes' %}active{% else %}text-slate-300{% endif %}"><i class="fas fa-triangle-exclamation w-4 text-center"></i><span>Impayés</span></a>
+      <a href="{% url 'comptabilite:rapports' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {% if section == 'rapports' %}active{% else %}text-slate-300{% endif %}"><i class="fas fa-chart-pie w-4 text-center"></i><span>Rapports</span></a>
+      <a href="{% url 'secretariat:notifications' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-slate-300"><i class="fas fa-bell w-4 text-center"></i><span>Notifications</span></a>
+      <a href="{% url 'comptabilite:profil' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl {% if section == 'profil' %}active{% else %}text-slate-300{% endif %}"><i class="fas fa-user-circle w-4 text-center"></i><span>Mon profil</span></a>
+      <a href="{% url 'core:dashboard' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-amber-400 hover:text-white hover:bg-slate-800 font-semibold"><i class="fas fa-arrow-left w-4 text-center"></i><span>Retour à l'accueil</span></a>
+    </nav>
+    <div class="p-3 border-t border-slate-800 bg-slate-950/60 no-print">
+      <div class="flex items-center gap-3 px-2 py-1.5">
+        {% if user.profile.photo %}<img src="{{ user.profile.photo.url }}" alt="" class="w-9 h-9 rounded-full object-cover">{% else %}<div class="w-9 h-9 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold text-xs">{{ user.first_name|first|upper|default:user.username|first|upper }}</div>{% endif %}
+        <div class="min-w-0 flex-1"><p class="text-xs font-semibold text-white truncate">{{ user.get_full_name|default:user.username }}</p><p class="text-[10px] text-slate-400">Comptable</p></div>
+      </div>
+      <form method="post" action="{% url 'accounts:logout' %}" class="m-0 mt-1">{% csrf_token %}<button type="submit" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-slate-400 hover:text-red-300 text-left"><i class="fas fa-sign-out-alt w-4 text-center"></i><span class="text-xs">Déconnexion</span></button></form>
+    </div>
+  </aside>
+  <div id="compta-overlay" class="fixed inset-0 bg-slate-900/60 z-30 hidden md:hidden no-print" onclick="toggleComptaSidebar()"></div>
+
+  <div class="flex-1 md:ml-64 min-w-0 flex flex-col min-h-screen bg-slate-50">
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-20 px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3 no-print">
+      <div class="flex items-center gap-3 min-w-0">
+        <button class="md:hidden text-slate-600 text-lg p-1.5" onclick="toggleComptaSidebar()"><i class="fas fa-bars"></i></button>
+        <div class="min-w-0"><h1 class="font-bold text-slate-900 text-sm sm:text-base truncate">{% block header_title %}Espace Comptable{% endblock %}</h1><p class="text-xs text-slate-500 truncate">{% block header_sub %}Gestion financière{% endblock %}</p></div>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        {% if all_academic_years %}<form method="get" action="{% url 'core:set_year' %}" class="hidden sm:block m-0"><input type="hidden" name="next" value="{{ request.get_full_path }}"><select name="year" onchange="this.form.submit()" class="px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">{% for y in all_academic_years %}<option value="{{ y.id }}" {% if year and year.id == y.id %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></form>{% endif %}
+        <a href="{% url 'comptabilite:rapports' %}" class="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold"><i class="fas fa-chart-pie"></i></a>
+      </div>
+    </header>
+    <main class="flex-1 p-4 sm:p-6 lg:p-8 pb-24 md:pb-8 max-w-7xl w-full mx-auto">
+      {% if messages %}<div class="mb-5 space-y-2 no-print">{% for message in messages %}<div class="text-xs rounded-xl px-4 py-3 {% if 'error' in message.tags %}bg-red-50 text-red-800{% elif 'success' in message.tags %}bg-emerald-50 text-emerald-800{% else %}bg-blue-50 text-blue-800{% endif %}">{{ message }}</div>{% endfor %}</div>{% endif %}
+      {% block content %}{% endblock %}
+    </main>
+    <nav class="compta-bottom-nav md:hidden no-print">
+      <a href="{% url 'comptabilite:dashboard' %}" class="{% if section == 'accueil' %}active{% endif %}"><i class="fas fa-house-user"></i><span>Accueil</span></a>
+      <a href="{% url 'comptabilite:paiements' %}" class="{% if section == 'paiements' %}active{% endif %}"><i class="fas fa-credit-card"></i><span>Paiements</span></a>
+      <a href="{% url 'comptabilite:depenses' %}" class="{% if section == 'depenses' %}active{% endif %}"><i class="fas fa-money-bill-wave"></i><span>Dépenses</span></a>
+      <a href="{% url 'comptabilite:impayes' %}" class="{% if section == 'impayes' %}active{% endif %}"><i class="fas fa-triangle-exclamation"></i><span>Impayés</span></a>
+      <button type="button" onclick="toggleComptaSidebar()"><i class="fas fa-bars"></i><span>Menu</span></button>
+    </nav>
+  </div>
+</div>
+<script>function toggleComptaSidebar(){var sb=document.getElementById('compta-sidebar'),ov=document.getElementById('compta-overlay');if(!sb||!ov)return;var o=sb.classList.toggle('-translate-x-full')===false;ov.classList.toggle('hidden',!o);document.body.style.overflow=o?'hidden':''}</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

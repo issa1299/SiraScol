@@ -1,4 +1,6 @@
-from core.permissions import role_required, can, get_role, get_parent_students
+from core.permissions import (
+    role_required, can, get_role, get_parent_students, permission_required,
+)
 from core.year_context import get_selected_year
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect, get_object_or_404
@@ -14,6 +16,7 @@ from academics.models import AcademicYear
 
 
 @login_required
+@permission_required('finance.view')
 def finance_dashboard(request):
     """Centre Financier SiraScol — encaissements, dépenses, soldes."""
     from academics.models import ClassRoom
@@ -122,6 +125,7 @@ def finance_dashboard(request):
 
 
 @login_required
+@permission_required('finance.reports')
 def finance_report(request):
     """Rapport financier journalier / période — prévisualisation imprimable."""
     from .models import Expense
@@ -178,6 +182,7 @@ def finance_report(request):
 
 
 @login_required
+@permission_required('finance.view')
 def student_finance_card(request, student_id):
     """Carte financière d'un élève (payé / dû / reste + historique)."""
     student = get_object_or_404(Student, pk=student_id)
@@ -212,6 +217,7 @@ def student_finance_card(request, student_id):
 
 
 @login_required
+@permission_required('finance.view')
 def invoice_list(request):
     try:
         qs = Invoice.objects.select_related('student', 'fee_type', 'academic_year').order_by('-created_at')
@@ -239,6 +245,7 @@ def invoice_list(request):
 
 
 @login_required
+@permission_required('finance.fees_config')
 def invoice_create(request):
     students = Student.objects.filter(status='actif').order_by('last_name', 'first_name')
     fee_types = FeeType.objects.filter(is_active=True)
@@ -276,6 +283,7 @@ def invoice_create(request):
 
 
 @login_required
+@permission_required('finance.pay')
 def payment_create(request):
     if request.method == 'POST':
         try:
@@ -324,7 +332,10 @@ def payment_create(request):
 @login_required
 def payment_receipt(request, pk):
     """Reçu de paiement imprimable / PDF HTML"""
+    from django.core.exceptions import PermissionDenied
     from core.access import get_student_for_user
+    if get_role(request.user) not in ('directeur', 'comptable', 'parent'):
+        raise PermissionDenied("Accès aux reçus réservé à la comptabilité et aux parents.")
     payment = get_object_or_404(
         Payment.objects.select_related(
             'invoice__student', 'invoice__fee_type', 'invoice__academic_year'
@@ -347,6 +358,7 @@ def payment_receipt(request, pk):
 
 
 @login_required
+@permission_required('finance.view')
 def finance_classes(request):
     """Liste des classes avec résumé des soldes."""
     from academics.models import ClassRoom, AcademicYear
@@ -387,6 +399,7 @@ def finance_classes(request):
 
 
 @login_required
+@permission_required('finance.view')
 def finance_class_students(request, classroom_id):
     """Élèves d'une classe avec soldes + recherche."""
     from academics.models import ClassRoom, AcademicYear
@@ -439,6 +452,7 @@ def finance_class_students(request, classroom_id):
 
 
 @login_required
+@permission_required('finance.pay')
 def student_payment_modal(request, student_id):
     """Formulaire modal de paiement pour un élève (GET fragment / POST)."""
     from students.models import Student
@@ -527,6 +541,7 @@ def student_payment_modal(request, student_id):
 
 
 @login_required
+@permission_required('finance.expenses')
 def expense_create(request):
     """Modal / page : enregistrer une dépense."""
     from .models import Expense

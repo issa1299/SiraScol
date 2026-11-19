@@ -1,0 +1,40 @@
+{% extends "comptabilite/base_comptable.html" %}
+{% block title %}Rapports financiers — Comptabilité{% endblock %}
+{% block header_title %}Rapports financiers{% endblock %}
+{% block header_sub %}Recettes, dépenses, solde et exports{% endblock %}
+{% block content %}
+
+<div class="bg-white rounded-2xl border p-4 mb-6 flex flex-wrap items-center gap-3">
+  <form method="get" class="flex gap-2">
+    <select name="periode" class="form-input w-auto" onchange="this.form.submit()">
+      <option value="jour" {% if period == 'jour' %}selected{% endif %}>Aujourd'hui</option>
+      <option value="semaine" {% if period == 'semaine' %}selected{% endif %}>Cette semaine</option>
+      <option value="mois" {% if period == 'mois' %}selected{% endif %}>Ce mois</option>
+      <option value="annee" {% if period == 'annee' %}selected{% endif %}>Année scolaire</option>
+    </select>
+  </form>
+  <span class="text-xs text-slate-500">Du <strong>{{ start|date:"d/m/Y" }}</strong> au <strong>{{ end|date:"d/m/Y" }}</strong></span>
+  <div class="ml-auto flex gap-2">
+    <a href="?periode={{ period }}&amp;format=excel" class="px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 text-xs font-semibold"><i class="fas fa-file-excel"></i> Excel</a>
+    <a href="?periode={{ period }}&amp;format=pdf" class="px-3 py-2 rounded-xl bg-rose-50 text-rose-700 text-xs font-semibold"><i class="fas fa-file-pdf"></i> PDF</a>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+  <div class="bg-white rounded-2xl border p-4"><p class="text-[10px] font-bold uppercase text-slate-500 mb-2">Recettes</p><p class="text-2xl font-bold text-emerald-600">{{ recettes }}</p></div>
+  <div class="bg-white rounded-2xl border p-4"><p class="text-[10px] font-bold uppercase text-slate-500 mb-2">Dépenses</p><p class="text-2xl font-bold text-rose-600">{{ depenses }}</p></div>
+  <div class="bg-white rounded-2xl border p-4"><p class="text-[10px] font-bold uppercase text-slate-500 mb-2">Solde</p><p class="text-2xl font-bold text-slate-900">{{ solde }}</p></div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-arrow-down text-emerald-600"></i> Recettes</h3></div>
+    <div class="divide-y divide-slate-100">{% for p in payments %}<div class="px-5 py-2.5 flex justify-between text-xs"><span class="text-slate-600">{{ p.payment_date|date:"d/m" }} · {{ p.invoice.student.matricule }}</span><span class="font-bold text-emerald-600">+ {{ p.amount }}</span></div>{% empty %}<div class="py-8 text-center text-slate-400 text-xs">Aucune recette.</div>{% endfor %}</div>
+  </div>
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-arrow-up text-rose-600"></i> Dépenses</h3></div>
+    <div class="divide-y divide-slate-100">{% for e in expenses %}<div class="px-5 py-2.5 flex justify-between text-xs"><span class="text-slate-600">{{ e.date|date:"d/m" }} · {{ e.motif }}</span><span class="font-bold text-rose-600">- {{ e.amount }}</span></div>{% empty %}<div class="py-8 text-center text-slate-400 text-xs">Aucune dépense.</div>{% endfor %}</div>
+  </div>
+</div>
+
+{% endblock %}

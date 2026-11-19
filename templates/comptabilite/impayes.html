@@ -1,0 +1,34 @@
+{% extends "comptabilite/base_comptable.html" %}
+{% block title %}Impayés — Comptabilité{% endblock %}
+{% block header_title %}Suivi des impayés{% endblock %}
+{% block header_sub %}Élèves qui n'ont pas soldé leurs frais{% endblock %}
+{% block content %}
+
+<div class="bg-white rounded-2xl border p-4 mb-6 flex flex-col sm:flex-row gap-3 sm:items-center">
+  <form method="get" class="flex-1 flex gap-2">
+    <select name="classroom" class="form-input"><option value="">Toutes les classes</option>{% for c in classrooms %}<option value="{{ c.id }}" {% if classroom_id == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+    <button type="submit" class="px-4 rounded-xl bg-amber-600 text-white text-xs font-semibold"><i class="fas fa-filter"></i></button>
+  </form>
+  <a href="{% url 'comptabilite:impayes_pdf' %}" target="_blank" class="px-4 py-2.5 rounded-xl bg-rose-50 text-rose-700 text-xs font-semibold text-center"><i class="fas fa-file-pdf"></i> Liste PDF</a>
+</div>
+
+<div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm min-w-[700px]">
+      <thead><tr class="bg-slate-50 border-b text-[11px] text-slate-500 uppercase"><th class="text-left px-5 py-3">Élève</th><th class="text-left px-3 py-3">Frais</th><th class="text-left px-3 py-3">Échéance</th><th class="text-right px-3 py-3">Reste</th><th class="text-right px-5 py-3">Action</th></tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for r in rows %}
+        <tr class="hover:bg-slate-50 {% if r.late %}bg-rose-50/40{% endif %}">
+          <td class="px-5 py-3 font-semibold text-slate-800">{{ r.invoice.student.last_name }} {{ r.invoice.student.first_name }}<span class="block text-[10px] font-mono text-slate-400">{{ r.invoice.student.matricule }}</span></td>
+          <td class="px-3 py-3 text-xs text-slate-600">{{ r.invoice.fee_type.name }}</td>
+          <td class="px-3 py-3 text-xs {% if r.late %}text-rose-600 font-bold{% else %}text-slate-500{% endif %}">{{ r.invoice.due_date|date:"d/m/Y" }}{% if r.late %} (retard){% endif %}</td>
+          <td class="px-3 py-3 text-right font-bold text-rose-600">{{ r.balance }}</td>
+          <td class="px-5 py-3 text-right"><form method="post" action="{% url 'comptabilite:rappel' r.invoice.pk %}" class="m-0">{% csrf_token %}<button type="submit" class="px-3 py-1.5 rounded-lg bg-amber-50 text-amber-700 text-[11px] font-semibold"><i class="fas fa-bell"></i> Rappel</button></form></td>
+        </tr>
+        {% empty %}<tr><td colspan="5" class="py-12 text-center text-slate-400 text-xs">Aucun impayé.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

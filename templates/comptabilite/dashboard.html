@@ -1,0 +1,34 @@
+{% extends "comptabilite/base_comptable.html" %}
+{% block title %}Tableau de bord — Comptabilité{% endblock %}
+{% block header_title %}Tableau de bord financier{% endblock %}
+{% block header_sub %}{% if year %}Année scolaire {{ year.name }}{% endif %}{% endblock %}
+{% block content %}
+
+<div class="bg-gradient-to-br from-amber-600 via-orange-600 to-orange-700 rounded-2xl p-6 text-white mb-6 flex flex-col sm:flex-row sm:items-center gap-5">
+  <div class="w-16 h-16 rounded-2xl bg-white/20 border-4 border-white/40 flex items-center justify-center text-2xl shrink-0"><i class="fas fa-coins"></i></div>
+  <div class="flex-1"><p class="text-[11px] uppercase tracking-widest text-amber-100 font-bold">Comptabilité</p><h2 class="text-xl font-bold">Situation financière</h2></div>
+  <a href="{% url 'comptabilite:rapports' %}" class="shrink-0 px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-xs font-semibold"><i class="fas fa-chart-pie"></i> Rapports</a>
+</div>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+  <div class="bg-white rounded-2xl border p-4"><p class="text-[10px] font-bold uppercase text-slate-500 mb-2">Recettes encaissées</p><p class="text-2xl font-bold text-emerald-600">{{ collected }}</p></div>
+  <div class="bg-white rounded-2xl border p-4"><p class="text-[10px] font-bold uppercase text-slate-500 mb-2">Dépenses</p><p class="text-2xl font-bold text-rose-600">{{ expenses }}</p></div>
+  <div class="bg-white rounded-2xl border p-4"><p class="text-[10px] font-bold uppercase text-slate-500 mb-2">Solde</p><p class="text-2xl font-bold text-slate-900">{{ solde }}</p></div>
+  <div class="bg-white rounded-2xl border p-4"><p class="text-[10px] font-bold uppercase text-slate-500 mb-2">Frais attendus</p><p class="text-2xl font-bold text-slate-900">{{ expected }}</p></div>
+  <div class="bg-white rounded-2xl border p-4"><p class="text-[10px] font-bold uppercase text-slate-500 mb-2">Reste à récupérer</p><p class="text-2xl font-bold text-amber-600">{{ balance }}</p></div>
+  <div class="bg-white rounded-2xl border p-4 col-span-2 lg:col-span-3"><p class="text-[10px] font-bold uppercase text-slate-500 mb-2">Parents avec impayés</p><p class="text-2xl font-bold text-rose-600">{{ nb_unpaid }}</p><a href="{% url 'comptabilite:impayes' %}" class="text-[11px] text-amber-700 hover:underline">Voir les impayés →</a></div>
+</div>
+
+<div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+  <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-clock-rotate-left text-amber-600"></i> Dernières transactions</h3></div>
+  <div class="divide-y divide-slate-100">
+    {% for p in payments %}
+    <div class="px-5 py-3 flex items-center justify-between gap-3">
+      <div><p class="text-sm font-semibold text-slate-800">{{ p.invoice.student.full_name }}</p><p class="text-[11px] text-slate-500">{{ p.invoice.fee_type.name }} · {{ p.get_method_display }} · {{ p.payment_date|date:"d/m/Y" }}</p></div>
+      <span class="font-bold text-emerald-600 text-sm">+ {{ p.amount }}</span>
+    </div>
+    {% empty %}<div class="py-10 text-center text-slate-400 text-xs">Aucune transaction.</div>{% endfor %}
+  </div>
+</div>
+
+{% endblock %}

@@ -47,7 +47,7 @@ class Invoice(models.Model):
 
     @property
     def amount_paid(self):
-        total = self.payments.aggregate(s=Sum('amount'))['s']
+        total = self.payments.filter(is_cancelled=False).aggregate(s=Sum('amount'))['s']
         return total if total is not None else 0
 
     @property
@@ -86,6 +86,9 @@ class Payment(models.Model):
     reference = models.CharField(max_length=100, blank=True, verbose_name='Référence')
     received_by = models.CharField(max_length=100, blank=True, verbose_name='Reçu par')
     notes = models.TextField(blank=True)
+    is_cancelled = models.BooleanField(default=False, verbose_name='Annulé')
+    cancelled_reason = models.CharField(max_length=255, blank=True, verbose_name='Motif d’annulation')
+    cancelled_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -133,6 +136,10 @@ class Expense(models.Model):
     )
     created_by = models.ForeignKey(
         'auth.User', on_delete=models.SET_NULL, null=True, blank=True
+    )
+    receipt = models.FileField(
+        upload_to='justificatifs/%Y/%m/', blank=True, null=True,
+        verbose_name='Pièce justificative',
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

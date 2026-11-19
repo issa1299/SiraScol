@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'prof.apps.ProfConfig',
     'parent.apps.ParentConfig',
     'secretariat',
+    'comptabilite',
     'core.apps.CoreConfig',
 ]
 

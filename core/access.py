@@ -21,7 +21,7 @@ def filter_students_for_user(user, queryset=None):
     from students.models import Student
     qs = queryset if queryset is not None else Student.objects.all()
     role = get_role(user)
-    if role == 'directeur' or (user and user.is_superuser):
+    if role in ('directeur', 'comptable') or (user and user.is_superuser):
         return qs
     if role == 'secretaire':
         return qs
@@ -56,7 +56,7 @@ def filter_classrooms_for_user(user, queryset=None):
     from academics.models import ClassRoom
     qs = queryset if queryset is not None else ClassRoom.objects.all()
     role = get_role(user)
-    if role in ('directeur', 'secretaire') or (user and user.is_superuser):
+    if role in ('directeur', 'secretaire', 'comptable') or (user and user.is_superuser):
         return qs
     if role == 'enseignant':
         return get_teacher_classrooms(user)

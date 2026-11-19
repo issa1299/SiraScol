@@ -76,6 +76,12 @@ Deux modèles selon le niveau :
 
 Accès : Fiche élève → bouton **Bulletin** · Filtre par période · Bouton Imprimer
 
+## Espace Comptable
+
+Portail dédié sur `/mon-espace-comptable/` : tableau de bord financier, configuration des frais et génération de factures (avec réductions/exonérations), paiements (espèces, Mobile Money, virement, chèque) avec reçu PDF, dépenses avec pièce justificative, impayés filtrables avec rappels aux parents, reçus/factures avec annulation tracée, et rapports journaliers/hebdomadaires/mensuels/annuels exportables en Excel et PDF.
+
+Les droits finance sont réservés au comptable et au directeur ; le secrétaire ne peut ni enregistrer de paiement ni consulter les reçus.
+
 ## Espace Secrétaire
 
 Portail dédié sur `/mon-espace-secretaire/` : tableau de bord administratif, élèves (recherche, archive, transfert), inscriptions/réinscriptions, classes et effectifs, enseignants, documents PDF (certificat de scolarité, attestation, fiche d'inscription, liste de classe), annonces et messages à transmettre à la direction, notifications, profil.

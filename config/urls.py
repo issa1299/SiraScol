@@ -18,6 +18,7 @@ urlpatterns = [
     path('mon-espace-prof/', include('prof.urls')),
     path('mon-espace-parent/', include('parent.urls')),
     path('mon-espace-secretaire/', include('secretariat.urls')),
+    path('mon-espace-comptable/', include('comptabilite.urls')),
     path('', include('core.urls')),
 ]
 
