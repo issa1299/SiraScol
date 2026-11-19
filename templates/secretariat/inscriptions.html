@@ -1,0 +1,36 @@
+{% extends "secretariat/base_secretaire.html" %}
+{% block title %}Inscriptions — Secrétariat{% endblock %}
+{% block header_title %}Inscriptions et réinscriptions{% endblock %}
+{% block header_sub %}Affecter un élève à une classe et enregistrer le parent{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+    <div class="px-5 py-4 border-b"><h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-history text-sky-600"></i> Historique des inscriptions</h3></div>
+    <div class="divide-y divide-slate-100">
+      {% for e in enrollments %}
+      <div class="px-5 py-3 flex items-center justify-between gap-3">
+        <div><p class="text-sm font-semibold text-slate-800">{{ e.student.full_name }}</p><p class="text-[11px] text-slate-500">{{ e.classroom.name }} · {{ e.academic_year.name }} · {{ e.enrollment_date|date:"d/m/Y" }}</p></div>
+        <span class="text-[10px] px-2 py-1 rounded-lg {% if e.is_active %}bg-emerald-50 text-emerald-700{% else %}bg-slate-100 text-slate-500{% endif %} font-bold">{% if e.is_active %}Active{% else %}Clôturée{% endif %}</span>
+      </div>
+      {% empty %}<div class="py-10 text-center text-slate-400 text-xs">Aucune inscription.</div>{% endfor %}
+    </div>
+  </div>
+
+  <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
+    <h3 class="font-bold text-slate-900 text-sm mb-4"><i class="fas fa-plus text-sky-600"></i> Nouvelle inscription</h3>
+    <form method="post" class="space-y-3">
+      {% csrf_token %}
+      <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Élève</label><select name="student" class="form-input" required><option value="">— Choisir —</option>{% for s in students %}<option value="{{ s.id }}">{{ s.last_name }} {{ s.first_name }} ({{ s.matricule }})</option>{% endfor %}</select></div>
+      <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Année scolaire</label><select name="academic_year" class="form-input" required>{% for y in years %}<option value="{{ y.id }}" {% if year and y.id == y.id %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></div>
+      <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Classe</label><select name="classroom" class="form-input" required><option value="">— Choisir —</option>{% for c in classrooms %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+      <p class="text-[11px] font-bold uppercase text-slate-500 pt-2 border-t">Parent / tuteur (facultatif)</p>
+      <div><label class="block text-[11px] text-slate-500 mb-1">Nom et prénom</label><input type="text" name="parent_name" class="form-input" placeholder="Ex. Moussa Bah"></div>
+      <div><label class="block text-[11px] text-slate-500 mb-1">Téléphone</label><input type="text" name="parent_phone" class="form-input"></div>
+      <div><label class="block text-[11px] text-slate-500 mb-1">Relation</label><select name="relation" class="form-input"><option value="pere">Père</option><option value="mere">Mère</option><option value="tuteur">Tuteur</option></select></div>
+      <button type="submit" class="w-full bg-sky-600 hover:bg-sky-700 text-white py-2.5 rounded-xl text-xs font-semibold"><i class="fas fa-save"></i> Enregistrer</button>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

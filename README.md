@@ -76,6 +76,12 @@ Deux modèles selon le niveau :
 
 Accès : Fiche élève → bouton **Bulletin** · Filtre par période · Bouton Imprimer
 
+## Espace Secrétaire
+
+Portail dédié sur `/mon-espace-secretaire/` : tableau de bord administratif, élèves (recherche, archive, transfert), inscriptions/réinscriptions, classes et effectifs, enseignants, documents PDF (certificat de scolarité, attestation, fiche d'inscription, liste de classe), annonces et messages à transmettre à la direction, notifications, profil.
+
+Le rôle `comptable` est désormais distinct de `secretaire` : le secrétaire gère les dossiers scolaires, le comptable les seules opérations financières.
+
 ## Espace Parent
 
 Portail dédié sur `/mon-espace-parent/` (dashboard multi-enfants, notes, bulletins PDF, absences, paiements/reçus, emploi du temps, devoirs, messagerie, demandes de rendez-vous, notifications, profil). Un sélecteur d'enfant permet de suivre chaque enfant avec un seul compte. Le parent ne peut consulter que ses propres enfants ; les reçus de paiement sont également filtrés par élève.

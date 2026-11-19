@@ -64,6 +64,7 @@ INSTALLED_APPS = [
     'eleve',
     'prof.apps.ProfConfig',
     'parent.apps.ParentConfig',
+    'secretariat',
     'core.apps.CoreConfig',
 ]
 

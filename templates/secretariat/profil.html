@@ -1,0 +1,21 @@
+{% extends "secretariat/base_secretaire.html" %}
+{% block title %}Mon profil — Secrétariat{% endblock %}
+{% block header_title %}Mon profil{% endblock %}
+{% block header_sub %}Informations du compte{% endblock %}
+{% block content %}
+
+<div class="max-w-2xl bg-white rounded-2xl border border-slate-200 shadow-xs p-6">
+  <div class="flex items-center gap-4 mb-6">
+    {% if profile.photo %}<img src="{{ profile.photo.url }}" alt="" class="w-20 h-20 rounded-2xl object-cover">{% else %}<div class="w-20 h-20 rounded-2xl bg-sky-100 text-sky-700 flex items-center justify-center text-2xl font-bold">{{ user.first_name|first|upper|default:user.username|first|upper }}</div>{% endif %}
+    <div><h3 class="text-lg font-bold text-slate-900">{{ user.get_full_name|default:user.username }}</h3><p class="text-xs text-slate-500">{{ user.username }} · Secrétaire</p></div>
+  </div>
+  <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+    <div><dt class="text-slate-400 uppercase text-[10px] font-bold mb-1">Nom</dt><dd class="font-semibold text-slate-800">{{ user.last_name|default:"—" }}</dd></div>
+    <div><dt class="text-slate-400 uppercase text-[10px] font-bold mb-1">Prénom</dt><dd class="font-semibold text-slate-800">{{ user.first_name|default:"—" }}</dd></div>
+    <div><dt class="text-slate-400 uppercase text-[10px] font-bold mb-1">E-mail</dt><dd class="font-semibold text-slate-800">{{ user.email|default:"—" }}</dd></div>
+    <div><dt class="text-slate-400 uppercase text-[10px] font-bold mb-1">Téléphone</dt><dd class="font-semibold text-slate-800">{{ profile.phone|default:"—" }}</dd></div>
+    <div class="sm:col-span-2"><dt class="text-slate-400 uppercase text-[10px] font-bold mb-1">Adresse</dt><dd class="font-semibold text-slate-800">{{ profile.address|default:"—" }}</dd></div>
+  </dl>
+</div>
+
+{% endblock %}

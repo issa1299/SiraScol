@@ -20,7 +20,7 @@ from django.shortcuts import redirect
 # Rôles affichés
 ROLE_LABELS = {
     'directeur': 'Directeur',
-    'secretaire': 'Secrétaire / Comptable',
+    'secretaire': 'Secrétaire',
     'enseignant': 'Enseignant',
     'parent': 'Parent',
     'eleve': 'Élève',
@@ -30,12 +30,11 @@ ROLE_LABELS = {
 }
 
 # Rôles « canoniques » (les 5 demandés)
-CANONICAL_ROLES = ('directeur', 'secretaire', 'enseignant', 'parent', 'eleve')
+CANONICAL_ROLES = ('directeur', 'secretaire', 'comptable', 'enseignant', 'parent', 'eleve')
 
-# Alias → rôle canonique
+# Alias → rôle canonique (le comptable est désormais un rôle distinct)
 ROLE_ALIASES = {
     'admin': 'directeur',
-    'comptable': 'secretaire',
 }
 
 # ── Matrice de permissions ───────────────────────────────────────────────────
@@ -44,7 +43,7 @@ ROLE_ALIASES = {
 
 PERMISSIONS = {
     # Navigation
-    'nav.dashboard': ['directeur', 'secretaire', 'enseignant', 'parent', 'eleve'],
+    'nav.dashboard': ['directeur', 'secretaire', 'comptable', 'enseignant', 'parent', 'eleve'],
     'nav.students': ['directeur', 'secretaire', 'enseignant', 'parent'],
     'nav.teachers': ['directeur', 'secretaire'],
     'nav.classrooms': ['directeur', 'secretaire', 'enseignant'],
@@ -52,7 +51,7 @@ PERMISSIONS = {
     'nav.promotion': ['directeur'],
     'nav.grades': ['directeur', 'enseignant', 'parent', 'eleve'],  # PAS secrétaire
     'nav.bulletins': ['directeur', 'enseignant', 'parent', 'eleve'],  # PAS secrétaire
-    'nav.finance': ['directeur', 'secretaire', 'parent'],
+    'nav.finance': ['directeur', 'comptable'],
     'nav.attendance': ['directeur', 'enseignant', 'parent', 'eleve'],
     'nav.timetable': ['directeur', 'enseignant', 'parent', 'eleve'],
     'nav.announcements': ['directeur', 'secretaire', 'enseignant', 'parent', 'eleve'],
@@ -99,13 +98,15 @@ PERMISSIONS = {
     'homework.view': ['directeur', 'enseignant', 'eleve'],
     'homework.manage': ['directeur', 'enseignant'],
 
-    # Finance
-    'finance.view': ['directeur', 'secretaire', 'parent'],
-    'finance.pay': ['directeur', 'secretaire'],
-    'finance.receipts': ['directeur', 'secretaire'],
-    'finance.unpaid': ['directeur', 'secretaire'],
-    'finance.fees_config': ['directeur'],
-    'finance.stats': ['directeur', 'secretaire'],
+    # Finance — rôle comptable dédié (le secrétaire ne gère pas les transactions)
+    'finance.view': ['directeur', 'comptable'],
+    'finance.pay': ['directeur', 'comptable'],
+    'finance.receipts': ['directeur', 'comptable'],
+    'finance.unpaid': ['directeur', 'comptable'],
+    'finance.fees_config': ['directeur', 'comptable'],
+    'finance.stats': ['directeur', 'comptable'],
+    'finance.expenses': ['directeur', 'comptable'],
+    'finance.reports': ['directeur', 'comptable'],
 
     # Présences
     'attendance.view': ['directeur', 'enseignant', 'parent', 'eleve'],
@@ -127,8 +128,6 @@ PERMISSIONS = {
     'personnel.presences': ['directeur', 'secretaire'],
     'personnel.documents': ['directeur', 'secretaire'],
     'personnel.reports': ['directeur', 'secretaire'],
-    'finance.expenses': ['directeur', 'secretaire'],
-    'finance.reports': ['directeur', 'secretaire'],
 }
 
 
@@ -291,7 +290,7 @@ def can(user, permission):
 
 
 def is_staff_role(user):
-    return get_role(user) in ('directeur', 'secretaire')
+    return get_role(user) in ('directeur', 'secretaire', 'comptable')
 
 
 def is_config_role(user):
