@@ -27,12 +27,15 @@ def _teacher_student_ids(user):
     teacher = get_linked_teacher(user)
     if not teacher:
         return set()
-    from academics.models import SubjectAssignment
+    from academics.models import SubjectAssignment, ClassRoom
+    from timetable.models import TimetableEntry
     classroom_ids = set(
         SubjectAssignment.objects.filter(teacher=teacher).values_list('classroom_id', flat=True)
     )
-    from academics.models import ClassRoom
     classroom_ids |= set(ClassRoom.objects.filter(main_teacher=teacher).values_list('id', flat=True))
+    classroom_ids |= set(
+        TimetableEntry.objects.filter(teacher=teacher).values_list('classroom_id', flat=True)
+    )
     if not classroom_ids:
         return set()
     return set(
@@ -50,6 +53,7 @@ def _student_teacher_ids(student):
     if not classroom_ids:
         return set()
     from academics.models import ClassRoom, SubjectAssignment
+    from timetable.models import TimetableEntry
     ids = set(
         SubjectAssignment.objects.filter(classroom_id__in=classroom_ids)
         .values_list('teacher__user_id', flat=True)
@@ -57,6 +61,13 @@ def _student_teacher_ids(student):
     ids |= set(
         ClassRoom.objects.filter(id__in=classroom_ids, main_teacher__user__isnull=False)
         .values_list('main_teacher__user_id', flat=True)
+    )
+    # Les affectations ne sont pas toujours renseignées : les cours planifiés
+    # sont aussi une source fiable pour trouver les professeurs de la classe.
+    ids |= set(
+        TimetableEntry.objects.filter(
+            classroom_id__in=classroom_ids, teacher__user__isnull=False
+        ).values_list('teacher__user_id', flat=True)
     )
     return {x for x in ids if x}
 
@@ -80,10 +91,12 @@ def allowed_recipient_ids(user):
         return set()
 
     roles = ROLE_RULES.get(role, set())
-    allowed = set(
-        User.objects.filter(is_active=True, profile__role__in=roles)
-        .exclude(pk=user.pk).values_list('id', flat=True)
-    )
+    # On normalise le rôle de chaque compte (gère les anciennes valeurs
+    # 'admin' / 'comptable' stockées en base et les superutilisateurs).
+    allowed = set()
+    for other in User.objects.filter(is_active=True).exclude(pk=user.pk).select_related('profile'):
+        if get_role(other) in roles:
+            allowed.add(other.pk)
 
     if role == 'enseignant':
         student_ids = _teacher_student_ids(user)

@@ -38,6 +38,7 @@
       <form method="post" enctype="multipart/form-data" class="space-y-3">
         {% csrf_token %}<input type="hidden" name="action" value="message">
         <select name="recipient" class="form-input" required><option value="">— Destinataire —</option>{% for u in contacts %}<option value="{{ u.id }}">{{ u.get_full_name|default:u.username }}</option>{% endfor %}</select>
+        {% if not contacts %}<p class="text-[10px] text-amber-600 mt-1">Aucun destinataire autorisé.</p>{% endif %}
         <input type="text" name="subject" placeholder="Objet" class="form-input" required>
         <textarea name="body" placeholder="Votre message…" class="form-input" rows="4" required></textarea>
         <input type="file" name="attachment" class="form-input">
