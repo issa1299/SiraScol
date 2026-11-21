@@ -96,9 +96,9 @@ Portail dédié sur `/mon-espace-comptable/` : tableau de bord financier, config
 
 Les droits finance sont réservés au comptable et au directeur ; le secrétaire ne peut ni enregistrer de paiement ni consulter les reçus.
 
-## Espace Classe
+## Fiche classe (Gestion des classes)
 
-Portail dédié sur `/classe/` : « Gestion des classes » puis, pour chaque classe, `/classe/<id>/` avec 10 onglets — Vue générale, Élèves, Matières, Enseignants, Emploi du temps, Présences, Notes, Discipline, Bulletins, Rapports. Les rapports (effectif, présence, enseignants, résultats) sont générés en PDF. Le modèle `Sanction` couple les retenues, avertissements, exclusions et observations à une classe et à un élève. L'historique des inscriptions est conservé lors des changements d'année (utiliser la promotion en fin d'année).
+La fiche d'une classe (`/classes/<id>/`) contient 10 onglets — Vue générale, Élèves, Matières, Enseignants, Emploi du temps, Présences, Notes, Discipline, Bulletins, Rapports. Les rapports (effectif, présence, enseignants, résultats) sont générés en PDF. Le modèle `Sanction` couple les retenues, avertissements, exclusions et observations à une classe et à un élève. L'historique des inscriptions est conservé lors des changements d'année (utiliser la promotion en fin d'année).
 
 Sur mobile, les tableaux deviennent des cartes compactes ; un appui ouvre une boîte de dialogue avec toutes les colonnes de la ligne.
 

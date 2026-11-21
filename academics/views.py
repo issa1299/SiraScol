@@ -163,17 +163,14 @@ def classroom_list(request):
 
 @login_required
 def classroom_detail(request, pk):
+    from classe.service import TABS, build_context
+
     classroom = get_object_or_404(
         ClassRoom.objects.select_related('level__cycle', 'academic_year', 'main_teacher'), pk=pk
     )
-    enrollments = Enrollment.objects.filter(classroom=classroom, is_active=True).select_related(
-        'student'
-    ).order_by('student__last_name', 'student__first_name')
-    assignments = classroom.assignments.select_related('teacher', 'subject').all()
-    ctx = {
-        'classroom': classroom, 'enrollments': enrollments,
-        'assignments': assignments, 'student_count': enrollments.count(),
-    }
+    tab = request.GET.get('tab', 'general')
+    ctx = build_context(request, classroom, tab)
+    ctx['student_count'] = Enrollment.objects.filter(classroom=classroom, is_active=True).count()
     if request.GET.get('modal') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return render(request, 'academics/classroom_detail_modal.html', ctx)
     return render(request, 'academics/classroom_detail.html', ctx)
