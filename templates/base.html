@@ -387,6 +387,9 @@
                 <a href="{% url 'academics:classroom_list' %}" class="nav-link {% if request.resolver_match.app_name == 'academics' or '/classes' in request.path %}active{% endif %}">
                     <i class="fas fa-chalkboard w-5 text-center"></i> Gestion Des Classes
                 </a>
+                <a href="{% url 'classe:classes' %}" class="nav-link {% if request.resolver_match.app_name == 'classe' %}active{% endif %}">
+                    <i class="fas fa-door-open w-5 text-center"></i> Espace Classe
+                </a>
                 {% endif %}
                 {% if can_nav_grades or can_nav_bulletins %}
                 <a href="{% url 'timetable:home' %}" class="nav-link {% if '/emploi' in request.path or request.resolver_match.app_name == 'timetable' %}active{% endif %}">
@@ -627,6 +630,7 @@
                         {% endif %}
                         {% if can_nav_classrooms %}
                         <a href="{% url 'academics:classroom_list' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-chalkboard w-5 text-center"></i> Gestion Des Classes</a>
+                        <a href="{% url 'classe:classes' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-door-open w-5 text-center"></i> Espace Classe</a>
                         {% endif %}
                         {% if can_nav_grades or can_nav_bulletins %}
                         <a href="{% url 'timetable:home' %}" class="nav-link" onclick="closeMobileDrawer()"><i class="fas fa-book-open w-5 text-center"></i> Gestion Pédagogique</a>
