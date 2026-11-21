@@ -1,4 +1,7 @@
 import re
+from urllib.parse import quote
+
+from django.urls import reverse
 
 from core.account_sync import ensure_user_for_student, ensure_user_for_parent
 from core.year_context import get_selected_year
@@ -429,97 +432,84 @@ def student_edit(request, pk):
     })
 
 
+def _badge_design_key(request, school):
+    """Modèle choisi : surcharge GET ?template=, sinon réglage de l'école."""
+    return request.GET.get('template') or getattr(school, 'card_template', None) or 'official'
+
+
+def _get_school():
+    try:
+        from core.models import SchoolSettings
+        return SchoolSettings.get_solo()
+    except Exception:
+        return None
+
+
 @login_required
 def student_qr(request, pk):
-    """Modal QR code élève (matricule)."""
+    """QR de pointage élève — généré localement, format STU:<matricule>."""
+    from core.qr import badge_payload
     student = get_student_for_user(request.user, pk)
-    ctx = {'student': student}
-    if request.GET.get('modal') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return render(request, 'students/student_qr_modal.html', ctx)
+    code = badge_payload('eleve', student.matricule or student.pk)
+    ctx = {
+        'student': student,
+        'code': code,
+        'qr_url': reverse('core:qr_image') + '?data=' + quote(code),
+        'qr_url_lg': reverse('core:qr_image') + '?data=' + quote(code) + '&size=14',
+    }
     return render(request, 'students/student_qr_modal.html', ctx)
 
 
 @login_required
 def student_card(request, pk):
-    """Carte scolaire seule — impression / téléchargement PDF (navigateur)."""
+    """Carte scolaire élève — page autonome prête à imprimer."""
+    from core.badge import build_badge_context
     student = get_student_for_user(request.user, pk)
-    enrollment = student.current_enrollment()
-    parents = student.parents.select_related('parent').all()
-    parent = parents[0].parent if parents else None
-    try:
-        from core.models import SchoolSettings
-        school = SchoolSettings.get_solo()
-    except Exception:
-        school = None
-    year = get_selected_year(request)
-    from datetime import date
-    today = date.today()
-    age = None
-    if student.date_of_birth:
-        age = today.year - student.date_of_birth.year - (
-            (today.month, today.day) < (student.date_of_birth.month, student.date_of_birth.day)
-        )
-    from students.card_mali import _parents_pair
-    father_name, mother_name = _parents_pair(student)
+    school = _get_school()
+    badge = build_badge_context(
+        student, 'eleve', school, student.current_enrollment(),
+        _badge_design_key(request, school),
+    )
     return render(request, 'students/student_card.html', {
-        'student': student,
-        'enrollment': enrollment,
-        'parent': parent,
-        'father_name': father_name,
-        'mother_name': mother_name,
-        'school': school,
-        'selected_year': year,
-        'age': age,
-        'today': today,
+        'student': student, 'badge': badge, 'school': school,
+        'title': f"Carte scolaire — {badge['full_name']}",
+        'pdf_url': reverse('students:card_pdf', args=[student.pk]),
+        'image_url': reverse('students:card_image', args=[student.pk]),
+        'qr_url': badge['qr_url'],
     })
 
 
 @login_required
 def student_card_pdf(request, pk):
-    """Télécharger la carte scolaire en PDF — modèle Mali 85,6 × 54 mm."""
-    from io import BytesIO
-    from reportlab.lib.units import mm
-    from reportlab.pdfgen import canvas
-    from django.http import HttpResponse
-    from students.card_mali import draw_card_pdf
+    """PDF CR80 d'un élève, avec QR de pointage."""
+    from core.badge import build_badge_context
+    from students.card_mali import render_badge_pdf
 
     student = get_student_for_user(request.user, pk)
-    enrollment = student.current_enrollment()
-    try:
-        from core.models import SchoolSettings
-        school = SchoolSettings.get_solo()
-    except Exception:
-        school = None
-
-    w, h = 85.6 * mm, 54 * mm
-    buf = BytesIO()
-    c = canvas.Canvas(buf, pagesize=(w, h))
-    draw_card_pdf(c, student, enrollment, school, y0=0)
-    c.showPage()
-    c.save()
-    buf.seek(0)
-
+    school = _get_school()
+    badge = build_badge_context(
+        student, 'eleve', school, student.current_enrollment(),
+        _badge_design_key(request, school),
+    )
+    resp = HttpResponse(render_badge_pdf(badge).read(), content_type='application/pdf')
     filename = f"carte_{student.matricule}.pdf".replace(' ', '_')
-    resp = HttpResponse(buf.read(), content_type='application/pdf')
     resp['Content-Disposition'] = f'attachment; filename="{filename}"'
     return resp
 
 
-
+@login_required
 def student_card_image(request, pk):
-    """Télécharger la carte scolaire (recto) en PNG — modèle Mali exact."""
-    from django.http import HttpResponse
-    from students.card_mali import render_card_png
+    """PNG haute définition de la carte élève (aperçu ou téléchargement)."""
+    from core.badge import build_badge_context
+    from students.card_mali import render_badge_png
 
     student = get_student_for_user(request.user, pk)
-    enrollment = student.current_enrollment()
-    try:
-        from core.models import SchoolSettings
-        school = SchoolSettings.get_solo()
-    except Exception:
-        school = None
-
-    buf = render_card_png(student, enrollment, school)
+    school = _get_school()
+    badge = build_badge_context(
+        student, 'eleve', school, student.current_enrollment(),
+        _badge_design_key(request, school),
+    )
+    buf = render_badge_png(badge)
     filename = f"carte_{student.matricule}.png".replace(' ', '_')
     disp = 'inline' if request.GET.get('preview') == '1' else 'attachment'
     resp = HttpResponse(buf.read(), content_type='image/png')
@@ -529,95 +519,131 @@ def student_card_image(request, pk):
 
 @login_required
 def student_card_preview(request, pk):
-    """Aperçu carte en modal (image modèle Mali)."""
+    """Aperçu de la carte élève dans une modale."""
+    from core.badge import build_badge_context
     student = get_student_for_user(request.user, pk)
+    school = _get_school()
+    badge = build_badge_context(
+        student, 'eleve', school, student.current_enrollment(),
+        _badge_design_key(request, school),
+    )
     return render(request, 'students/student_card_preview_modal.html', {
-        'student': student,
-        'preview_image_url': f'/eleves/{student.pk}/carte/image/?preview=1',
-        'pdf_url': f'/eleves/{student.pk}/carte/pdf/',
-        'img_url': f'/eleves/{student.pk}/carte/image/',
+        'student': student, 'badge': badge,
+        'pdf_url': reverse('students:card_pdf', args=[student.pk]),
+        'image_url': reverse('students:card_image', args=[student.pk]),
+        'card_url': reverse('students:card', args=[student.pk]),
     })
 
 
 @login_required
 def cards_home(request):
-    """Gestion des cartes scolaires : modèles + classes."""
+    """Interface des badges : aperçus réels, réglage du modèle, élèves et personnel."""
     from academics.models import ClassRoom
-    from students.card_designs import CARD_DESIGNS
+    from core.badge import BADGE_DESIGNS, build_badge_context
+    from students.models import Enrollment, Student
+    from teachers.models import Teacher
+
     year = get_selected_year(request)
-    try:
-        from core.models import SchoolSettings
-        school = SchoolSettings.get_solo()
-    except Exception:
-        school = None
+    school = _get_school()
+    tab = request.GET.get('tab', 'eleves')
+    if tab not in ('eleves', 'personnel'):
+        tab = 'eleves'
 
     if request.method == 'POST' and request.POST.get('action') == 'set_template':
-        key = request.POST.get('card_template', 'modern')
-        if school and key in CARD_DESIGNS:
+        key = request.POST.get('card_template', 'official')
+        if school and key in BADGE_DESIGNS:
             school.card_template = key
             school.save(update_fields=['card_template'])
-            from django.contrib import messages
-            messages.success(request, f'Modèle de carte « {CARD_DESIGNS[key]["label"]} » enregistré.')
-        return redirect('students:cards_home')
+            messages.success(request, f'Modèle « {BADGE_DESIGNS[key]["label"]} » enregistré.')
+        return redirect('students:cards_home' + ('?tab=' + tab if tab != 'eleves' else ''))
 
-    classrooms = ClassRoom.objects.select_related('level', 'academic_year').order_by('level__order', 'name')
+    current = _badge_design_key(request, school)
+    # Vrais aperçus du modèle, avec la première élève disponible.
+    sample = Student.objects.order_by('last_name', 'first_name').first()
+    samples = {}
+    for key in BADGE_DESIGNS:
+        if sample:
+            samples[key] = build_badge_context(
+                sample, 'eleve', school, sample.current_enrollment(), key
+            )
+
+    classrooms = ClassRoom.objects.select_related('level', 'academic_year').order_by(
+        'level__order', 'name'
+    )
     if year:
         classrooms = classrooms.filter(academic_year=year)
-    # counts
-    from students.models import Enrollment
-    rows = []
-    for c in classrooms:
-        n = Enrollment.objects.filter(classroom=c, is_active=True).count()
-        rows.append({'classroom': c, 'count': n})
-    current = getattr(school, 'card_template', 'modern') if school else 'modern'
+    rows = [
+        {'classroom': c, 'count': Enrollment.objects.filter(classroom=c, is_active=True).count()}
+        for c in classrooms
+    ]
+
+    staff_qs = Teacher.objects.filter(status='actif').order_by('last_name', 'first_name')
+    category = request.GET.get('category', '')
+    q = request.GET.get('q', '').strip()
+    if category:
+        staff_qs = staff_qs.filter(category=category)
+    if q:
+        from django.db.models import Q
+        staff_qs = staff_qs.filter(
+            Q(last_name__icontains=q) | Q(first_name__icontains=q) | Q(matricule__icontains=q)
+        )
+    staff_rows = [
+        {'teacher': t, 'badge': build_badge_context(t, 'personnel', school, None, current)}
+        for t in staff_qs
+    ]
+
+    design_cards = [
+        {'key': key, 'design': design, 'badge': samples.get(key)}
+        for key, design in BADGE_DESIGNS.items()
+    ]
     return render(request, 'students/cards_home.html', {
-        'rows': rows,
-        'designs': CARD_DESIGNS,
-        'current_template': current,
-        'school': school,
-        'selected_year': year,
+        'tab': tab, 'rows': rows, 'designs': BADGE_DESIGNS,
+        'design_cards': design_cards, 'samples': samples,
+        'current_template': current, 'school': school, 'selected_year': year,
+        'staff_rows': staff_rows, 'categories': Teacher.CATEGORY_CHOICES,
+        'category': category, 'q': q,
     })
 
 
 @login_required
 def cards_class(request, classroom_id):
-    """Cartes d'une classe : aperçu + téléchargements individuels / lot."""
+    """Cartes d'une classe : aperçus réels + téléchargements individuels / lot."""
     from academics.models import ClassRoom
+    from core.badge import BADGE_DESIGNS, build_badge_context
     from students.models import Enrollment
-    from students.card_designs import CARD_DESIGNS, get_design
+
     classroom = get_object_or_404(ClassRoom, pk=classroom_id)
     enrollments = (
         Enrollment.objects.filter(classroom=classroom, is_active=True)
         .select_related('student')
         .order_by('student__last_name', 'student__first_name')
     )
-    try:
-        from core.models import SchoolSettings
-        school = SchoolSettings.get_solo()
-    except Exception:
-        school = None
-    current = getattr(school, 'card_template', 'modern') if school else 'modern'
-    # override via GET
-    template_key = request.GET.get('template') or current
+    school = _get_school()
+    current = _badge_design_key(request, school)
+    items = [
+        {
+            'enrollment': enr,
+            'student': enr.student,
+            'badge': build_badge_context(enr.student, 'eleve', school, enr, current),
+        }
+        for enr in enrollments
+    ]
     return render(request, 'students/cards_class.html', {
-        'classroom': classroom,
-        'enrollments': enrollments,
-        'designs': CARD_DESIGNS,
-        'current_template': template_key,
-        'school': school,
+        'classroom': classroom, 'items': items, 'enrollments': enrollments,
+        'designs': BADGE_DESIGNS, 'current_template': current, 'school': school,
     })
 
 
 @login_required
 def cards_class_pdf(request, classroom_id):
-    """PDF groupé : une carte Mali (recto) par page pour la classe."""
+    """PDF groupé : un badge par page (élèves de la classe)."""
     from io import BytesIO
     from reportlab.lib.units import mm
     from reportlab.pdfgen import canvas
-    from django.http import HttpResponse
     from academics.models import ClassRoom
+    from core.badge import build_badge_context
+    from students.card_mali import draw_badge_pdf
     from students.models import Enrollment
-    from students.card_mali import draw_card_pdf
 
     classroom = get_object_or_404(ClassRoom, pk=classroom_id)
     enrollments = (
@@ -625,22 +651,19 @@ def cards_class_pdf(request, classroom_id):
         .select_related('student')
         .order_by('student__last_name', 'student__first_name')
     )
-    try:
-        from core.models import SchoolSettings
-        school = SchoolSettings.get_solo()
-    except Exception:
-        school = None
+    school = _get_school()
+    key = _badge_design_key(request, school)
 
-    w, h = 85.6 * mm, 54 * mm
     buf = BytesIO()
-    c = canvas.Canvas(buf, pagesize=(w, h))
+    c = canvas.Canvas(buf, pagesize=(85.6 * mm, 54 * mm))
     for enr in enrollments:
-        draw_card_pdf(c, enr.student, enr, school, y0=0)
+        badge = build_badge_context(enr.student, 'eleve', school, enr, key)
+        draw_badge_pdf(c, badge, y0=0)
         c.showPage()
     c.save()
     buf.seek(0)
-    filename = f"cartes_{classroom.name}.pdf".replace(' ', '_')
     resp = HttpResponse(buf.read(), content_type='application/pdf')
+    filename = f"cartes_{classroom.name}.pdf".replace(' ', '_')
     resp['Content-Disposition'] = f'attachment; filename="{filename}"'
     return resp
 

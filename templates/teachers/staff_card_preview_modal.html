@@ -1,0 +1,29 @@
+<style>
+  .badge-preview-wrap { width:100%; max-width:340px; margin:0 auto; }
+  .badge-tips { font-size:.72rem; color:#64748b; background:#f8fafc; border:1px solid #e2e8f0;
+                border-radius:.75rem; padding:.6rem .75rem; margin-top:1rem; line-height:1.5; }
+  .badge-tips strong { color:#1d4ed8; }
+</style>
+
+<p class="text-xs text-slate-500 mb-3">
+  <i class="fas fa-id-badge text-blue-600"></i> Badge du personnel — format CR80 (85,6 × 54 mm).
+</p>
+
+<div class="badge-preview-wrap">{% include "core/badge.html" %}</div>
+
+<p class="badge-tips">
+  Le QR <strong>{{ badge.qr_payload }}</strong> est lu automatiquement par le scanner des présences.
+  Aucun changement d'onglet n'est nécessaire.
+</p>
+
+<div class="form-actions flex flex-wrap gap-2 mt-4">
+  <a href="{{ pdf_url }}" class="flex-1 text-center bg-blue-600 text-white py-3 rounded-xl text-xs font-semibold">
+    <i class="fas fa-download"></i> PDF
+  </a>
+  <a href="{{ image_url }}" class="flex-1 text-center bg-teal-600 text-white py-3 rounded-xl text-xs font-semibold">
+    <i class="fas fa-image"></i> Image
+  </a>
+  <a href="{{ card_url }}" target="_blank" class="flex-1 text-center bg-slate-100 text-slate-700 py-3 rounded-xl text-xs font-semibold">
+    <i class="fas fa-print"></i> Imprimer
+  </a>
+</div>

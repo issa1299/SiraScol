@@ -7,17 +7,19 @@
       <i class="fas fa-qrcode text-indigo-600"></i> QR codes — Personnel
     </h1>
     <p class="text-xs text-slate-500 mt-0.5">
-      À scanner dans <b>Scan QR Code → Personnel</b> · Format <code class="bg-slate-100 px-1 rounded">TCH:matricule</code>
+      QR locaux, reconnus automatiquement par le scanner · Format <code class="bg-slate-100 px-1 rounded">TCH:matricule</code>
     </p>
   </div>
   <div class="flex gap-2">
     <button type="button" onclick="window.print()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold">
       <i class="fas fa-print"></i> Imprimer
     </button>
-    <button type="button" onclick="sirascolExportPdf('#qr-grid', 'qr_personnel.pdf')" class="bg-rose-600 text-white px-4 py-2 rounded-xl text-sm font-semibold">
-      <i class="fas fa-file-pdf"></i> PDF
-    </button>
-    <a href="{% url 'teachers:list' %}" class="border px-4 py-2 rounded-xl text-sm">← Retour</a>
+    <a href="{% url 'teachers:cards_all_pdf' %}" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-semibold">
+      <i class="fas fa-id-badge"></i> Badges PDF
+    </a>
+    <a href="{% url 'students:cards_home' %}?tab=personnel" class="bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-semibold">
+      <i class="fas fa-address-card"></i> Gestion des badges
+    </a>
   </div>
 </div>
 
@@ -46,6 +48,9 @@
       <span class="text-slate-300">·</span>
       <button type="button" onclick="openModalUrl('{% url 'teachers:qr' r.teacher.pk %}','QR — {{ r.teacher.last_name }}')"
               class="text-xs text-blue-600 underline">Aperçu</button>
+      <span class="text-slate-300">·</span>
+      <button type="button" onclick="openModalUrl('{% url 'teachers:card_preview' r.teacher.pk %}','Badge — {{ r.teacher.last_name }}')"
+              class="text-xs text-emerald-600 underline">Badge</button>
     </div>
   </div>
   {% endfor %}

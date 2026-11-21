@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from . import config_views
 from . import export_views
+from . import qr_view
 
 app_name = 'core'
 
@@ -11,6 +12,7 @@ urlpatterns = [
     path('parametres/', views.school_settings, name='settings'),
     path('rapports/', views.reports_stats, name='reports'),
     path('rapports/pdf/', views.reports_stats_pdf, name='reports_pdf'),
+    path('qr/', qr_view.qr_image, name='qr_image'),
 
     # Configuration
     path('configuration/', config_views.config_home, name='config_home'),

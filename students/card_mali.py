@@ -1,357 +1,333 @@
 # -*- coding: utf-8 -*-
-"""
-Carte d'identité scolaire — modèle Mali exact (85,6 × 54 mm).
-Bandeau bleu + titre + champs gauche + photo/cachet droite.
+"""Moteur de rendu des badges (élèves ET personnel) — format CR80 85,6 × 54 mm.
+
+Les badges HTML, PNG et PDF partagent le même contexte (core.badge) et le même
+QR local (core.qr). Cette module ne contient que le dessin.
 """
 from io import BytesIO
 
+from core.badge import (
+    CARD_H_MM, CARD_W_MM, build_badge_context, get_badge_design,
+    parents_pair as _parents_pair,  # compatibilité ascendante
+)
+from core.qr import qr_png
 
-def _parents_pair(student):
-    """Retourne (père_ou_tuteur, mère) pour Fils/Fille de / Et de."""
-    father = mother = None
+# ── Géométrie commune (en mm) ────────────────────────────────────────────────
+BAND_W = 2.2
+HEADER_H = 13.0
+# Repères EN HAUT (comme le CSS et PIL) pour garantir un rendu identique partout.
+PHOTO = (4.0, 21.0, 21.0, 26.5)          # x, top, largeur, hauteur
+FIELD_X = 28.0
+FIELD_TOP = 21.0
+FIELD_STEP = 3.3
+QR = (64.4, 24.0, 15.6)                  # x, top, taille
+MAX_LINES = 8
+
+
+def _trim(text, n):
+    text = str(text or '—')
+    return text if len(text) <= n else text[: n - 1] + '…'
+
+
+def _hex_rgb(value):
+    value = (value or '#0f172a').lstrip('#')
+    if len(value) != 6:
+        return (15, 23, 42)
     try:
-        links = list(student.parents.select_related('parent').all())
-    except Exception:
-        links = []
-    for link in links:
-        rel = (getattr(link, 'relation', '') or '').lower()
-        p = link.parent
-        name = f'{p.last_name} {p.first_name}'.strip()
-        if rel in ('pere', 'père', 'father') and not father:
-            father = name
-        elif rel in ('mere', 'mère', 'mother') and not mother:
-            mother = name
-        elif rel in ('tuteur',) and not father:
-            father = name
-        elif not father:
-            father = name
-        elif not mother:
-            mother = name
-    return father or '—', mother or '—'
+        return tuple(int(value[i:i + 2], 16) for i in (0, 2, 4))
+    except ValueError:
+        return (15, 23, 42)
 
 
-def _school_ctx(school):
-    name = (school.name if school else 'Établissement scolaire') or 'Établissement scolaire'
-    motto = ''
-    if school and school.motto:
-        motto = school.motto
-    else:
-        motto = 'TRAVAIL - DISCIPLINE - REUSSITE'
-
-    left_raw = (school.header_left if school and school.header_left else '') or ''
-    if not left_raw and school:
-        parts = ['M.E.N']
-        if getattr(school, 'inspection', None):
-            parts.append(school.inspection)
-        if getattr(school, 'commune', None) or getattr(school, 'city', None):
-            place = school.commune or school.city
-            parts.append(f'A.E DE {place}'.upper())
-        left_raw = '\n'.join(parts)
-    left_lines = [ln.strip() for ln in left_raw.replace('|', '\n').split('\n') if ln.strip()][:3]
-    if not left_lines:
-        left_lines = ['M.E.N']
-
-    right_raw = (school.header_right if school and school.header_right else '') or ''
-    if not right_raw:
-        country = (school.country if school and school.country else 'MALI').upper()
-        right_raw = f'REPUBLIQUE DU {country}\nUN PEUPLE - UN BUT - UNE FOI'
-    right_lines = [ln.strip() for ln in right_raw.replace('|', '\n').split('\n') if ln.strip()][:2]
-
-    director = (school.director_name if school and school.director_name else '') or '—'
-
-    logo_path = None
-    stamp_path = None
-    if school:
-        if school.logo:
-            try:
-                logo_path = school.logo.path
-            except Exception:
-                pass
-        if school.stamp:
-            try:
-                stamp_path = school.stamp.path
-            except Exception:
-                pass
-
-    return {
-        'name': name,
-        'motto': motto.upper(),
-        'left_lines': left_lines,
-        'right_lines': right_lines,
-        'director': director,
-        'logo_path': logo_path,
-        'stamp_path': stamp_path,
-    }
-
-
-def draw_card_pdf(c, student, enrollment, school, y0=0):
-    """Dessine le recto carte Mali — page 85.6 × 54 mm."""
+# ═══════════════════════════════ PDF ════════════════════════════════════════
+def draw_badge_pdf(c, badge, y0=0):
+    """Dessine un badge complet sur un canvas reportlab (page 85.6 × 54 mm)."""
     from reportlab.lib.units import mm
     from reportlab.lib.utils import ImageReader
-    from reportlab.lib.colors import HexColor, Color, white
+    from reportlab.lib.colors import HexColor, white
 
-    w, h = 85.6 * mm, 54 * mm
-    ctx = _school_ctx(school)
-    father, mother = _parents_pair(student)
+    d = badge['design']
+    school = badge['school']
+    w, h = CARD_W_MM, CARD_H_MM
+    primary = HexColor(d['primary'])
+    secondary = HexColor(d['secondary'])
+    accent = HexColor(d['accent'])
+    ink = HexColor(d['ink'])
+    muted = HexColor(d['muted'])
+    bg = HexColor(d['bg'])
 
-    BLUE = HexColor('#1e40af')
-    BLUE_TITLE = HexColor('#1d4ed8')
-    INK = HexColor('#0f172a')
-    GRAY_BG = HexColor('#f1f5f9')
+    def B(top):
+        """Ligne de base reportlab pour une coordonnée verticale mesurée depuis le HAUT."""
+        return y0 + (h - top) * mm
 
-    # Fond
+    # Fond + bande latérale
+    c.setFillColor(bg)
+    c.rect(0, y0, w * mm, h * mm, fill=1, stroke=0)
+    c.setFillColor(HexColor(d['band']))
+    c.rect(0, y0, BAND_W * mm, h * mm, fill=1, stroke=0)
+
+    # ── Bandeau ──
+    c.setFillColor(primary)
+    c.rect(0, B(HEADER_H), w * mm, HEADER_H * mm, fill=1, stroke=0)
+
     c.setFillColor(white)
-    c.rect(0, y0, w, h, fill=1, stroke=0)
+    c.setFont('Helvetica', 4.2)
+    for i, ln in enumerate(school['left_lines']):
+        c.drawString(3.4 * mm, B(3.0 + i * 3.0), _trim(ln.upper(), 30))
+    for i, ln in enumerate(school['right_lines']):
+        c.drawRightString(w * mm - 3.4 * mm, B(3.0 + i * 3.0), _trim(ln.upper(), 34))
 
-    # ── Bandeau bleu (≈ 15 mm) ──
-    banner_h = 15 * mm
-    c.setFillColor(BLUE)
-    c.rect(0, y0 + h - banner_h, w, banner_h, fill=1, stroke=0)
-
-    # Gauche en-tête
-    c.setFillColor(white)
-    c.setFont('Helvetica', 4.5)
-    ly = y0 + h - 3.5 * mm
-    for ln in ctx['left_lines']:
-        c.drawString(2.8 * mm, ly, ln[:30].upper())
-        ly -= 3.5 * mm
-
-    # Droite en-tête
-    c.setFont('Helvetica', 4.5)
-    ry = y0 + h - 3.5 * mm
-    for ln in ctx['right_lines']:
-        c.drawRightString(w - 2.8 * mm, ry, ln[:34].upper())
-        ry -= 3.5 * mm
-
-    # Nom école (centré, gras)
-    c.setFont('Helvetica-Bold', 9)
-    school_name = ctx['name'][:36].upper()
-    c.drawCentredString(w / 2, y0 + h - 9 * mm, school_name)
-
-    # Devise
-    if ctx['motto']:
-        c.setFont('Helvetica-Bold', 5.5)
-        c.drawCentredString(w / 2, y0 + h - 12.8 * mm, ctx['motto'][:50])
+    c.setFont('Helvetica-Bold', 8.4)
+    c.drawCentredString(w * mm / 2, B(7.6), _trim(school['name'].upper(), 36))
+    c.setFont('Helvetica-Bold', 4.6)
+    c.drawCentredString(w * mm / 2, B(11.2), _trim(school['motto'], 48))
 
     # ── Titre ──
-    c.setFillColor(BLUE_TITLE)
-    c.setFont('Helvetica-Bold', 12)
-    c.drawCentredString(w / 2, y0 + h - banner_h - 5.5 * mm, "CARTE D'IDENTITÉ SCOLAIRE")
-
-    # ── Champs ──
-    gender = (getattr(student, 'gender', '') or '').upper()
-    nee_label = 'Née le :' if gender == 'F' else 'Né le :'
-    fils_label = 'Fille de :' if gender == 'F' else 'Fils de :'
-    dob = student.date_of_birth.strftime('%d/%m/%Y') if student.date_of_birth else '—'
-    classe = str(enrollment.classroom) if enrollment else '—'
-
-    rows = [
-        ('Nom :', (student.last_name or '').upper()),
-        ('Prénom :', student.first_name or ''),
-        ('Classe :', classe),
-        (nee_label, dob),
-        (fils_label, father),
-        ('Et de :', mother),
-        ('Directeur :', ctx['director']),
-    ]
-
-    # Zone champs : sous le titre jusqu'en bas
-    top_fields = y0 + h - banner_h - 10 * mm
-    c.setFillColor(INK)
-    yy = top_fields
-    for label, val in rows:
-        c.setFont('Helvetica-Bold', 7.5)
-        c.drawString(3.5 * mm, yy, label)
-        c.setFont('Helvetica', 7.5)
-        c.drawString(26 * mm, yy, (val or '—')[:30])
-        yy -= 4.2 * mm
+    c.setFillColor(secondary)
+    c.setFont('Helvetica-Bold', 8.0)
+    c.drawCentredString(w * mm / 2, B(17.4), badge['title'])
+    c.setStrokeColor(accent)
+    c.setLineWidth(0.7)
+    c.line(4 * mm, B(19.3), (w - 4) * mm, B(19.3))
 
     # ── Photo ──
-    pw, ph = 23 * mm, 29 * mm
-    px = w - pw - 3.5 * mm
-    py = y0 + 6 * mm
-
-    c.setStrokeColor(HexColor('#1e3a8a'))
-    c.setLineWidth(1.5)
-    c.setFillColor(GRAY_BG)
-    c.roundRect(px, py, pw, ph, 1.2 * mm, fill=1, stroke=1)
-
-    photo_drawn = False
-    if student.photo:
+    px, ptop, pw, ph = PHOTO
+    pbottom = CARD_H_MM - ptop - ph
+    c.setStrokeColor(accent)
+    c.setLineWidth(0.9)
+    c.setFillColor(HexColor('#e2e8f0'))
+    c.roundRect(px * mm, B(ptop + ph), pw * mm, ph * mm, 1.2 * mm, fill=1, stroke=1)
+    drawn = False
+    if badge.get('photo_path'):
         try:
             c.drawImage(
-                ImageReader(student.photo.path),
-                px + 1 * mm, py + 1 * mm,
-                width=pw - 2 * mm, height=ph - 2 * mm,
-                preserveAspectRatio=True, mask='auto',
+                ImageReader(badge['photo_path']),
+                px * mm + 0.8 * mm, (pbottom + 0.8) * mm,
+                width=(pw - 1.6) * mm, height=(ph - 1.6) * mm,
+                preserveAspectRatio=True, anchor='c', mask='auto',
             )
-            photo_drawn = True
+            drawn = True
+        except Exception:
+            drawn = False
+    if not drawn:
+        c.setFillColor(HexColor('#94a3b8'))
+        c.setFont('Helvetica-Bold', 16)
+        c.drawCentredString((px + pw / 2) * mm, B(ptop + ph / 2 + 2), badge['initials'])
+
+    # ── Champs ──
+    yy = FIELD_TOP
+    for label, value in badge['lines'][:MAX_LINES]:
+        c.setFillColor(muted)
+        c.setFont('Helvetica-Bold', 4.5)
+        c.drawString(FIELD_X * mm, B(yy), _trim(label, 14))
+        c.setFillColor(ink)
+        c.setFont('Helvetica', 5.4)
+        c.drawString((FIELD_X + 16) * mm, B(yy), _trim(value, 30))
+        yy += FIELD_STEP
+
+    # ── QR (pointage) ──
+    qx, qtop, qs = QR
+    qbottom = CARD_H_MM - qtop - qs
+    c.setFillColor(white)
+    c.setStrokeColor(accent)
+    c.setLineWidth(0.6)
+    c.roundRect((qx - 1) * mm, (qbottom - 1) * mm, (qs + 2) * mm, (qs + 2) * mm,
+                1 * mm, fill=1, stroke=1)
+    qr_buf = qr_png(badge['qr_payload'], box_size=10, border=1)
+    if qr_buf:
+        try:
+            c.drawImage(
+                ImageReader(qr_buf), qx * mm, qbottom * mm,
+                width=qs * mm, height=qs * mm, mask='auto',
+            )
         except Exception:
             pass
-    if not photo_drawn:
-        c.setFillColor(HexColor('#64748b'))
-        c.setFont('Helvetica-Bold', 14)
-        init = ((student.last_name or '?')[:1] + (student.first_name or '?')[:1]).upper()
-        c.drawCentredString(px + pw / 2, py + ph / 2 - 2 * mm, init)
+    c.setFillColor(muted)
+    c.setFont('Helvetica-Bold', 3.6)
+    c.drawCentredString((qx + qs / 2) * mm, B(qtop - 1.6), 'POINTAGE')
+    c.setFont('Helvetica', 4.6)
+    c.setFillColor(ink)
+    c.drawCentredString((qx + qs / 2) * mm, B(qtop + qs + 2.4), _trim(badge['matricule'], 16))
 
-    # ── Cachet école (image réelle) ──
-    stamp_path = ctx.get('stamp_path')
-    stamp_size = 14 * mm
-    sx = px - 5 * mm
-    sy = py - 1 * mm
-    if stamp_path:
+    # ── Pied ──
+    c.setFillColor(muted)
+    c.setFont('Helvetica', 3.9)
+    c.drawString(4 * mm, B(50.6), f"Valable jusqu'au {badge['valid_until_str']}")
+    c.setFont('Helvetica-Bold', 4.0)
+    c.drawRightString((w - 4) * mm, B(50.6), _trim(f"Dir. {badge['director']}", 26))
+
+
+def draw_card_pdf(c, student, enrollment, school, y0=0, design_key='official'):
+    """Compatibilité : construit le badge élève puis délègue au rendu unifié."""
+    badge = build_badge_context(student, 'eleve', school, enrollment, design_key)
+    draw_badge_pdf(c, badge, y0)
+
+
+def render_badge_pdf(badge):
+    """PDF d'un seul badge, prêt à être envoyé."""
+    from reportlab.lib.units import mm
+    from reportlab.pdfgen import canvas
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=(CARD_W_MM * mm, CARD_H_MM * mm))
+    draw_badge_pdf(c, badge, y0=0)
+    c.showPage()
+    c.save()
+    buf.seek(0)
+    return buf
+
+
+# ═══════════════════════════════ PNG ════════════════════════════════════════
+W_PX, H_PX = 1012, 638
+
+
+def _px(mm_value):
+    return int(round(mm_value * W_PX / CARD_W_MM))
+
+
+def _font(size, bold=False):
+    from PIL import ImageFont
+    candidates = [
+        'C:/Windows/Fonts/arialbd.ttf' if bold else 'C:/Windows/Fonts/arial.ttf',
+        'C:/Windows/Fonts/segoeuib.ttf' if bold else 'C:/Windows/Fonts/segoeui.ttf',
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf' if bold
+        else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+    ]
+    for path in candidates:
         try:
-            c.drawImage(
-                ImageReader(stamp_path),
-                sx, sy,
-                width=stamp_size, height=stamp_size,
-                preserveAspectRatio=True, mask='auto',
-            )
+            return ImageFont.truetype(path, size)
         except Exception:
-            stamp_path = None
-    if not stamp_path:
-        # Placeholder discret uniquement si aucun cachet uploadé
-        c.setStrokeColor(HexColor('#b91c1c'))
-        c.setFillColor(Color(0.85, 0.15, 0.15, alpha=0.08))
-        c.setLineWidth(1.2)
-        cx = sx + stamp_size / 2
-        cy = sy + stamp_size / 2
-        c.circle(cx, cy, stamp_size / 2 - 0.5 * mm, fill=1, stroke=1)
-        c.setFont('Helvetica', 3.5)
-        c.setFillColor(HexColor('#991b1b'))
-        c.drawCentredString(cx, cy - 1 * mm, 'CACHET ÉCOLE')
+            continue
+    return ImageFont.load_default()
 
 
-def render_card_png(student, enrollment, school, scale=4):
-    """PNG haute résolution du même modèle Mali."""
-    from PIL import Image, ImageDraw, ImageFont
+def _fit_photo(path, box_w, box_h):
+    from PIL import Image
+    if not path:
+        return None
+    try:
+        img = Image.open(path).convert('RGB')
+        # recadrage central pour remplir sans déformer
+        src_ratio = img.width / img.height
+        dst_ratio = box_w / box_h
+        if src_ratio > dst_ratio:
+            new_w = int(img.height * dst_ratio)
+            left = (img.width - new_w) // 2
+            img = img.crop((left, 0, left + new_w, img.height))
+        else:
+            new_h = int(img.width / dst_ratio)
+            top = (img.height - new_h) // 2
+            img = img.crop((0, top, img.width, top + new_h))
+        return img.resize((box_w, box_h), Image.Resampling.LANCZOS)
+    except Exception:
+        return None
 
-    # ~300 dpi CR80
-    W, H = 1012, 638
-    card = Image.new('RGB', (W, H), (252, 252, 250))
-    draw = ImageDraw.Draw(card)
 
-    def font(size, bold=False):
-        paths = [
-            '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf' if bold else '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
-            'C:/Windows/Fonts/arialbd.ttf' if bold else 'C:/Windows/Fonts/arial.ttf',
-            'C:/Windows/Fonts/segoeuib.ttf' if bold else 'C:/Windows/Fonts/segoeui.ttf',
-        ]
-        for path in paths:
-            try:
-                return ImageFont.truetype(path, size)
-            except Exception:
-                continue
-        return ImageFont.load_default()
+def render_badge_png(badge):
+    """PNG haute définition du même badge."""
+    from PIL import Image, ImageDraw
 
-    ctx = _school_ctx(school)
-    father, mother = _parents_pair(student)
-    BLUE = (30, 64, 175)
+    d = badge['design']
+    school = badge['school']
+    primary = _hex_rgb(d['primary'])
+    secondary = _hex_rgb(d['secondary'])
+    accent = _hex_rgb(d['accent'])
+    ink = _hex_rgb(d['ink'])
+    muted = _hex_rgb(d['muted'])
+    bg = _hex_rgb(d['bg'])
+
+    card = Image.new('RGB', (W_PX, H_PX), bg)
+    dr = ImageDraw.Draw(card)
+
+    # Bande latérale
+    dr.rectangle([0, 0, _px(BAND_W), H_PX], fill=_hex_rgb(d['band']))
 
     # Bandeau
-    banner_h = int(H * 0.28)
-    draw.rectangle([0, 0, W, banner_h], fill=BLUE)
+    header_px = _px(HEADER_H)
+    dr.rectangle([0, 0, W_PX, header_px], fill=primary)
 
-    f_tiny = font(13, False)
-    f_school = font(30, True)
-    f_motto = font(15, True)
-    f_title = font(34, True)
-    f_lab = font(22, True)
-    f_val = font(22, False)
+    f_tiny = _font(13)
+    f_school = _font(27, True)
+    f_motto = _font(14, True)
+    f_title = _font(23, True)
+    f_label = _font(13, True)
+    f_value = _font(15)
+    f_small = _font(12)
+    f_micro = _font(11, True)
 
-    # Header left
-    y = 14
-    for ln in ctx['left_lines']:
-        draw.text((18, y), ln.upper()[:36], fill=(255, 255, 255), font=f_tiny)
-        y += 18
+    y = 10
+    for ln in school['left_lines']:
+        dr.text((_px(3.4), y), _trim(ln.upper(), 30), fill=(255, 255, 255), font=f_tiny)
+        y += 17
+    y = 10
+    for ln in school['right_lines']:
+        text = _trim(ln.upper(), 34)
+        tw = dr.textlength(text, font=f_tiny)
+        dr.text((W_PX - _px(3.4) - tw, y), text, fill=(255, 255, 255), font=f_tiny)
+        y += 17
 
-    # Header right
-    y = 14
-    for ln in ctx['right_lines']:
-        text = ln.upper()[:40]
-        tw = draw.textlength(text, font=f_tiny)
-        draw.text((W - 18 - tw, y), text, fill=(255, 255, 255), font=f_tiny)
-        y += 18
+    name = _trim(school['name'].upper(), 36)
+    tw = dr.textlength(name, font=f_school)
+    dr.text(((W_PX - tw) / 2, _px(5.6)), name, fill=(255, 255, 255), font=f_school)
+    motto = _trim(school['motto'], 48)
+    tw = dr.textlength(motto, font=f_motto)
+    dr.text(((W_PX - tw) / 2, _px(9.6)), motto, fill=(226, 232, 240), font=f_motto)
 
-    # School name
-    name = ctx['name'].upper()[:38]
-    tw = draw.textlength(name, font=f_school)
-    draw.text(((W - tw) / 2, banner_h // 2 - 24), name, fill=(255, 255, 255), font=f_school)
-    if ctx['motto']:
-        m = ctx['motto'][:48]
-        tw = draw.textlength(m, font=f_motto)
-        draw.text(((W - tw) / 2, banner_h // 2 + 14), m, fill=(226, 232, 240), font=f_motto)
-
-    # Title
-    title = "CARTE D'IDENTITÉ SCOLAIRE"
-    tw = draw.textlength(title, font=f_title)
-    draw.text(((W - tw) / 2, banner_h + 16), title, fill=BLUE, font=f_title)
-
-    # Fields
-    gender = (getattr(student, 'gender', '') or '').upper()
-    nee_label = 'Née le :' if gender == 'F' else 'Né le :'
-    fils_label = 'Fille de :' if gender == 'F' else 'Fils de :'
-    dob = student.date_of_birth.strftime('%d/%m/%Y') if student.date_of_birth else '—'
-    classe = str(enrollment.classroom) if enrollment else '—'
-    rows = [
-        ('Nom :', (student.last_name or '').upper()),
-        ('Prénom :', student.first_name or ''),
-        ('Classe :', classe),
-        (nee_label, dob),
-        (fils_label, father),
-        ('Et de :', mother),
-        ('Directeur :', ctx['director']),
-    ]
-    yy = banner_h + 68
-    label_w = 170
-    for label, val in rows:
-        draw.text((28, yy), label, fill=(15, 23, 42), font=f_lab)
-        draw.text((28 + label_w, yy), (val or '—')[:32], fill=(30, 41, 59), font=f_val)
-        yy += 40
+    tw = dr.textlength(badge['title'], font=f_title)
+    dr.text(((W_PX - tw) / 2, _px(15.2)), badge['title'], fill=secondary, font=f_title)
+    dr.line([(_px(4), _px(19.3)), (W_PX - _px(4), _px(19.3))], fill=accent, width=3)
 
     # Photo
-    pw, ph = 230, 290
-    px = W - pw - 28
-    py = banner_h + 55
-    draw.rounded_rectangle([px, py, px + pw, py + ph], radius=10, outline=(30, 58, 138), width=4, fill=(241, 245, 249))
-
-    if student.photo:
-        try:
-            photo = Image.open(student.photo.path).convert('RGB')
-            # crop center to fit
-            photo = photo.resize((pw - 12, ph - 12), Image.Resampling.LANCZOS)
-            card.paste(photo, (px + 6, py + 6))
-        except Exception:
-            init = ((student.last_name or '?')[:1] + (student.first_name or '?')[:1]).upper()
-            tw = draw.textlength(init, font=font(42, True))
-            draw.text((px + (pw - tw) / 2, py + ph // 2 - 20), init, fill=(100, 116, 139), font=font(42, True))
+    px, py, pw, ph = PHOTO
+    box = (_px(px), _px(py), _px(px + pw), _px(py + ph))
+    dr.rounded_rectangle(box, radius=10, outline=accent, width=3,
+                         fill=_hex_rgb('#e2e8f0'))
+    photo = _fit_photo(badge.get('photo_path'), box[2] - box[0] - 10, box[3] - box[1] - 10)
+    if photo:
+        card.paste(photo, (box[0] + 5, box[1] + 5))
     else:
-        init = ((student.last_name or '?')[:1] + (student.first_name or '?')[:1]).upper()
-        tw = draw.textlength(init, font=font(42, True))
-        draw.text((px + (pw - tw) / 2, py + ph // 2 - 20), init, fill=(100, 116, 139), font=font(42, True))
+        tw = dr.textlength(badge['initials'], font=_font(46, True))
+        dr.text((box[0] + (box[2] - box[0] - tw) / 2, box[1] + (box[3] - box[1]) / 2 - 28),
+                badge['initials'], fill=muted, font=_font(46, True))
 
-    # Cachet école
-    stamp_path = ctx.get('stamp_path')
-    if stamp_path:
+    # Champs
+    yy = FIELD_TOP
+    for label, value in badge['lines'][:MAX_LINES]:
+        dr.text((_px(FIELD_X), _px(yy)), _trim(label, 14), fill=muted, font=f_label)
+        dr.text((_px(FIELD_X + 16), _px(yy)), _trim(value, 30), fill=ink, font=f_value)
+        yy += FIELD_STEP
+
+    # QR
+    qx, qy, qs = QR
+    qr_box = (_px(qx - 1), _px(qy - 1), _px(qx + qs + 1), _px(qy + qs + 1))
+    dr.rounded_rectangle(qr_box, radius=8, outline=accent, width=2, fill=(255, 255, 255))
+    qr_buf = qr_png(badge['qr_payload'], box_size=10, border=1)
+    if qr_buf:
         try:
-            stamp = Image.open(stamp_path).convert('RGBA')
-            stamp.thumbnail((150, 150), Image.Resampling.LANCZOS)
-            # position: bas gauche de la photo
-            sx = px - 40
-            sy = py + ph - 100
-            card.paste(stamp, (sx, sy), stamp)
+            qr_img = Image.open(qr_buf).convert('RGB')
+            qr_img = qr_img.resize((_px(qs), _px(qs)), Image.Resampling.NEAREST)
+            card.paste(qr_img, (_px(qx), _px(qy)))
         except Exception:
-            stamp_path = None
-    if not stamp_path:
-        overlay = Image.new('RGBA', (W, H), (0, 0, 0, 0))
-        od = ImageDraw.Draw(overlay)
-        sx, sy, sr = px + 10, py + ph - 30, 58
-        od.ellipse([sx - sr, sy - sr, sx + sr, sy + sr], outline=(185, 28, 28, 180), width=3)
-        od.ellipse([sx - sr + 10, sy - sr + 10, sx + sr - 10, sy + sr - 10], outline=(185, 28, 28, 140), width=2)
-        od.text((sx - 42, sy - 8), 'CACHET ÉCOLE', fill=(153, 27, 27, 200), font=font(12, True))
-        card = Image.alpha_composite(card.convert('RGBA'), overlay).convert('RGB')
+            pass
+    caption = 'POINTAGE'
+    tw = dr.textlength(caption, font=f_micro)
+    dr.text((_px(qx + qs / 2) - tw / 2, _px(qy - 2.6)), caption, fill=muted, font=f_micro)
+    mat = _trim(badge['matricule'], 16)
+    tw = dr.textlength(mat, font=f_small)
+    dr.text((_px(qx + qs / 2) - tw / 2, _px(qy + qs + 1.4)), mat, fill=ink, font=f_small)
+
+    # Pied
+    dr.text((_px(4), _px(50.0)), f"Valable jusqu'au {badge['valid_until_str']}",
+            fill=muted, font=f_small)
+    dir_txt = _trim(f"Dir. {badge['director']}", 26)
+    tw = dr.textlength(dir_txt, font=f_small)
+    dr.text((W_PX - _px(4) - tw, _px(50.0)), dir_txt, fill=muted, font=f_small)
 
     out = BytesIO()
     card.save(out, format='PNG', optimize=True)
     out.seek(0)
     return out
+
+
+def render_card_png(student, enrollment, school, design_key='official'):
+    """Compatibilité ascendante : PNG d'un badge élève."""
+    return render_badge_png(build_badge_context(student, 'eleve', school, enrollment, design_key))

@@ -4,11 +4,12 @@
   <p class="text-xs text-slate-500">{{ teacher.get_category_display }}{% if teacher.function %} · {{ teacher.function }}{% endif %}</p>
   <p class="text-xs font-mono text-indigo-600 mt-1">{{ teacher.matricule }}</p>
   <p class="text-[11px] text-slate-400 mt-1">Code scan : <code class="bg-slate-100 px-1 rounded">{{ code }}</code></p>
-  <p class="text-[11px] text-slate-400">À utiliser dans Scan QR Code → onglet Personnel</p>
-  <div class="flex gap-2 mt-4 justify-center">
+  <p class="text-[11px] text-slate-400">Reconnu automatiquement par le scanner, sans changer d'onglet.</p>
+  <div class="flex flex-wrap gap-2 mt-4 justify-center">
     <a href="{{ qr_url_lg }}" target="_blank" class="bg-blue-600 text-white text-sm px-4 py-2 rounded-xl">
       <i class="fas fa-download"></i> Télécharger
     </a>
+    {% if card_url %}<a href="{{ card_url }}" class="bg-teal-600 text-white text-sm px-4 py-2 rounded-xl"><i class="fas fa-id-badge"></i> Voir le badge</a>{% endif %}
     <button type="button" onclick="closeModal('modal-dynamic')" class="border text-sm px-4 py-2 rounded-xl">Fermer</button>
   </div>
 </div>

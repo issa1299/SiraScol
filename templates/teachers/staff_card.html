@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title }}</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; background:#e2e8f0; color:#0f172a;
+           font-family:'Segoe UI',system-ui,Arial,sans-serif;
+           padding:1.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom,0px)); }
+    .toolbar { max-width:85.6mm; margin:0 auto 1rem; display:flex; flex-wrap:wrap; gap:.5rem; }
+    .toolbar a, .toolbar button { flex:1 1 auto; text-align:center; text-decoration:none;
+      font-size:.8rem; font-weight:700; padding:.7rem .9rem; border-radius:.75rem;
+      border:0; cursor:pointer; }
+    .btn-print { background:#1d4ed8; color:#fff; }
+    .btn-pdf { background:#0f766e; color:#fff; }
+    .btn-img { background:#fff; color:#334155; border:1px solid #cbd5e1 !important; }
+    .badge-wrap { width:85.6mm; max-width:100%; margin:0 auto; }
+    .hint { max-width:85.6mm; margin:1rem auto 0; text-align:center;
+            font-size:.72rem; color:#64748b; line-height:1.5; }
+    .hint strong { color:#1d4ed8; }
+    @page { size: 85.6mm 54mm; margin: 0; }
+    @media print {
+      body { background:#fff; padding:0; margin:0; }
+      .toolbar, .hint { display:none !important; }
+      .badge-wrap { width:85.6mm; margin:0; }
+      .badge-card { box-shadow:none !important; border-radius:0 !important; }
+    }
+    @media (max-width:420px) { body { padding:.75rem .5rem; } }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <button type="button" class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Imprimer</button>
+    <a class="btn-pdf" href="{{ pdf_url }}"><i class="fas fa-file-pdf"></i> PDF</a>
+    <a class="btn-img" href="{{ image_url }}"><i class="fas fa-image"></i> Image</a>
+    <a class="btn-back" href="{% url 'teachers:card_preview' teacher.pk %}" style="background:#f1f5f9;color:#475569"><i class="fas fa-arrow-left"></i> Aperçu</a>
+  </div>
+
+  <div class="badge-wrap">{% include "core/badge.html" %}</div>
+
+  <p class="hint">
+    Ce badge personnel est valable pour le pointage : le QR <strong>{{ badge.qr_payload }}</strong>
+    est reconnu automatiquement par le scanner des présences, sans choisir d'onglet.
+  </p>
+</body>
+</html>

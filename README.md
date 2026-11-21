@@ -100,7 +100,18 @@ Les droits finance sont réservés au comptable et au directeur ; le secrétaire
 
 La fiche d'une classe (`/classes/<id>/`) contient 10 onglets — Vue générale, Élèves, Matières, Enseignants, Emploi du temps, Présences, Notes, Discipline, Bulletins, Rapports. Les rapports (effectif, présence, enseignants, résultats) sont générés en PDF. Le modèle `Sanction` couple les retenues, avertissements, exclusions et observations à une classe et à un élève. L'historique des inscriptions est conservé lors des changements d'année (utiliser la promotion en fin d'année).
 
-Sur mobile, les tableaux deviennent des cartes compactes ; un appui ouvre une boîte de dialogue avec toutes les colonnes de la ligne.
+Sur mobile, les tableaux deviennent des cartes compactes ; un appui ouvre une boîte de dialogue avec toutes les colonnes de la ligne. Les cellules contenant un champ ou un lien d'action restent toujours visibles.
+
+## Cartes & badges (élèves et personnel)
+
+Interface unifiée sur `/eleves/cartes/` avec deux onglets **Élèves** et **Personnel**. Six modèles de badge (CR80, 85,6 × 54 mm) sont proposés avec un aperçu réel ; le modèle choisi est enregistré dans les paramètres de l'école et appliqué à tous les rendus (HTML, PNG, PDF).
+
+Chaque badge contient un **QR code généré localement** (`core/qr.py`, dépendance `qrcode[pil]`) pour le pointage des présences :
+- élève → `STU:<matricule>` ; personnel → `TCH:<matricule>`.
+- Le scanner (`/absences/scan/`) reconnaît ces préfixes et détermine automatiquement le type de pointage, sans changer d'onglet.
+- Aucun appel à un service QR externe.
+
+Actions disponibles : aperçu en boîte de dialogue, PDF individuel ou groupé (une carte par page), image PNG haute définition et impression navigateur. Les badges du personnel sont aussi accessibles depuis `/enseignants/qr-codes/`.
 
 ## Espace Secrétaire
 

@@ -145,7 +145,7 @@
           }
           if (!td.getAttribute('data-label') && labels[i]) td.setAttribute('data-label', labels[i]);
           var text = td.textContent.trim();
-          var field = td.querySelector('input, select, textarea, button');
+          var field = td.querySelector('input, select, textarea, button, a');
           pairs.push([td.getAttribute('data-label') || '', text || (field ? '…' : '')]);
           // Les cellules contenant un champ doivent TOUJOURS rester visibles,
           // sinon la saisie (notes, validation, pointage) devient impossible sur mobile.

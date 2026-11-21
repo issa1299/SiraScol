@@ -3,238 +3,48 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Carte scolaire — {{ student.last_name }} {{ student.first_name }}</title>
+  <title>{{ title }}</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-      background: #e2e8f0;
-      min-height: 100vh;
-      padding: 1.5rem;
-      color: #0f172a;
-    }
-    .toolbar {
-      max-width: 420px;
-      margin: 0 auto 1rem;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      justify-content: center;
-    }
-    .toolbar a {
-      text-decoration: none;
-      font-size: 0.875rem;
-      font-weight: 600;
-      padding: 0.7rem 1.15rem;
-      border-radius: 0.75rem;
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-    }
-    .btn-pdf { background: #1d4ed8; color: #fff; }
-    .btn-pdf:hover { background: #1e40af; }
-    .btn-img { background: #0f766e; color: #fff; }
-    .btn-img:hover { background: #0d9488; }
-    .btn-back { background: #fff; color: #334155; border: 1px solid #cbd5e1; }
-    .hint {
-      text-align: center;
-      font-size: 0.75rem;
-      color: #64748b;
-      margin-bottom: 1.25rem;
-    }
-    .card-wrap { display: flex; justify-content: center; }
-    .card {
-      width: 340px;
-      max-width: 100%;
-      height: auto;
-      min-height: 214px;
-      background: #fcfcfa;
-      border-radius: 6px;
-      overflow: hidden;
-      box-shadow: 0 16px 40px -12px rgba(15,23,42,.35), 0 0 0 1px rgba(15,23,42,.08);
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-    .banner {
-      background: #1e40af;
-      color: #fff;
-      padding: 6px 10px 8px;
-      min-height: 52px;
-    }
-    .banner-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 6.5px;
-      line-height: 1.25;
-      opacity: .95;
-      text-transform: uppercase;
-    }
-    .banner-row .left, .banner-row .right { max-width: 28%; }
-    .banner-row .right { text-align: right; }
-    .banner-center { text-align: center; margin-top: 2px; }
-    .banner-center .school {
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: .02em;
-      text-transform: uppercase;
-      line-height: 1.15;
-    }
-    .banner-center .motto {
-      font-size: 7px;
-      font-weight: 700;
-      opacity: .9;
-      margin-top: 1px;
-      text-transform: uppercase;
-    }
-    .title {
-      text-align: center;
-      color: #1d4ed8;
-      font-weight: 800;
-      font-size: 13px;
-      letter-spacing: .02em;
-      margin: 6px 0 2px;
-      text-transform: uppercase;
-    }
-    .body {
-      flex: 1;
-      display: flex;
-      padding: 4px 10px 10px;
-      gap: 8px;
-      position: relative;
-    }
-    .fields {
-      flex: 1;
-      font-size: 10px;
-      line-height: 1.55;
-    }
-    .fields .row { display: flex; gap: 4px; }
-    .fields .lab { font-weight: 700; min-width: 72px; color: #0f172a; }
-    .fields .val { color: #1e293b; }
-    .photo-wrap {
-      width: 88px;
-      flex-shrink: 0;
-      position: relative;
-    }
-    .photo {
-      width: 88px;
-      height: 110px;
-      object-fit: cover;
-      border: 2px solid #1e3a8a;
-      border-radius: 6px;
-      background: #f1f5f9;
-      display: block;
-    }
-    .photo-placeholder {
-      width: 88px;
-      height: 110px;
-      border: 2px solid #1e3a8a;
-      border-radius: 6px;
-      background: #e2e8f0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      color: #64748b;
-      font-size: 18px;
-    }
-    .stamp {
-      position: absolute;
-      left: -12px;
-      bottom: -6px;
-      width: 56px;
-      height: 56px;
-      object-fit: contain;
-      opacity: .9;
-    }
-    .stamp-fake {
-      position: absolute;
-      left: -8px;
-      bottom: 0;
-      width: 52px;
-      height: 52px;
-      border: 2px solid #dc2626;
-      border-radius: 50%;
-      color: #b91c1c;
-      font-size: 7px;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(220,38,38,.08);
-      transform: rotate(-12deg);
-    }
-    @media (max-width: 767px) {
-      body { padding: 1rem 0.75rem calc(1rem + env(safe-area-inset-bottom, 0px)); }
-    }
+    * { box-sizing: border-box; }
+    body { margin:0; min-height:100vh; background:#e2e8f0; color:#0f172a;
+           font-family:'Segoe UI',system-ui,Arial,sans-serif;
+           padding:1.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom,0px)); }
+    .toolbar { max-width:85.6mm; margin:0 auto 1rem; display:flex; flex-wrap:wrap; gap:.5rem; }
+    .toolbar a, .toolbar button { flex:1 1 auto; text-align:center; text-decoration:none;
+      font-size:.8rem; font-weight:700; padding:.7rem .9rem; border-radius:.75rem;
+      border:0; cursor:pointer; }
+    .btn-print { background:#1d4ed8; color:#fff; }
+    .btn-pdf { background:#0f766e; color:#fff; }
+    .btn-img { background:#fff; color:#334155; border:1px solid #cbd5e1 !important; }
+    .btn-back { background:#f1f5f9; color:#475569; }
+    .badge-wrap { width:85.6mm; max-width:100%; margin:0 auto; }
+    .hint { max-width:85.6mm; margin:1rem auto 0; text-align:center;
+            font-size:.72rem; color:#64748b; line-height:1.5; }
+    .hint strong { color:#1d4ed8; }
+    @page { size: 85.6mm 54mm; margin: 0; }
     @media print {
-      body { background: #fff; padding: 0; }
-      .toolbar, .hint { display: none !important; }
-      .card { box-shadow: none; border-radius: 0; }
+      body { background:#fff; padding:0; margin:0; }
+      .toolbar, .hint { display:none !important; }
+      .badge-wrap { width:85.6mm; margin:0; }
+      .badge-card { box-shadow:none !important; border-radius:0 !important; }
     }
+    @media (max-width:420px) { body { padding:.75rem .5rem; } }
   </style>
 </head>
 <body>
   <div class="toolbar">
-    <a class="btn-back" href="{% url 'students:detail' student.pk %}">← Retour</a>
-    <a class="btn-pdf" href="{% url 'students:card_pdf' student.pk %}">Télécharger PDF</a>
-    <a class="btn-img" href="{% url 'students:card_image' student.pk %}">Télécharger image</a>
+    <button type="button" class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Imprimer</button>
+    <a class="btn-pdf" href="{{ pdf_url }}"><i class="fas fa-file-pdf"></i> PDF</a>
+    <a class="btn-img" href="{{ image_url }}"><i class="fas fa-image"></i> Image</a>
+    <a class="btn-back" href="{% url 'students:card_preview' student.pk %}"><i class="fas fa-arrow-left"></i> Aperçu</a>
   </div>
-  <p class="hint">Format 85,6 × 54 mm — modèle carte d’identité scolaire</p>
 
-  <div class="card-wrap">
-    <div class="card">
-      <div class="banner">
-        <div class="banner-row">
-          <div class="left">
-            {% if school.header_left %}
-              {{ school.header_left|linebreaksbr }}
-            {% else %}
-              M.E.N<br>
-              {% if school.inspection %}{{ school.inspection }}{% endif %}
-            {% endif %}
-          </div>
-          <div class="right">
-            {% if school.header_right %}
-              {{ school.header_right|linebreaksbr }}
-            {% else %}
-              REPUBLIQUE DU {{ school.country|default:"MALI"|upper }}<br>
-              UN PEUPLE - UN BUT - UNE FOI
-            {% endif %}
-          </div>
-        </div>
-        <div class="banner-center">
-          <div class="school">{{ school.name|default:"Établissement scolaire" }}</div>
-          {% if school.motto %}<div class="motto">{{ school.motto }}</div>{% endif %}
-        </div>
-      </div>
-      <div class="title">Carte d’identité scolaire</div>
-      <div class="body">
-        <div class="fields">
-          {% with g=student.gender %}
-          <div class="row"><span class="lab">Nom :</span><span class="val">{{ student.last_name|upper }}</span></div>
-          <div class="row"><span class="lab">Prénom :</span><span class="val">{{ student.first_name }}</span></div>
-          <div class="row"><span class="lab">Classe :</span><span class="val">{% if enrollment %}{{ enrollment.classroom }}{% else %}—{% endif %}</span></div>
-          <div class="row"><span class="lab">{% if g == 'F' %}Née le :{% else %}Né le :{% endif %}</span><span class="val">{% if student.date_of_birth %}{{ student.date_of_birth|date:"d/m/Y" }}{% else %}—{% endif %}</span></div>
-          <div class="row"><span class="lab">{% if g == 'F' %}Fille de :{% else %}Fils de :{% endif %}</span><span class="val">{{ father_name|default:"—" }}</span></div>
-          <div class="row"><span class="lab">Et de :</span><span class="val">{{ mother_name|default:"—" }}</span></div>
-          <div class="row"><span class="lab">Directeur :</span><span class="val">{{ school.director_name|default:"—" }}</span></div>
-          {% endwith %}
-        </div>
-        <div class="photo-wrap">
-          {% if student.photo %}
-            <img class="photo" src="{{ student.photo.url }}" alt="Photo">
-          {% else %}
-            <div class="photo-placeholder">{{ student.last_name|slice:":1" }}{{ student.first_name|slice:":1" }}</div>
-          {% endif %}
-          {% if school.stamp %}
-            <img class="stamp" src="{{ school.stamp.url }}" alt="Cachet">
-          {% else %}
-            <div class="stamp-fake">CACHET</div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  </div>
+  <div class="badge-wrap">{% include "core/badge.html" %}</div>
+
+  <p class="hint">
+    Présentez ce badge au portique de pointage : le QR <strong>{{ badge.qr_payload }}</strong>
+    est reconnu automatiquement par le scanner des présences.
+    Format carte CR80 (85,6 × 54 mm).
+  </p>
 </body>
 </html>

@@ -1,11 +1,15 @@
 from datetime import date, timedelta
 from decimal import Decimal
+from io import BytesIO
+from urllib.parse import quote
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Q, Count, Sum
+from django.http import HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.urls import reverse
 from django.utils import timezone
 
 from academics.models import ClassRoom, SubjectAssignment
@@ -848,9 +852,27 @@ def _mise_en_place_pdf(ctx):
     return resp
 
 
+def _school_settings():
+    try:
+        from core.models import SchoolSettings
+        return SchoolSettings.get_solo()
+    except Exception:
+        return None
+
+
+def _staff_badge(teacher, request=None, school=None):
+    from core.badge import build_badge_context
+    school = school if school is not None else _school_settings()
+    design = (request.GET.get('template') if request else None) or getattr(
+        school, 'card_template', None
+    ) or 'official'
+    return build_badge_context(teacher, 'personnel', school, None, design)
+
+
 @login_required
 def staff_qr_codes(request):
-    """Page génération QR codes personnel pour pointage."""
+    """QR codes du personnel pour pointage — générés localement (TCH:<matricule>)."""
+    from core.qr import badge_payload
     if not can(request.user, 'personnel.list'):
         messages.error(request, 'Accès refusé.')
         return redirect('core:dashboard')
@@ -860,23 +882,22 @@ def staff_qr_codes(request):
     if category in ('enseignant', 'admin', 'service'):
         qs = qs.filter(category=category)
     if q:
-        from django.db.models import Q
         qs = qs.filter(
             Q(last_name__icontains=q) | Q(first_name__icontains=q) | Q(matricule__icontains=q)
         )
     rows = []
     for tch in qs:
-        code = f"TCH:{tch.matricule}" if tch.matricule else f"TCH:{tch.pk}"
+        code = badge_payload('personnel', tch.matricule or tch.pk)
+        url = reverse('core:qr_image') + '?data=' + quote(code)
         rows.append({
             'teacher': tch,
             'code': code,
-            'qr_url': f'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={code}',
-            'qr_url_lg': f'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={code}',
+            'qr_url': url,
+            'qr_url_lg': url + '&size=14',
+            'card_url': reverse('teachers:card', args=[tch.pk]),
         })
     return render(request, 'teachers/staff_qr_codes.html', {
-        'rows': rows,
-        'category': category,
-        'q': q,
+        'rows': rows, 'category': category, 'q': q,
         'categories': Teacher.CATEGORY_CHOICES,
     })
 
@@ -884,12 +905,85 @@ def staff_qr_codes(request):
 @login_required
 def staff_qr_one(request, pk):
     """Modal QR d'un membre du personnel."""
+    from core.qr import badge_payload
     teacher = get_object_or_404(Teacher, pk=pk)
-    code = f"TCH:{teacher.matricule}" if teacher.matricule else f"TCH:{teacher.pk}"
-    ctx = {
-        'teacher': teacher,
-        'code': code,
-        'qr_url': f'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data={code}',
-        'qr_url_lg': f'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data={code}',
-    }
-    return render(request, 'teachers/staff_qr_modal.html', ctx)
+    code = badge_payload('personnel', teacher.matricule or teacher.pk)
+    url = reverse('core:qr_image') + '?data=' + quote(code)
+    return render(request, 'teachers/staff_qr_modal.html', {
+        'teacher': teacher, 'code': code,
+        'qr_url': url, 'qr_url_lg': url + '&size=14',
+        'card_url': reverse('teachers:card', args=[teacher.pk]),
+    })
+
+
+@login_required
+def staff_card(request, pk):
+    """Badge du personnel — page autonome prête à imprimer."""
+    teacher = get_object_or_404(Teacher, pk=pk)
+    badge = _staff_badge(teacher, request)
+    return render(request, 'teachers/staff_card.html', {
+        'teacher': teacher, 'badge': badge,
+        'title': f"Badge — {badge['full_name']}",
+        'pdf_url': reverse('teachers:card_pdf', args=[teacher.pk]),
+        'image_url': reverse('teachers:card_image', args=[teacher.pk]),
+    })
+
+
+@login_required
+def staff_card_pdf(request, pk):
+    """PDF CR80 d'un membre du personnel, avec QR de pointage."""
+    from students.card_mali import render_badge_pdf
+    teacher = get_object_or_404(Teacher, pk=pk)
+    resp = HttpResponse(render_badge_pdf(_staff_badge(teacher, request)).read(),
+                        content_type='application/pdf')
+    filename = f"badge_{teacher.matricule}.pdf".replace(' ', '_')
+    resp['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return resp
+
+
+@login_required
+def staff_card_image(request, pk):
+    """PNG haute définition du badge personnel."""
+    from students.card_mali import render_badge_png
+    teacher = get_object_or_404(Teacher, pk=pk)
+    buf = render_badge_png(_staff_badge(teacher, request))
+    filename = f"badge_{teacher.matricule}.png".replace(' ', '_')
+    disp = 'inline' if request.GET.get('preview') == '1' else 'attachment'
+    resp = HttpResponse(buf.read(), content_type='image/png')
+    resp['Content-Disposition'] = f'{disp}; filename="{filename}"'
+    return resp
+
+
+@login_required
+def staff_card_preview(request, pk):
+    """Aperçu du badge personnel dans une modale."""
+    teacher = get_object_or_404(Teacher, pk=pk)
+    return render(request, 'teachers/staff_card_preview_modal.html', {
+        'teacher': teacher, 'badge': _staff_badge(teacher, request),
+        'pdf_url': reverse('teachers:card_pdf', args=[teacher.pk]),
+        'image_url': reverse('teachers:card_image', args=[teacher.pk]),
+        'card_url': reverse('teachers:card', args=[teacher.pk]),
+    })
+
+
+@login_required
+def staff_cards_all_pdf(request):
+    """Tous les badges du personnel actif, un par page."""
+    from reportlab.lib.units import mm
+    from reportlab.pdfgen import canvas
+    from students.card_mali import draw_badge_pdf
+    if not can(request.user, 'personnel.list'):
+        messages.error(request, 'Accès refusé.')
+        return redirect('core:dashboard')
+    school = _school_settings()
+    qs = Teacher.objects.filter(status='actif').order_by('last_name', 'first_name')
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=(85.6 * mm, 54 * mm))
+    for teacher in qs:
+        draw_badge_pdf(c, _staff_badge(teacher, request, school), y0=0)
+        c.showPage()
+    c.save()
+    buf.seek(0)
+    resp = HttpResponse(buf.read(), content_type='application/pdf')
+    resp['Content-Disposition'] = 'attachment; filename="badges_personnel.pdf"'
+    return resp

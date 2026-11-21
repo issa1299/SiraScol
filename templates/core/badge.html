@@ -1,0 +1,83 @@
+{% comment %}Badge CR80 — contexte : badge (voir core.badge.build_badge_context).{% endcomment %}
+<style>
+  .badge-card {
+    --primary: {{ badge.design.primary }};
+    --secondary: {{ badge.design.secondary }};
+    --accent: {{ badge.design.accent }};
+    --band: {{ badge.design.band }};
+    --bg: {{ badge.design.bg }};
+    --ink: {{ badge.design.ink }};
+    --muted: {{ badge.design.muted }};
+    position: relative; width: 100%; aspect-ratio: 85.6 / 54;
+    container-type: inline-size; background: var(--bg);
+    border-radius: 1.2cqw; overflow: hidden;
+    box-shadow: 0 10px 30px -8px rgba(15,23,42,.35), 0 0 0 1px rgba(15,23,42,.10);
+    font-family: 'Segoe UI', system-ui, Arial, sans-serif; color: var(--ink);
+  }
+  .badge-band { position: absolute; left:0; top:0; bottom:0; width:2.57cqw; background:var(--band); }
+  .badge-header { position:absolute; left:0; right:0; top:0; height:15.19cqw; background:var(--primary); color:#fff; }
+  .badge-headlines { position:absolute; left:4%; right:4%; top:6%; display:flex; justify-content:space-between; gap:1cqw; font-size:1.4cqw; font-weight:600; line-height:1.15; }
+  .badge-headlines span { max-width:40%; }
+  .badge-headlines span:last-child { text-align:right; }
+  .badge-school { position:absolute; left:0; right:0; top:24%; text-align:center; font-size:4.4cqw; font-weight:800; letter-spacing:.02em; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 4%; }
+  .badge-motto { position:absolute; left:0; right:0; top:66%; text-align:center; font-size:2.3cqw; font-weight:700; color:#e2e8f0; letter-spacing:.06em; }
+  .badge-title { position:absolute; left:0; right:0; top:27.5%; text-align:center; font-size:4.5cqw; font-weight:800; color:var(--secondary); letter-spacing:.01em; }
+  .badge-rule { position:absolute; left:4.67cqw; right:4.67cqw; top:35.7%; height:.35cqw; background:var(--accent); }
+  .badge-photo {
+    position:absolute; left:4.67cqw; top:24.53cqw; width:24.53cqw; height:30.96cqw;
+    border:.3cqw solid var(--accent); border-radius:.8cqw; background:#e2e8f0;
+    display:flex; align-items:center; justify-content:center; overflow:hidden;
+  }
+  .badge-photo img { width:100%; height:100%; object-fit:cover; object-position:center; }
+  .badge-initials { font-size:7cqw; font-weight:800; color:#94a3b8; }
+  .badge-fields { position:absolute; left:32.71cqw; top:24.53cqw; right:26.5cqw; }
+  .badge-field { display:flex; align-items:center; gap:.8cqw; line-height:1; height:3.86cqw; font-size:2.9cqw; }
+  .badge-field .l { flex:0 0 34%; font-size:2.5cqw; font-weight:800; color:var(--muted); text-transform:uppercase; white-space:nowrap; }
+  .badge-field .v { flex:1; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .badge-qr { position:absolute; left:75.23cqw; top:28.04cqw; width:18.22cqw; text-align:center; }
+  .badge-qr img { width:100%; aspect-ratio:1; display:block; background:#fff; border:.18cqw solid var(--accent); border-radius:.5cqw; }
+  .badge-qr .cap { display:block; margin-top:.5cqw; font-size:1.7cqw; font-weight:800; color:var(--muted); letter-spacing:.08em; }
+  .badge-qr .mat { display:block; font-size:2.2cqw; font-weight:800; color:var(--ink); }
+  .badge-footer { position:absolute; left:4.67cqw; right:4.67cqw; bottom:2.2cqw; display:flex; justify-content:space-between; gap:1cqw; font-size:2.1cqw; color:var(--muted); }
+  .badge-footer span { white-space:nowrap; }
+</style>
+
+<div class="badge-card">
+  <div class="badge-band"></div>
+  <div class="badge-header">
+    <div class="badge-headlines">
+      {% for line in badge.school.left_lines %}<span>{{ line }}</span>{% endfor %}
+      {% for line in badge.school.right_lines %}<span>{{ line }}</span>{% endfor %}
+    </div>
+    <div class="badge-school">{{ badge.school.name }}</div>
+    <div class="badge-motto">{{ badge.school.motto }}</div>
+  </div>
+
+  <div class="badge-title">{{ badge.title }}</div>
+  <div class="badge-rule"></div>
+
+  <div class="badge-photo">
+    {% if badge.photo_url %}
+    <img src="{{ badge.photo_url }}" alt="Photo de {{ badge.full_name }}">
+    {% else %}
+    <span class="badge-initials">{{ badge.initials }}</span>
+    {% endif %}
+  </div>
+
+  <div class="badge-fields">
+    {% for label, value in badge.lines %}
+    <div class="badge-field"><span class="l">{{ label }}</span><span class="v">{{ value }}</span></div>
+    {% endfor %}
+  </div>
+
+  <div class="badge-qr">
+    {% if badge.qr_url %}<img src="{{ badge.qr_url }}" alt="QR de pointage {{ badge.qr_payload }}">{% endif %}
+    <span class="cap">POINTAGE</span>
+    <span class="mat">{{ badge.matricule }}</span>
+  </div>
+
+  <div class="badge-footer">
+    <span>Valable jusqu'au {{ badge.valid_until_str }}</span>
+    <span>Dir. {{ badge.director }}</span>
+  </div>
+</div>
