@@ -1,5 +1,5 @@
 from django import forms
-from .models import Student, Enrollment
+from .models import Student, Enrollment, Parent
 from academics.models import ClassRoom, AcademicYear
 
 
@@ -25,6 +25,38 @@ class StudentForm(forms.ModelForm):
             'enrollment_date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
             'notes': forms.Textarea(attrs={'class': 'form-input', 'rows': 2}),
         }
+
+
+class ParentInfoForm(forms.Form):
+    """Informations du parent/tuteur lors de l'inscription d'un élève."""
+
+    RELATIONS = [('', '— Choisir —'), ('pere', 'Père'), ('mere', 'Mère'),
+                 ('tuteur', 'Tuteur'), ('autre', 'Autre')]
+
+    existing_parent = forms.ModelChoiceField(
+        queryset=Parent.objects.none(), required=False,
+        label='Parent déjà enregistré (facultatif)',
+        widget=forms.Select(attrs={'class': 'form-input'}),
+    )
+    first_name = forms.CharField(required=False, label='Prénom du parent', widget=forms.TextInput(attrs={'class': 'form-input'}))
+    last_name = forms.CharField(required=False, label='Nom du parent', widget=forms.TextInput(attrs={'class': 'form-input'}))
+    phone = forms.CharField(required=False, label='Téléphone du parent', widget=forms.TextInput(attrs={'class': 'form-input'}))
+    phone2 = forms.CharField(required=False, label='Téléphone 2', widget=forms.TextInput(attrs={'class': 'form-input'}))
+    email = forms.EmailField(required=False, label='E-mail du parent', widget=forms.EmailInput(attrs={'class': 'form-input'}))
+    relation = forms.ChoiceField(choices=RELATIONS, required=False, label='Lien avec l’élève', widget=forms.Select(attrs={'class': 'form-input'}))
+    is_primary = forms.BooleanField(required=False, initial=True, label='Contact principal', widget=forms.CheckboxInput(attrs={'class': 'rounded border-slate-300'}))
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['existing_parent'].queryset = Parent.objects.order_by('last_name', 'first_name')
+        self.fields['relation'].initial = 'pere'
+
+    def clean(self):
+        data = super().clean()
+        if not data.get('existing_parent') and (data.get('first_name') or data.get('last_name')):
+            if not data.get('phone'):
+                self.add_error('phone', 'Le téléphone est obligatoire pour créer un nouveau parent.')
+        return data
 
 
 class EnrollmentForm(forms.Form):

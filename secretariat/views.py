@@ -5,6 +5,7 @@ from datetime import date, timedelta
 
 from django.contrib import messages
 from django.contrib.auth.models import User
+from django.db import transaction
 from django.db.models import Count, Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -104,13 +105,26 @@ def transfert(request, pk):
         if not classroom or not target_year:
             messages.error(request, 'Choisissez une classe et une année valides.')
         else:
-            Enrollment.objects.filter(student=student, is_active=True).update(
-                is_active=False, end_status='transferred'
-            )
-            Enrollment.objects.update_or_create(
-                student=student, academic_year=target_year,
-                defaults={'classroom': classroom, 'enrollment_date': date.today(), 'is_active': True},
-            )
+            with transaction.atomic():
+                # On clôt les inscriptions actives des AUTRES années pour garder l'historique.
+                Enrollment.objects.filter(student=student, is_active=True).exclude(
+                    academic_year=target_year
+                ).update(is_active=False, end_status='transferred')
+                # Année cible : on réactive l'inscription existante sans écraser sa date
+                # d'origine (le dossier et l'historique sont conservés), sinon on la crée.
+                existing = Enrollment.objects.filter(
+                    student=student, academic_year=target_year
+                ).first()
+                if existing:
+                    existing.classroom = classroom
+                    existing.is_active = True
+                    existing.end_status = 'en_cours'
+                    existing.save(update_fields=['classroom', 'is_active', 'end_status'])
+                else:
+                    Enrollment.objects.create(
+                        student=student, classroom=classroom, academic_year=target_year,
+                        enrollment_date=date.today(), is_active=True,
+                    )
             messages.success(request, f'{student.full_name} affecté(e) à {classroom.name}.')
             return redirect('secretariat:eleves')
     return render(request, 'secretariat/transfert.html', {

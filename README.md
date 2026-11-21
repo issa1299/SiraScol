@@ -134,13 +134,21 @@ Menu **Élèves → Importer des élèves** (`/eleves/importer/`) ou, en ligne d
 
 L'import se fait **classe par classe** : on choisit d'abord la classe (et l'année), puis on dépose le fichier des élèves de cette classe.
 
+### Par l'interface (directeur / secrétaire)
+1. Télécharger le **modèle Excel** (`.xlsx`, onglets « Élèves » et « Consignes ») ou le modèle CSV.
+2. Remplir **une ligne par élève** de la classe choisie.
+3. Déposer le fichier : SiraScol **vérifie les données et détecte doublons/erreurs**, puis affiche un **aperçu** — *aucune écriture en base à cette étape*.
+4. **Confirmer** l'import : les élèves valides sont créés dans une transaction globale, avec leurs comptes et inscriptions.
+5. Un **rapport d'erreurs Excel** est téléchargeable si des lignes ont été ignorées.
+
+### En ligne de commande
 ```bash
 python manage.py import_students eleves.csv --class "1ère A"
 python manage.py import_students eleves.xlsx --class "1ère A" --year 2026-2027
 python manage.py import_students --sample > modele.csv
 ```
 
-Le modèle CSV (séparateur `;`, UTF-8) contient les colonnes :
+Le modèle (séparateur `;` pour le CSV, UTF-8) contient les colonnes :
 `Nom;Prénom;Sexe;Date de naissance;Date d'inscription;Téléphone;Lieu de naissance;Adresse;Nom du parent;Téléphone parent;Relation`
 
 La classe et l'année ne sont **pas** dans le fichier : elles sont fournies au formulaire ou à la commande (`--class`).
@@ -148,8 +156,12 @@ La classe et l'année ne sont **pas** dans le fichier : elles sont fournies au f
 - Le **matricule est généré automatiquement** (`2026-0001`).
 - Un **compte élève** est créé : identifiant `2026.0001`, mot de passe `2026-0001` (à faire changer ensuite).
 - Une **inscription** est créée pour la classe et l'année indiquées, avec les factures si les frais sont configurés.
-- Les **parents/tuteurs** et leurs comptes sont créés si les colonnes sont remplies.
-- Les lignes invalides sont ignorées et signalées dans le rapport ; aucune importation partielle d'une ligne.
+- Les **parents/tuteurs** et leurs comptes sont créés si les colonnes sont remplies ; un même parent peut être associé à plusieurs enfants.
+- Les **doublons** (même nom + prénom + date de naissance, dans le fichier ou en base) et les **lignes invalides** sont signalés avant confirmation et jamais importés ; aucune importation partielle d'une ligne.
+
+## Inscription manuelle
+
+Menu **Élèves → Ajouter un élève** (`/eleves/ajouter/`). Le secrétaire renseigne l'identité, la scolarité (classe + année, obligatoires) et les informations du parent/tuteur — existant (plusieurs enfants possibles sur un même compte) ou nouveau. Le **matricule est généré automatiquement**, les comptes élève/parent sont créés et leurs identifiants affichés, et les frais de la classe sont facturés.
 
 ## Production
 

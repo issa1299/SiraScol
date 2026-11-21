@@ -10,6 +10,7 @@ from core.permissions import (
     get_role, get_parent_students, is_staff_role, permission_required, can, role_required,
 )
 from core.access import filter_students_for_user, get_student_for_user, filter_classrooms_for_user
+from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import render, get_object_or_404, redirect
@@ -17,9 +18,12 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.utils import timezone
 
-from .models import Student, Enrollment, ParentStudent
-from .forms import StudentForm, EnrollmentForm
-from .import_service import import_rows, parse_file, sample_csv
+from .models import Student, Enrollment, Parent, ParentStudent
+from .forms import StudentForm, EnrollmentForm, ParentInfoForm
+from .import_service import (
+    parse_file, validate_rows, import_from_preview,
+    sample_csv, sample_xlsx, error_report_xlsx,
+)
 from academics.models import ClassRoom, AcademicYear
 
 
@@ -303,24 +307,27 @@ def student_create(request):
     if request.method == 'POST':
         form = StudentForm(request.POST, request.FILES)
         enr_form = EnrollmentForm(request.POST)
-        if form.is_valid():
-            student = form.save()
-            if enr_form.is_valid():
-                classroom = enr_form.cleaned_data.get('classroom')
-                year = enr_form.cleaned_data.get('academic_year')
-                if classroom and year:
+        parent_form = ParentInfoForm(request.POST, prefix='parent')
+        success_msg = ''
+        if form.is_valid() and enr_form.is_valid() and parent_form.is_valid():
+            classroom = enr_form.cleaned_data.get('classroom')
+            enr_year = enr_form.cleaned_data.get('academic_year')
+            if not classroom or not enr_year:
+                messages.error(request, "Choisissez la classe et l'année scolaire de l'élève.")
+            else:
+                with transaction.atomic():
+                    student = form.save()  # matricule généré automatiquement
                     Enrollment.objects.create(
                         student=student, classroom=classroom,
-                        academic_year=year,
+                        academic_year=enr_year,
                         enrollment_date=student.enrollment_date or timezone.now().date(),
                         is_active=True,
                     )
                     invoices = _create_invoices_for_enrollment(
-                        student, classroom, year, student.enrollment_date
+                        student, classroom, enr_year, student.enrollment_date
                     )
-                    # Montant payé à l'inscription
-                    paid_raw = (request.POST.get('amount_paid') or '').strip().replace(',', '.')
                     paid_msg = ''
+                    paid_raw = (request.POST.get('amount_paid') or '').strip().replace(',', '.')
                     if paid_raw:
                         try:
                             amount_paid = Decimal(paid_raw)
@@ -333,30 +340,58 @@ def student_create(request):
                                 student.enrollment_date, received_by=received,
                             )
                             paid_msg = f' Paiement enregistré : {recorded}.'
-            user_acc, created_acc, pwd = ensure_user_for_student(student)
-            cred = f" Compte : {user_acc.username} / mdp : {pwd}." if created_acc and pwd else ""
-            messages.success(
-                request,
-                f"Élève {student} créé (matricule {student.matricule}). "
-                f"Les frais de la classe ont été générés s'ils étaient définis."
-                + (paid_msg if classroom and year else '')
-                + cred
-            )
-            return redirect('students:detail', pk=student.pk)
+
+                    pdata = parent_form.cleaned_data
+                    parent = pdata.get('existing_parent')
+                    pfirst = (pdata.get('first_name') or '').strip()
+                    plast = (pdata.get('last_name') or '').strip()
+                    pphone = (pdata.get('phone') or '').strip()
+                    parent_msg = ''
+                    if not parent and (pfirst or plast or pphone):
+                        parent, _created = Parent.objects.get_or_create(
+                            phone=pphone or 'NON-RENSEIGNE',
+                            first_name=pfirst or 'Parent',
+                            last_name=plast or student.last_name,
+                            defaults={
+                                'phone2': pdata.get('phone2') or '',
+                                'email': pdata.get('email') or '',
+                            },
+                        )
+                    if parent:
+                        ParentStudent.objects.get_or_create(
+                            parent=parent, student=student,
+                            defaults={
+                                'relation': pdata.get('relation') or 'pere',
+                                'is_primary': bool(pdata.get('is_primary')),
+                            },
+                        )
+                        pu, p_created, p_pwd = ensure_user_for_parent(parent)
+                        if p_created and p_pwd:
+                            parent_msg = f" Compte parent : {pu.username} / mdp : {p_pwd}."
+
+                    user_acc, created_acc, pwd = ensure_user_for_student(student)
+                    cred = f" Compte élève : {user_acc.username} / mdp : {pwd}." if created_acc and pwd else ""
+                    success_msg = (
+                        f"Élève {student} inscrit (matricule {student.matricule}) "
+                        f"en {classroom.name} — {enr_year.name}."
+                        + paid_msg + ' ' + cred + ' ' + parent_msg
+                    )
+                messages.success(request, success_msg)
+                return redirect('students:detail', pk=student.pk)
     else:
         form = StudentForm(initial={'enrollment_date': timezone.now().date(), 'status': 'actif'})
         enr_form = EnrollmentForm()
+        parent_form = ParentInfoForm(prefix='parent')
 
-    if request.GET.get('modal') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-        return render(request, 'students/student_form_modal.html', {
-            'form': form, 'enr_form': enr_form, 'title': 'Nouvel élève', 'is_edit': False,
-            'form_action': request.path,
-            'classrooms_fees': classrooms_fees,
-        })
-    return render(request, 'students/student_form.html', {
-        'form': form, 'enr_form': enr_form, 'title': 'Nouvel élève', 'is_edit': False,
+    ctx = {
+        'form': form, 'enr_form': enr_form, 'parent_form': parent_form,
+        'title': 'Nouvel élève', 'is_edit': False,
         'classrooms_fees': classrooms_fees,
-    })
+    }
+    if request.GET.get('modal') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        ctx['form_action'] = request.path
+        return render(request, 'students/student_form_modal.html', ctx)
+    return render(request, 'students/student_form.html', ctx)
 
 
 @login_required
@@ -674,10 +709,7 @@ def student_list_pdf(request):
 
 @role_required('directeur', 'secretaire')
 def student_import(request):
-    """Import d'élèves CLASSE PAR CLASSE depuis un CSV ou un classeur Excel."""
-    from django.contrib import messages
-    from core.year_context import get_selected_year
-
+    """Import d'élèves CLASSE PAR CLASSE : modèle Excel → aperçu → confirmation → rapport."""
     years = AcademicYear.objects.order_by('-is_current', '-start_date', '-id')
     default_year = get_selected_year(request)
 
@@ -696,46 +728,99 @@ def student_import(request):
     if class_id:
         selected_classroom = classrooms.filter(pk=class_id).first()
 
+    action = request.POST.get('action') or request.GET.get('action') or ''
+
+    # ── Téléchargement du modèle Excel (CSV conservé pour compatibilité) ──
     if request.GET.get('sample') == '1':
-        response = HttpResponse(sample_csv(), content_type='text/csv; charset=utf-8')
         suffix = f"_{selected_classroom.name}" if selected_classroom else ''
         suffix = re.sub(r'[^A-Za-z0-9]+', '_', suffix).strip('_')
-        response['Content-Disposition'] = (
-            f'attachment; filename="modele_import{suffix}.csv"'
-        )
+        if request.GET.get('format') == 'csv':
+            response = HttpResponse(sample_csv(), content_type='text/csv; charset=utf-8')
+            response['Content-Disposition'] = (
+                f'attachment; filename="modele_import{suffix}.csv"'
+            )
+        else:
+            response = HttpResponse(
+                sample_xlsx(),
+                content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            )
+            response['Content-Disposition'] = (
+                f'attachment; filename="modele_import{suffix}.xlsx"'
+            )
         return response
 
+    # ── Rapport d'erreurs (Excel) ──
+    if request.GET.get('report_errors') == '1':
+        data = request.session.get('import_error_report')
+        if not data:
+            messages.error(request, "Aucun rapport d'erreurs disponible.")
+            return redirect('students:import')
+        response = HttpResponse(
+            error_report_xlsx(data),
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        )
+        response['Content-Disposition'] = 'attachment; filename="rapport_erreurs_import.xlsx"'
+        return response
+
+    preview = None
     report = None
     error = ''
     if request.method == 'POST':
-        if not selected_classroom:
-            error = "Veuillez choisir la classe dans laquelle importer les élèves."
-        else:
-            uploaded = request.FILES.get('file')
-            if not uploaded:
-                error = "Veuillez choisir un fichier CSV ou Excel (.csv, .xlsx)."
+        if action == 'verify':
+            # Étape 2 : analyse SANS écriture en base.
+            if not selected_classroom:
+                error = "Veuillez choisir la classe dans laquelle importer les élèves."
             else:
-                try:
-                    rows = parse_file(uploaded, uploaded.name)
-                except Exception as exc:
-                    error = f"Lecture du fichier impossible : {exc}"
+                uploaded = request.FILES.get('file')
+                if not uploaded:
+                    error = "Veuillez choisir un fichier CSV ou Excel (.csv, .xlsx)."
                 else:
-                    if not rows:
-                        error = "Le fichier ne contient aucune ligne d'élève."
+                    try:
+                        rows = parse_file(uploaded, uploaded.name)
+                    except Exception as exc:
+                        error = f"Lecture du fichier impossible : {exc}"
                     else:
-                        report = import_rows(
-                            rows,
-                            classroom=selected_classroom,
-                            create_parents=request.POST.get('create_parents') == 'on',
-                            create_invoices=request.POST.get('create_invoices') == 'on',
-                        )
-                        messages.success(
-                            request,
-                            f"Import dans {selected_classroom.name} terminé : "
-                            f"{report['created']} élève(s) créé(s), "
-                            f"{report['exists']} déjà existant(s), "
-                            f"{len(report['errors'])} erreur(s).",
-                        )
+                        if not rows:
+                            error = "Le fichier ne contient aucune ligne d'élève."
+                        else:
+                            preview = validate_rows(rows, selected_classroom)
+                            request.session['import_preview'] = {
+                                'classroom_id': selected_classroom.pk,
+                                'create_parents': request.POST.get('create_parents') == 'on',
+                                'create_invoices': request.POST.get('create_invoices') == 'on',
+                                'rows': preview['rows'],
+                            }
+        elif action == 'confirm':
+            # Étape 3 : import définitif des lignes validées.
+            stored = request.session.get('import_preview')
+            if not stored:
+                error = "L'aperçu a expiré. Veuillez déposer à nouveau le fichier."
+            else:
+                target = ClassRoom.objects.filter(pk=stored.get('classroom_id')).first()
+                if not target:
+                    error = "La classe sélectionnée n'existe plus."
+                else:
+                    report = import_from_preview(
+                        stored['rows'], target,
+                        create_parents=stored.get('create_parents', True),
+                        create_invoices=stored.get('create_invoices', True),
+                    )
+                    request.session['import_error_report'] = {
+                        'classroom': target.name,
+                        'year': target.academic_year.name,
+                        'created': report['created'],
+                        'exists': report['exists'],
+                        'errors': report['errors'],
+                    }
+                    request.session.pop('import_preview', None)
+                    messages.success(
+                        request,
+                        f"Import dans {target.name} terminé : "
+                        f"{report['created']} élève(s) créé(s), "
+                        f"{report['exists']} déjà existant(s), "
+                        f"{len(report['errors'])} erreur(s).",
+                    )
+        # action vide = simple changement d'année : on réaffiche le formulaire.
 
     existing_count = 0
     if selected_classroom:
@@ -744,6 +829,7 @@ def student_import(request):
         ).count()
 
     return render(request, 'students/student_import.html', {
+        'preview': preview,
         'report': report,
         'error': error,
         'years': years,
@@ -751,4 +837,5 @@ def student_import(request):
         'classrooms': classrooms,
         'selected_classroom': selected_classroom,
         'existing_count': existing_count,
+        'stored_preview': request.session.get('import_preview'),
     })

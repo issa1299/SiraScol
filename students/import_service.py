@@ -299,3 +299,221 @@ def sample_csv():
         'Moussa Bah', '0700000001', 'Père',
     ])
     return '\ufeff' + buf.getvalue()
+
+
+# ── Validation / aperçu (sans aucune écriture en base) ────────────────────────
+def validate_rows(rows, classroom, create_parents=True):
+    """Analyse les lignes et retourne un aperçu, SANS rien créer en base.
+
+    Chaque entrée : {line, data, status, message, display_name}.
+    status ∈ {'ok', 'existing', 'duplicate', 'error'}.
+      - ok        : nouvel élève, importable ;
+      - existing  : élève déjà en base (matricule conservé), sera réinscrit ;
+      - duplicate : doublon avec une ligne précédente du fichier, ignoré ;
+      - error     : données invalides, ignoré.
+    Les dates sont sérialisées en ISO pour pouvoir être stockées en session.
+    """
+    seen = {}
+    out = []
+    for row in rows:
+        line = row.get('_line', '?')
+        data = {
+            '_line': line,
+            'last_name': str(row.get('last_name') or '').strip(),
+            'first_name': str(row.get('first_name') or '').strip(),
+            'gender': '',
+            'date_of_birth': '',
+            'enrollment_date': '',
+            'place_of_birth': str(row.get('place_of_birth') or '').strip(),
+            'address': str(row.get('address') or '').strip(),
+            'phone': str(row.get('phone') or '').strip(),
+            'email': str(row.get('email') or '').strip(),
+            'parent_name': str(row.get('parent_name') or '').strip(),
+            'parent_phone': str(row.get('parent_phone') or '').strip(),
+            'relation': str(row.get('relation') or '').strip(),
+        }
+        problems = []
+        dob = None
+
+        if not data['last_name'] or not data['first_name']:
+            problems.append('Nom et prénom obligatoires')
+
+        try:
+            data['gender'] = _parse_gender(row.get('gender') or 'M')
+        except ValueError as exc:
+            problems.append(str(exc))
+
+        try:
+            dob = _parse_date(row.get('date_of_birth'))
+            if not dob:
+                raise ValueError('Date de naissance obligatoire')
+            data['date_of_birth'] = dob.isoformat()
+        except ValueError as exc:
+            problems.append(str(exc))
+            dob = None
+
+        try:
+            enr = _parse_date(row.get('enrollment_date')) or date.today()
+            data['enrollment_date'] = enr.isoformat()
+        except ValueError as exc:
+            problems.append(str(exc))
+
+        status = 'error' if problems else 'ok'
+        message = '; '.join(problems) if problems else 'Prêt à importer'
+
+        if status == 'ok':
+            key = (
+                data['last_name'].lower(), data['first_name'].lower(),
+                data['date_of_birth'],
+            )
+            if key in seen:
+                status = 'duplicate'
+                message = f'Doublon dans le fichier (même élève qu’en ligne {seen[key]})'
+            else:
+                seen[key] = line
+                existing = Student.objects.filter(
+                    last_name__iexact=data['last_name'],
+                    first_name__iexact=data['first_name'],
+                    date_of_birth=dob,
+                ).first()
+                if existing:
+                    status = 'existing'
+                    message = f'Déjà enregistré — matricule {existing.matricule}'
+
+        out.append({
+            'line': line,
+            'data': data,
+            'status': status,
+            'message': message,
+            'display_name': (data['last_name'] + ' ' + data['first_name']).strip() or '—',
+        })
+
+    return {
+        'rows': out,
+        'classroom': classroom,
+        'total': len(out),
+        'nb_ok': sum(1 for r in out if r['status'] == 'ok'),
+        'nb_existing': sum(1 for r in out if r['status'] == 'existing'),
+        'nb_duplicate': sum(1 for r in out if r['status'] == 'duplicate'),
+        'nb_error': sum(1 for r in out if r['status'] == 'error'),
+        'importable': sum(1 for r in out if r['status'] in ('ok', 'existing')),
+    }
+
+
+def import_from_preview(preview_rows, classroom, create_parents=True, create_invoices=True):
+    """Importe les lignes validées, dans UNE transaction globale.
+
+    Les erreurs de validation (doublons, données invalides) sont ajoutées au
+    rapport pour alimenter le rapport d'erreurs téléchargeable.
+    """
+    report = {
+        'year': classroom.academic_year,
+        'classroom': classroom,
+        'total': len(preview_rows),
+        'created': 0, 'exists': 0, 'errors': [], 'credentials': [],
+    }
+    for entry in preview_rows:
+        if entry.get('status') in ('error', 'duplicate'):
+            report['errors'].append({
+                'line': entry.get('line'), 'message': entry.get('message', ''),
+            })
+
+    with transaction.atomic():
+        for entry in preview_rows:
+            if entry.get('status') not in ('ok', 'existing'):
+                continue
+            try:
+                result = _import_one(
+                    entry['data'], classroom.academic_year, classroom,
+                    create_parents, create_invoices,
+                )
+                if result['created']:
+                    report['created'] += 1
+                else:
+                    report['exists'] += 1
+                report['credentials'].extend(result['credentials'])
+            except Exception as exc:
+                report['errors'].append({
+                    'line': entry.get('line'), 'message': str(exc),
+                })
+    return report
+
+
+# ── Modèle Excel et rapport d'erreurs ────────────────────────────────────────
+SAMPLE_EXAMPLE = [
+    'Bah', 'Ibrahim', 'M', '2010-05-12', '2026-09-01',
+    '0700000000', 'Abidjan', '', 'Moussa Bah', '0700000001', 'Père',
+]
+
+_TEMPLATE_NOTES = [
+    ['MODELE D\'IMPORT DES ELEVES — SiraScol'],
+    [],
+    ['1. Choisissez d\'abord l\'année et la classe dans l\'application.'],
+    ['2. Remplissez une ligne par élève de CETTE classe (1 import = 1 classe).'],
+    ['3. Le matricule est généré automatiquement (ex. 2026-0001).'],
+    ['4. Sexe : M ou F. Dates : AAAA-MM-JJ ou JJ/MM/AAAA.'],
+    ['5. Nom du parent : « Prénom Nom ». Relation : Père / Mère / Tuteur.'],
+    ['6. La classe et l\'année NE SONT PAS dans le fichier : elles viennent du formulaire.'],
+    ['7. Après le dépôt, un aperçu est affiché avant confirmation définitive.'],
+]
+
+
+def sample_xlsx():
+    """Retourne les octets d'un classeur Excel modèle (file 'Élèves' + 'Consignes')."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Alignment, Font, PatternFill
+    from openpyxl.utils import get_column_letter
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Élèves'
+    ws.append(SAMPLE_HEADER)
+    ws.append(SAMPLE_EXAMPLE)
+    header_fill = PatternFill('solid', fgColor='2563EB')
+    for cell in ws[1]:
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center', wrap_text=True)
+    ws.row_dimensions[1].height = 30
+    widths = [14, 14, 8, 18, 18, 15, 18, 24, 20, 16, 12]
+    for i, width in enumerate(widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = width
+    ws.freeze_panes = 'A2'
+
+    notes = wb.create_sheet('Consignes')
+    for row in _TEMPLATE_NOTES:
+        notes.append(row)
+    notes['A1'].font = Font(bold=True, size=13, color='2563EB')
+    notes.column_dimensions['A'].width = 95
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()
+
+
+def error_report_xlsx(report_data):
+    """Retourne les octets d'un classeur listant les lignes en erreur."""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = 'Erreurs'
+    ws.append(['Classe', 'Année', 'Créés', 'Existants', 'Erreurs'])
+    ws.append([
+        report_data.get('classroom', ''), report_data.get('year', ''),
+        report_data.get('created', 0), report_data.get('exists', 0),
+        len(report_data.get('errors', [])),
+    ])
+    ws.append([])
+    ws.append(['Ligne', 'Message'])
+    for cell in ws[4]:
+        cell.font = Font(bold=True, color='FFFFFF')
+        cell.fill = PatternFill('solid', fgColor='DC2626')
+    for err in report_data.get('errors', []):
+        ws.append([err.get('line', ''), err.get('message', '')])
+    ws.column_dimensions['A'].width = 12
+    ws.column_dimensions['B'].width = 85
+    buf = io.BytesIO()
+    wb.save(buf)
+    return buf.getvalue()

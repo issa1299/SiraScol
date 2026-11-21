@@ -8,7 +8,7 @@
   </a>
   <h2 class="text-xl font-bold text-slate-900 mt-2">Importer les élèves d'une classe</h2>
   <p class="text-xs text-slate-500 mt-1">
-    Choisissez d'abord la classe, puis déposez le fichier des élèves de cette classe. SiraScol crée les élèves, leurs comptes de connexion et leurs inscriptions.
+    Modèle Excel → dépôt du fichier → <strong>aperçu des données</strong> → <strong>confirmation</strong> → rapport. Aucune donnée n'est enregistrée avant votre confirmation.
   </p>
 </div>
 
@@ -22,6 +22,7 @@
   <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-xs p-5 sm:p-6">
     <form method="post" enctype="multipart/form-data" class="space-y-5">
       {% csrf_token %}
+      <input type="hidden" name="action" value="verify">
 
       <div class="rounded-xl border border-blue-200 bg-blue-50/50 p-4 space-y-4">
         <p class="text-xs font-bold text-blue-800 flex items-center gap-2">
@@ -30,7 +31,7 @@
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1.5">Année scolaire</label>
-            <select name="academic_year" onchange="this.form.action='?year='+this.value; this.form.submit()"
+            <select name="academic_year" onchange="window.location.href='?year='+this.value"
                     class="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-xs bg-white">
               {% for y in years %}
               <option value="{{ y.id }}" {% if selected_year and selected_year.id == y.id %}selected{% endif %}>{{ y.name }}</option>
@@ -62,7 +63,7 @@
 
       <div>
         <label class="block text-xs font-bold text-slate-600 mb-1.5">
-          <i class="fas fa-layer-group text-blue-600"></i> Étape 2 — Fichier des élèves de cette classe (.csv, .xlsx)
+          <i class="fas fa-file-excel text-emerald-600"></i> Étape 2 — Déposez le fichier des élèves de cette classe (.xlsx ou .csv)
         </label>
         <input type="file" name="file" accept=".csv,.xlsx,.xlsm,.txt" required
                class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2.5 bg-white file:mr-3 file:px-3 file:py-1.5 file:rounded-lg file:border-0 file:bg-blue-600 file:text-white file:text-xs file:cursor-pointer">
@@ -82,13 +83,17 @@
         </label>
       </div>
 
-      <div class="flex items-center gap-3 pt-2">
+      <div class="flex flex-wrap items-center gap-3 pt-2">
         <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-sm">
-          <i class="fas fa-file-import"></i> Lancer l'import
+          <i class="fas fa-magnifying-glass"></i> Vérifier le fichier
         </button>
         <a href="{% url 'students:import' %}?sample=1&amp;year={{ selected_year.id }}{% if selected_classroom %}&amp;classroom={{ selected_classroom.id }}{% endif %}"
+           class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold">
+          <i class="fas fa-file-excel"></i> Modèle Excel
+        </a>
+        <a href="{% url 'students:import' %}?sample=1&amp;format=csv&amp;year={{ selected_year.id }}{% if selected_classroom %}&amp;classroom={{ selected_classroom.id }}{% endif %}"
            class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">
-          <i class="fas fa-download"></i> Télécharger le modèle
+          <i class="fas fa-download"></i> Modèle CSV
         </a>
       </div>
     </form>
@@ -97,10 +102,11 @@
   <div class="bg-blue-50/60 rounded-2xl border border-blue-200 p-5 text-xs text-slate-700 space-y-3">
     <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2"><i class="fas fa-circle-info text-blue-600"></i> Comment ça marche</h3>
     <p><strong>1.</strong> Choisissez l'année puis la <strong>classe</strong> (un seul import par classe).</p>
-    <p><strong>2.</strong> Téléchargez le modèle et remplissez une ligne par élève de cette classe.</p>
-    <p><strong>3.</strong> Le <strong>matricule est généré automatiquement</strong> (ex. <code>2026-0001</code>).</p>
-    <p><strong>4.</strong> Un compte est créé : identifiant <code>2026.0001</code>, mot de passe <code>2026-0001</code>, et l'élève est inscrit dans la classe choisie.</p>
-    <p class="text-red-700"><i class="fas fa-triangle-exclamation"></i> Les lignes en erreur sont ignorées et signalées dans le rapport ; les autres sont importées.</p>
+    <p><strong>2.</strong> Téléchargez le <strong>modèle Excel</strong> et remplissez une ligne par élève.</p>
+    <p><strong>3.</strong> Déposez le fichier : SiraScol <strong>vérifie les données</strong> et affiche un <strong>aperçu</strong> (aucune écriture).</p>
+    <p><strong>4.</strong> <strong>Confirmez</strong> l'import : matricules et comptes sont créés (identifiant <code>2026.0001</code> / mot de passe <code>2026-0001</code>).</p>
+    <p><strong>5.</strong> Un <strong>rapport d'erreurs Excel</strong> est téléchargeable si certaines lignes ont été ignorées.</p>
+    <p class="text-red-700"><i class="fas fa-triangle-exclamation"></i> Doublons et lignes invalides sont signalés avant confirmation et jamais importés.</p>
     <p class="text-slate-500 pt-2 border-t border-blue-200">
       Colonnes du fichier : Nom, Prénom, Sexe (M/F), Date de naissance, Date d'inscription, Téléphone, Lieu de naissance, Adresse, Nom du parent (« Prénom Nom »), Téléphone parent, Relation (Père/Mère/Tuteur).<br>
       <strong>La classe et l'année ne sont pas dans le fichier</strong> : elles sont prises dans le formulaire.
@@ -108,14 +114,82 @@
   </div>
 </div>
 
+{% if preview %}
+<div class="mt-6 bg-white rounded-2xl border border-amber-200 shadow-xs overflow-hidden">
+  <div class="px-5 py-4 border-b border-amber-100 bg-amber-50 flex items-center justify-between flex-wrap gap-2">
+    <h3 class="font-bold text-slate-900 text-sm">
+      <i class="fas fa-eye text-amber-600"></i> Aperçu avant validation — {{ preview.classroom.name }} ({{ preview.classroom.academic_year.name }})
+    </h3>
+    <p class="text-[11px] text-amber-800 font-semibold">Aucune donnée n'a encore été enregistrée.</p>
+  </div>
+  <div class="px-5 py-3 border-b flex flex-wrap gap-2 text-[11px]">
+    <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold">{{ preview.nb_ok }} à créer</span>
+    <span class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-bold">{{ preview.nb_existing }} déjà existant(s)</span>
+    <span class="px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 font-bold">{{ preview.nb_duplicate }} doublon(s)</span>
+    <span class="px-2.5 py-1 rounded-lg bg-red-50 text-red-700 font-bold">{{ preview.nb_error }} erreur(s)</span>
+    <span class="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-bold">{{ preview.importable }} importable(s)</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-xs min-w-[640px]">
+      <thead><tr class="bg-slate-50 text-slate-500 uppercase text-[10px]">
+        <th class="text-left px-4 py-2">Ligne</th>
+        <th class="text-left px-4 py-2">Élève</th>
+        <th class="text-left px-4 py-2">Sexe</th>
+        <th class="text-left px-4 py-2">Naissance</th>
+        <th class="text-left px-4 py-2">Parent</th>
+        <th class="text-left px-4 py-2">Statut</th>
+        <th class="text-left px-4 py-2">Détail</th>
+      </tr></thead>
+      <tbody class="divide-y divide-slate-100">
+        {% for r in preview.rows %}
+        <tr class="{% if r.status == 'error' or r.status == 'duplicate' %}bg-red-50/40{% endif %}">
+          <td class="px-4 py-2 font-mono text-slate-500">{{ r.line }}</td>
+          <td class="px-4 py-2 font-semibold text-slate-800">{{ r.display_name }}</td>
+          <td class="px-4 py-2">{{ r.data.gender|default:'—' }}</td>
+          <td class="px-4 py-2">{{ r.data.date_of_birth|default:'—' }}</td>
+          <td class="px-4 py-2 text-slate-500">{{ r.data.parent_name|default:'—' }}</td>
+          <td class="px-4 py-2">
+            {% if r.status == 'ok' %}<span class="px-2 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold">À créer</span>
+            {% elif r.status == 'existing' %}<span class="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 font-bold">Existant</span>
+            {% elif r.status == 'duplicate' %}<span class="px-2 py-1 rounded-lg bg-amber-50 text-amber-700 font-bold">Doublon</span>
+            {% else %}<span class="px-2 py-1 rounded-lg bg-red-50 text-red-700 font-bold">Erreur</span>{% endif %}
+          </td>
+          <td class="px-4 py-2 text-slate-500">{{ r.message }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="px-5 py-4 border-t border-amber-100 bg-amber-50/50 flex flex-wrap items-center gap-3">
+    <form method="post" class="m-0">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="confirm">
+      <button type="submit" {% if preview.importable == 0 %}disabled{% endif %}
+              class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-sm {% if preview.importable == 0 %}opacity-50 cursor-not-allowed{% endif %}">
+        <i class="fas fa-check"></i> Confirmer l'import ({{ preview.importable }})
+      </button>
+    </form>
+    <a href="{% url 'students:import' %}" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">
+      <i class="fas fa-rotate-left"></i> Recommencer
+    </a>
+    <p class="text-[11px] text-slate-500">Les lignes « Erreur » et « Doublon » seront ignorées.</p>
+  </div>
+</div>
+{% endif %}
+
 {% if report %}
 <div class="mt-6 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
   <div class="px-5 py-4 border-b flex items-center justify-between flex-wrap gap-2">
     <h3 class="font-bold text-slate-900 text-sm"><i class="fas fa-list-check text-blue-600"></i> Rapport d'import — {{ report.classroom.name }} ({{ report.year.name }})</h3>
-    <div class="flex gap-2 text-[11px]">
+    <div class="flex flex-wrap gap-2 text-[11px] items-center">
       <span class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold">{{ report.created }} créé(s)</span>
       <span class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 font-bold">{{ report.exists }} existant(s)</span>
       <span class="px-2.5 py-1 rounded-lg bg-red-50 text-red-700 font-bold">{{ report.errors|length }} erreur(s)</span>
+      {% if report.errors %}
+      <a href="{% url 'students:import' %}?report_errors=1" class="px-2.5 py-1 rounded-lg bg-rose-600 text-white font-bold hover:bg-rose-700">
+        <i class="fas fa-file-excel"></i> Rapport d'erreurs Excel
+      </a>
+      {% endif %}
     </div>
   </div>
 
