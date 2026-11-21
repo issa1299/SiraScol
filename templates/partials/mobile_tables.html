@@ -1,0 +1,88 @@
+{# Tableaux → cartes sur mobile (ajouté à toutes les coquilles de portail). #}
+<style>
+  @media (max-width: 767px) {
+    table.mobile-card-table,
+    table.mobile-card-table tbody,
+    table.mobile-card-table tr,
+    table.mobile-card-table td { display: block; width: 100% !important; }
+
+    table.mobile-card-table thead { display: none !important; }
+
+    table.mobile-card-table tbody tr {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 1rem;
+      margin: 0 0 .75rem;
+      padding: .35rem .25rem;
+      box-shadow: 0 2px 10px rgba(15, 23, 42, .06);
+      overflow: hidden;
+    }
+
+    table.mobile-card-table tbody td {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: .75rem;
+      border: 0 !important;
+      border-bottom: 1px dashed #e2e8f0 !important;
+      text-align: left !important;
+      padding: .6rem .85rem !important;
+      font-size: .8rem;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    table.mobile-card-table tbody td:last-child { border-bottom: 0 !important; }
+
+    table.mobile-card-table tbody td::before {
+      content: attr(data-label);
+      flex: 0 0 38%;
+      max-width: 38%;
+      font-size: .62rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+      color: #64748b;
+      padding-top: .1rem;
+    }
+
+    table.mobile-card-table tbody td:empty::before { content: ''; }
+    table.mobile-card-table tbody td.mobile-card-empty::before { display: none !important; content: '' !important; }
+    table.mobile-card-table tbody td.mobile-card-empty { justify-content: center !important; text-align: center !important; color: #94a3b8; font-style: italic; }
+    table.mobile-card-table input[type="checkbox"] { width: 1.1rem; height: 1.1rem; }
+    .mobile-card-table .inline-flex { justify-content: flex-end; }
+  }
+</style>
+<script>
+(function () {
+  function transformTables() {
+    document.querySelectorAll('table:not([data-mobile-cards])').forEach(function (table) {
+      var head = table.querySelector('thead');
+      var body = table.tBodies && table.tBodies[0];
+      if (!body || !body.rows.length) return;
+      var labels = head
+        ? Array.prototype.map.call(head.querySelectorAll('th'), function (th) { return th.textContent.trim(); })
+        : [];
+      Array.prototype.forEach.call(body.rows, function (tr) {
+        Array.prototype.forEach.call(tr.cells, function (td, i) {
+          if (td.colSpan > 1) {
+            td.classList.add('mobile-card-empty');
+            return;
+          }
+          if (!td.getAttribute('data-label') && labels[i]) {
+            td.setAttribute('data-label', labels[i]);
+          }
+        });
+      });
+      table.classList.add('mobile-card-table');
+      table.setAttribute('data-mobile-cards', '1');
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', transformTables);
+  } else {
+    transformTables();
+  }
+  window.addEventListener('resize', transformTables);
+})();
+</script>

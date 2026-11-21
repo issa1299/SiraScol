@@ -84,5 +84,6 @@
 </div>
 <script>function toggleComptaSidebar(){var sb=document.getElementById('compta-sidebar'),ov=document.getElementById('compta-overlay');if(!sb||!ov)return;var o=sb.classList.toggle('-translate-x-full')===false;ov.classList.toggle('hidden',!o);document.body.style.overflow=o?'hidden':''}</script>
 {% block extra_js %}{% endblock %}
+{% include 'partials/mobile_tables.html' %}
 </body>
 </html>

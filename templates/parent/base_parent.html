@@ -130,5 +130,6 @@
 function toggleParentSidebar(){var sb=document.getElementById('parent-sidebar'),ov=document.getElementById('parent-overlay');if(!sb||!ov)return;var open=sb.classList.toggle('-translate-x-full')===false;ov.classList.toggle('hidden',!open);document.body.style.overflow=open?'hidden':'';}
 </script>
 {% block extra_js %}{% endblock %}
+{% include 'partials/mobile_tables.html' %}
 </body>
 </html>
