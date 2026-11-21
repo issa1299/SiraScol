@@ -347,8 +347,9 @@ def student_create(request):
                     plast = (pdata.get('last_name') or '').strip()
                     pphone = (pdata.get('phone') or '').strip()
                     parent_msg = ''
+                    parent_created = False
                     if not parent and (pfirst or plast or pphone):
-                        parent, _created = Parent.objects.get_or_create(
+                        parent, parent_created = Parent.objects.get_or_create(
                             phone=pphone or 'NON-RENSEIGNE',
                             first_name=pfirst or 'Parent',
                             last_name=plast or student.last_name,
@@ -365,12 +366,22 @@ def student_create(request):
                                 'is_primary': bool(pdata.get('is_primary')),
                             },
                         )
-                        pu, p_created, p_pwd = ensure_user_for_parent(parent)
-                        if p_created and p_pwd:
-                            parent_msg = f" Compte parent : {pu.username} / mdp : {p_pwd}."
+                        pu, p_user_created, p_pwd = ensure_user_for_parent(parent)
+                        # Le signal crée déjà le compte :pwd est alors None.
+                        # Mot de passe initial = téléphone (ou identifiant si absent).
+                        if parent_created or p_user_created:
+                            parent_msg = (
+                                f" Compte parent : {pu.username} / mdp : "
+                                f"{p_pwd or parent.phone or pu.username}."
+                            )
 
-                    user_acc, created_acc, pwd = ensure_user_for_student(student)
-                    cred = f" Compte élève : {user_acc.username} / mdp : {pwd}." if created_acc and pwd else ""
+                    user_acc, _created_acc, pwd = ensure_user_for_student(student)
+                    # Le signal post_save crée le compte avant cet appel : pwd vaut None.
+                    # Le mot de passe initial est donc le matricule (voir account_sync).
+                    cred = (
+                        f" Compte élève : {user_acc.username} / mdp : "
+                        f"{pwd or student.matricule}."
+                    )
                     success_msg = (
                         f"Élève {student} inscrit (matricule {student.matricule}) "
                         f"en {classroom.name} — {enr_year.name}."

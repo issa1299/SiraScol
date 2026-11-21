@@ -145,10 +145,13 @@
           }
           if (!td.getAttribute('data-label') && labels[i]) td.setAttribute('data-label', labels[i]);
           var text = td.textContent.trim();
-          pairs.push([td.getAttribute('data-label') || '', text]);
-          if (primary < 2 && text && !td.querySelector('img')) {
+          var field = td.querySelector('input, select, textarea, button');
+          pairs.push([td.getAttribute('data-label') || '', text || (field ? '…' : '')]);
+          // Les cellules contenant un champ doivent TOUJOURS rester visibles,
+          // sinon la saisie (notes, validation, pointage) devient impossible sur mobile.
+          if (field || (primary < 2 && text && !td.querySelector('img'))) {
             td.classList.add('mobile-primary');
-            primary++;
+            if (!field) primary++;
           }
         });
         if (!tr.classList.contains('mobile-no-dialog') && !tr.classList.contains('mobile-card-empty')) {

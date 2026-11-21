@@ -45,7 +45,9 @@
     .card-wrap { display: flex; justify-content: center; }
     .card {
       width: 340px;
-      height: 214px;
+      max-width: 100%;
+      height: auto;
+      min-height: 214px;
       background: #fcfcfa;
       border-radius: 6px;
       overflow: hidden;
@@ -161,6 +163,9 @@
       justify-content: center;
       background: rgba(220,38,38,.08);
       transform: rotate(-12deg);
+    }
+    @media (max-width: 767px) {
+      body { padding: 1rem 0.75rem calc(1rem + env(safe-area-inset-bottom, 0px)); }
     }
     @media print {
       body { background: #fff; padding: 0; }

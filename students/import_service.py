@@ -232,7 +232,7 @@ def _import_one(row, year, classroom, create_parents, create_invoices):
         if p_created and pu:
             credentials.append({
                 'type': 'Parent', 'name': parent.first_name + ' ' + parent.last_name,
-                'username': pu.username, 'password': p_pwd or p_phone,
+                'username': pu.username, 'password': p_pwd or p_phone or pu.username,
             })
         ParentStudent.objects.get_or_create(
             parent=parent,
