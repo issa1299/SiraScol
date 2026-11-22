@@ -21,31 +21,32 @@ SAFE = 36                     # marge de sécurité (≈ 3 mm)
 HEADER_H = 150
 LOGO_D, LOGO_X, LOGO_Y = 82, SAFE, 32
 SCHOOL_X = SAFE + LOGO_D + 20
-SCHOOL_NAME_Y, SCHOOL_NAME_FS = 42, 34
-PLACE_Y, PLACE_FS = 88, 20
+# Textes centrés verticalement dans la bande verte (hauteur 150 px).
+SCHOOL_NAME_Y, SCHOOL_NAME_FS = 66, 22      # ~22 px, blanc gras
+PLACE_Y, PLACE_FS = 100, 16                 # ville en dessous, plus petit
 RIGHT_X = W_PX - SAFE
-TITLE_Y, TITLE_FS = 45, 34
-YEAR_Y, YEAR_FS = 88, 19
+TITLE_Y, TITLE_FS = 70, 34
+YEAR_Y, YEAR_FS = 105, 16
 
 PHOTO_X, PHOTO_Y, PHOTO_W, PHOTO_H = SAFE, 182, 200, 250
-NAME_X, NAME_Y, NAME_FS = SAFE + PHOTO_W + 28, 205, 48
+NAME_X, NAME_Y, NAME_FS = SAFE + PHOTO_W + 28, 215, 48  # 20 px après l'en-tête
 
 FIELDS_X = NAME_X
-FIELDS_TOP = 292
-LABEL_FS, VALUE_FS = 15, 30
-LABEL_GAP = 4                 # écart étiquette → valeur
-GROUP_GAP = 20                # écart entre deux groupes
-PITCH = LABEL_FS + LABEL_GAP + VALUE_FS + GROUP_GAP  # 69 px
+FIELDS_TOP = 240                            # 16 px sous le nom
+LABEL_FS, VALUE_FS = 18, 30                 # étiquettes ≈ 60 % des valeurs
+LABEL_GAP = 4                               # écart étiquette → valeur
+GROUP_GAP = 19                              # écart entre deux groupes
+PITCH = LABEL_FS + LABEL_GAP + VALUE_FS + GROUP_GAP  # 71 px
 
 QR_SIZE = 190
-QR_X = W_PX - SAFE - QR_SIZE
+QR_X = 660                                  # légèrement rentré pour garder la marge droite
 QR_Y = 170
-CAPTION_Y = 470  # sous les champs, pour ne jamais les recouvrir
+CAPTION_Y = 398                             # juste sous le QR, sans le chevaucher
 CAPTION_FS = 15
 
 FOOTER_H = 80
 FOOTER_TOP = H_PX - FOOTER_H
-FOOTER_TEXT_Y = 584           # → ~37 px de marge en bas
+FOOTER_TEXT_Y = 591           # centré dans la bande, ~3,5 mm du bord bas
 FOOTER_FS = 17
 
 LABEL_COLOR = '#4f5f54'
@@ -308,18 +309,18 @@ def draw_badge_pdf(c, badge, y0=0):
 
     if school.get('name'):
         c.setFillColor(white)
-        setfont(True, 8.2)
+        setfont(True, 5.3)
         c.drawString(W(SCHOOL_X), Y(SCHOOL_NAME_Y), _trim(school['name'], 24))
     if school.get('place'):
         c.setFillColor(HexColor('#d5e6db'))
-        setfont(False, 4.8)
+        setfont(False, 3.9)
         c.drawString(W(SCHOOL_X), Y(PLACE_Y), _trim(school['place'], 30))
 
     c.setFillColor(accent)
     setfont(True, 8.2)
     c.drawRightString(W(RIGHT_X), Y(TITLE_Y), _trim(badge['title'], 22))
     c.setFillColor(HexColor('#d5e6db'))
-    setfont(False, 4.6)
+    setfont(False, 3.9)
     c.drawRightString(W(RIGHT_X), Y(YEAR_Y),
                       _trim(f"Année scolaire {badge['year_label']}", 28))
 
@@ -355,7 +356,7 @@ def draw_badge_pdf(c, badge, y0=0):
     c.drawString(W(NAME_X), Y(NAME_Y),
                  _trim(f"{badge['first_name']} {badge['last_name']}", 26))
 
-    label_size, value_size = 7.0, 7.4
+    label_size, value_size = 4.4, 7.4
     top = FIELDS_TOP
     for label, value in badge['main_fields']:
         if not value:

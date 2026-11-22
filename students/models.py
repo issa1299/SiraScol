@@ -22,7 +22,9 @@ class Student(models.Model):
     first_name = models.CharField(max_length=100, verbose_name='Prénom')
     last_name = models.CharField(max_length=100, verbose_name='Nom')
     gender = models.CharField(max_length=1, choices=GENDER_CHOICES, verbose_name='Sexe')
-    date_of_birth = models.DateField(verbose_name='Date de naissance')
+    date_of_birth = models.DateField(
+        null=True, blank=True, verbose_name='Date de naissance'
+    )
     place_of_birth = models.CharField(max_length=100, blank=True, verbose_name='Lieu de naissance')
     nationality = models.CharField(max_length=50, default='Ivoirienne', verbose_name='Nationalité')
     address = models.TextField(blank=True, verbose_name='Adresse')
