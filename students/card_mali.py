@@ -383,12 +383,13 @@ def render_badge_png(badge):
             fill=(255, 255, 255), font=f_foot)
     f_stamp = _font(15, True)
     txt = 'Cachet de la direction'
-    tw = dr.textlength(txt, font=f_stamp)
+    tw = int(round(dr.textlength(txt, font=f_stamp)))
     right_x = W_PX - _px(g['pad'])
     stamp = _fit_image(school.get('stamp_path'), _px(6), _px(6), contain=True)
     if stamp:
-        card.paste(stamp, (right_x - tw - _px(1.6) - stamp.width,
-                           H_PX - _px(g['footer_h']) + (_px(g['footer_h']) - stamp.height) // 2), stamp)
+        sx = int(right_x - tw - _px(1.6) - stamp.width)
+        sy = int(H_PX - _px(g['footer_h']) + (_px(g['footer_h']) - stamp.height) // 2)
+        card.paste(stamp, (sx, sy), stamp)
     dr.text((right_x - tw, _px(g['footer_text_top'])), txt, fill=accent, font=f_stamp)
 
     out = BytesIO()
