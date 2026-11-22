@@ -11,6 +11,7 @@ cqw = 1% de 1012 px, cqh = 1% de 638 px. Marge de sécurité : 36 px.{% endcomme
     --photo-bg: {{ badge.design.photo_bg|default:'#e7eee9' }};
     position: relative; width: 100%; aspect-ratio: 1012 / 638;
     container-type: size; background: var(--bg); color: var(--ink);
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
     border-radius: 1cqw; overflow: hidden;
     font-family: 'Segoe UI', system-ui, Arial, sans-serif;
     box-shadow: 0 10px 30px -8px rgba(15,23,42,.35), 0 0 0 1px rgba(15,23,42,.10);
@@ -58,7 +59,7 @@ cqw = 1% de 1012 px, cqh = 1% de 638 px. Marge de sécurité : 36 px.{% endcomme
 
   {# ── Nom ── #}
   .badge-name {
-    position:absolute; left:26.09cqw; top:28.21cqh; right:23cqw;
+    position:absolute; left:26.09cqw; top:32.13cqh; right:23cqw;
     font-size:4.74cqw; font-weight:800; line-height:1;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
@@ -67,7 +68,7 @@ cqw = 1% de 1012 px, cqh = 1% de 638 px. Marge de sécurité : 36 px.{% endcomme
   .badge-fields { position:absolute; left:26.09cqw; top:45.77cqh; right:23cqw; }
   .badge-field { height:10.82cqh; }
   .badge-field .lab {
-    font-size:1.48cqw; font-weight:700; color:var(--label);
+    font-size:2.86cqw; font-weight:700; color:var(--label);
     text-transform:uppercase; letter-spacing:.12em; line-height:1;
   }
   .badge-field .val {
@@ -82,8 +83,8 @@ cqw = 1% de 1012 px, cqh = 1% de 638 px. Marge de sécurité : 36 px.{% endcomme
   }
   .badge-qr img { width:100%; aspect-ratio:1; display:block; }
   .badge-qr-legend {
-    position:absolute; left:75cqw; width:23cqw; top:58.31cqh;
-    text-align:center; font-size:1.48cqw; line-height:1;
+    position:absolute; left:42cqw; width:40cqw; top:58.31cqh;
+    text-align:center; font-size:2.2cqw; line-height:1;
     color:var(--caption); white-space:nowrap;
   }
 
@@ -94,11 +95,11 @@ cqw = 1% de 1012 px, cqh = 1% de 638 px. Marge de sécurité : 36 px.{% endcomme
   }
   .badge-footer .note {
     position:absolute; left:3.56cqw; top:4.07cqh;
-    font-size:1.68cqw; line-height:1; white-space:nowrap;
+    font-size:2.0cqw; line-height:1; white-space:nowrap;
   }
   .badge-footer .stamp-label {
     position:absolute; right:3.56cqw; top:4.07cqh;
-    font-size:1.68cqw; font-weight:700; color:var(--accent); line-height:1;
+    font-size:2.0cqw; font-weight:700; color:var(--accent); line-height:1;
   }
 </style>
 

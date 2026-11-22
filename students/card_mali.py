@@ -21,14 +21,14 @@ SAFE = 36                     # marge de sécurité (≈ 3 mm)
 HEADER_H = 150
 LOGO_D, LOGO_X, LOGO_Y = 82, SAFE, 32
 SCHOOL_X = SAFE + LOGO_D + 20
-SCHOOL_NAME_Y, SCHOOL_NAME_FS = 42, 40
+SCHOOL_NAME_Y, SCHOOL_NAME_FS = 42, 34
 PLACE_Y, PLACE_FS = 88, 20
 RIGHT_X = W_PX - SAFE
 TITLE_Y, TITLE_FS = 45, 34
 YEAR_Y, YEAR_FS = 88, 19
 
 PHOTO_X, PHOTO_Y, PHOTO_W, PHOTO_H = SAFE, 182, 200, 250
-NAME_X, NAME_Y, NAME_FS = SAFE + PHOTO_W + 28, 180, 48
+NAME_X, NAME_Y, NAME_FS = SAFE + PHOTO_W + 28, 205, 48
 
 FIELDS_X = NAME_X
 FIELDS_TOP = 292
@@ -164,7 +164,7 @@ def render_badge_png(badge):
                 'LOGO', fill=accent, font=f_logo)
 
     if school.get('name'):
-        dr.text((SCHOOL_X, SCHOOL_NAME_Y), _trim(school['name'], 32),
+        dr.text((SCHOOL_X, SCHOOL_NAME_Y), _trim(school['name'], 24),
                 fill=(255, 255, 255), font=_font(SCHOOL_NAME_FS, True))
     if school.get('place'):
         dr.text((SCHOOL_X, PLACE_Y), _trim(school['place'], 32),
@@ -248,18 +248,25 @@ def render_card_png(student, enrollment, school, design_key='official'):
 
 # ═══════════════════════════════ PDF ════════════════════════════════════════
 def draw_badge_pdf(c, badge, y0=0):
+    """ Rendu PDF fidèle à l'aperçu : polices TTF embarquées, couleurs exactes. """
     from reportlab.lib.units import mm as mm_unit
     from reportlab.lib.utils import ImageReader
     from reportlab.lib.colors import HexColor, white
+    from core.badge_pdf import _init
 
+    _init()
     d = badge['design']
     school = badge['school']
+    BOLD, REG = ('VeraBd', 'Vera')
 
     def Y(top_px):
         return y0 + (H_PX - top_px) * mm_unit / PX_PER_MM
 
     def W(px):
         return px * mm_unit / PX_PER_MM
+
+    def setfont(bold, size):
+        c.setFont(BOLD if bold else REG, size)
 
     primary = HexColor(d['primary'])
     accent = HexColor(d['accent'])
@@ -280,7 +287,7 @@ def draw_badge_pdf(c, badge, y0=0):
         try:
             c.saveState()
             path = c.beginPath()
-            path.circle(cx, cy, r - 1)
+            path.circle(cx, cy, r - 0.6)
             c.clipPath(path, stroke=0, fill=0)
             c.setFillColor(white)
             c.rect(cx - r, cy - r, 2 * r, 2 * r, fill=1, stroke=0)
@@ -292,27 +299,27 @@ def draw_badge_pdf(c, badge, y0=0):
         except Exception:
             logo_drawn = False
     c.setStrokeColor(accent)
-    c.setLineWidth(1.6)
+    c.setLineWidth(1.2)
     c.circle(cx, cy, r, fill=0, stroke=1)
     if not logo_drawn:
         c.setFillColor(accent)
-        c.setFont('Helvetica-Bold', 7)
-        c.drawCentredString(cx, Y(LOGO_Y + LOGO_D / 2 + 2), 'LOGO')
+        setfont(True, 4.5)
+        c.drawCentredString(cx, Y(LOGO_Y + LOGO_D / 2 + 1.6), 'LOGO')
 
     if school.get('name'):
         c.setFillColor(white)
-        c.setFont('Helvetica-Bold', 11)
-        c.drawString(W(SCHOOL_X), Y(SCHOOL_NAME_Y), _trim(school['name'], 32))
+        setfont(True, 8.2)
+        c.drawString(W(SCHOOL_X), Y(SCHOOL_NAME_Y), _trim(school['name'], 24))
     if school.get('place'):
-        c.setFillColor(HexColor('#e5e7eb'))
-        c.setFont('Helvetica', 6)
-        c.drawString(W(SCHOOL_X), Y(PLACE_Y), _trim(school['place'], 32))
+        c.setFillColor(HexColor('#d5e6db'))
+        setfont(False, 4.8)
+        c.drawString(W(SCHOOL_X), Y(PLACE_Y), _trim(school['place'], 30))
 
     c.setFillColor(accent)
-    c.setFont('Helvetica-Bold', 9.6)
+    setfont(True, 8.2)
     c.drawRightString(W(RIGHT_X), Y(TITLE_Y), _trim(badge['title'], 22))
-    c.setFillColor(HexColor('#e5e7eb'))
-    c.setFont('Helvetica', 5.6)
+    c.setFillColor(HexColor('#d5e6db'))
+    setfont(False, 4.6)
     c.drawRightString(W(RIGHT_X), Y(YEAR_Y),
                       _trim(f"Année scolaire {badge['year_label']}", 28))
 
@@ -334,35 +341,38 @@ def draw_badge_pdf(c, badge, y0=0):
             photo_drawn = False
     if not photo_drawn:
         c.setStrokeColor(HexColor('#6b8a78'))
-        c.setLineWidth(1.6)
+        c.setLineWidth(1.4)
         cx2, cy2 = W(PHOTO_X + PHOTO_W / 2), Y(PHOTO_Y + PHOTO_H / 2 + 3)
         c.circle(cx2, cy2 + W(4), W(5), fill=0, stroke=1)
         c.arc(cx2 - W(8), cy2 - W(3), cx2 + W(8), cy2 + W(3), 180, 180)
         c.setFillColor(HexColor('#6b8a78'))
-        c.setFont('Helvetica-Bold', 4.5)
-        c.drawCentredString(cx2, cy2 - W(6), 'PHOTO')
+        setfont(True, 5)
+        c.drawCentredString(cx2, cy2 - W(5), 'PHOTO')
 
-    # Nom et champs
+    # Nom et champs (étiquettes 7 pt, valeurs 7,4 pt, espacées)
     c.setFillColor(ink)
-    c.setFont('Helvetica-Bold', 13)
+    setfont(True, 11.5)
     c.drawString(W(NAME_X), Y(NAME_Y),
                  _trim(f"{badge['first_name']} {badge['last_name']}", 26))
 
-    fl, fv = 4.2, 8.2
+    label_size, value_size = 7.0, 7.4
     top = FIELDS_TOP
     for label, value in badge['main_fields']:
+        if not value:
+            top += PITCH
+            continue
         c.setFillColor(label_color)
-        c.setFont('Helvetica-Bold', fl)
+        setfont(True, label_size)
         x = W(FIELDS_X)
         for ch in label.upper():
             c.drawString(x, Y(top), ch)
-            x += c.stringWidth(ch, 'Helvetica-Bold', fl) + 0.45
+            x += c.stringWidth(ch, BOLD, label_size) + 0.45
         c.setFillColor(ink)
-        c.setFont('Helvetica-Bold', fv)
-        c.drawString(W(FIELDS_X), Y(top + LABEL_FS + LABEL_GAP), _trim(value, 26))
+        setfont(True, value_size)
+        c.drawString(W(FIELDS_X), Y(top + 30), _trim(value, 26))
         top += PITCH
 
-    # QR
+    # QR : zone blanche, noir sur blanc
     c.setFillColor(white)
     c.setStrokeColor(HexColor('#d1d5db'))
     c.setLineWidth(0.8)
@@ -377,19 +387,19 @@ def draw_badge_pdf(c, badge, y0=0):
         except Exception:
             pass
     c.setFillColor(caption_color)
-    c.setFont('Helvetica', 4.3)
-    c.drawCentredString(W(QR_X + QR_SIZE / 2), Y(CAPTION_Y),
+    setfont(False, 7.0)
+    c.drawCentredString(W(62 * W_PX / CARD_W_MM), Y(CAPTION_Y),
                         'Scanner pour vérifier la carte')
 
     # Pied complet — une seule mention, pas de second logo
     c.setFillColor(primary)
     c.rect(0, Y(H_PX), W(W_PX), W(FOOTER_H), fill=1, stroke=0)
-    c.setFillColor(white)
-    c.setFont('Helvetica', 4.8)
+    c.setFillColor(HexColor('#d5e6db'))
+    setfont(False, 5.0)
     c.drawString(W(SAFE), Y(FOOTER_TEXT_Y),
                  'Cette carte est personnelle et doit être présentée à l’entrée.')
     c.setFillColor(accent)
-    c.setFont('Helvetica-Bold', 4.8)
+    setfont(True, 5.0)
     c.drawRightString(W(RIGHT_X), Y(FOOTER_TEXT_Y), 'Cachet de la direction')
 
 

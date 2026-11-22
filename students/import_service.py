@@ -12,6 +12,7 @@ from django.db import transaction
 from core.account_sync import ensure_user_for_parent, ensure_user_for_student
 
 from .models import Enrollment, Parent, ParentStudent, Student
+from .validators import check_birth_date
 
 
 # ── Noms de colonnes acceptés ────────────────────────────────────────────────
@@ -158,6 +159,9 @@ def _import_one(row, year, classroom, create_parents, create_invoices):
     dob = _parse_date(row.get('date_of_birth'))
     if not dob:
         raise ValueError('Date de naissance obligatoire')
+    birth_error = check_birth_date(dob)
+    if birth_error:
+        raise ValueError(birth_error)
     enrollment_date = _parse_date(row.get('enrollment_date')) or date.today()
 
     # Évite les doublons : même nom + prénom + date de naissance
@@ -351,6 +355,10 @@ def validate_rows(rows, classroom, create_parents=True):
         except ValueError as exc:
             problems.append(str(exc))
             dob = None
+        if dob:
+            birth_error = check_birth_date(dob)
+            if birth_error:
+                problems.append(birth_error)
 
         try:
             enr = _parse_date(row.get('enrollment_date')) or date.today()

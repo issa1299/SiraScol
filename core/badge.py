@@ -64,6 +64,14 @@ def get_badge_design(key):
     return BADGE_DESIGNS.get(key) or BADGE_DESIGNS['official']
 
 
+def title_words(text):
+    """Majuscule au premier mot de chaque mot, accents préservés."""
+    return ' '.join(
+        (word[:1].upper() + word[1:]) if word else ''
+        for word in str(text or '').split()
+    )
+
+
 def parents_pair(student):
     """Retourne (père/tuteur, mère) pour un élève."""
     father = mother = None
@@ -90,7 +98,9 @@ def parents_pair(student):
 
 def school_context(school):
     """En-tête de l'établissement, réutilisé par tous les rendus."""
-    name = (getattr(school, 'name', None) if school else None) or ''
+    raw_name = (getattr(school, 'name', None) if school else None) or ''
+    # Ancienne valeur par défaut laissée en base : on la traite comme absente.
+    name = '' if raw_name.strip().lower() in ('mon école', 'mon ecole') else raw_name
     motto = ''
     if school and getattr(school, 'motto', None):
         motto = school.motto
@@ -231,8 +241,9 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
             ('ET DE', mother),
             ('TÉL.', parent_phone or (person.phone or '—')),
         ]
+        dob_str = _fmt_date(person.date_of_birth) if person.date_of_birth else ''
         main_fields = [('CLASSE', classe), ('MATRICULE', person.matricule or '—'),
-                       (born_word.upper(), _fmt_date(person.date_of_birth))]
+                       (born_word.upper(), dob_str)]
         title = "CARTE SCOLAIRE"
         role_label = 'ÉLÈVE'
     else:
@@ -252,10 +263,10 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
         main_fields = [
             ('FONCTION', function or '—'),
             ('MATRICULE', person.matricule or '—'),
-            ('CATÉGORIE', category or '—'),
+            ('SERVICE', getattr(person, 'department', None) or '—'),
         ]
         year_label = school_ctx['year_label']
-        title = 'CARTE SCOLAIRE'
+        title = 'CARTE DU PERSONNEL'
         role_label = 'PERSONNEL'
 
     payload = badge_payload(kind, getattr(person, 'matricule', None) or person.pk)
@@ -275,9 +286,9 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
         'role_label': role_label,
         'title': title,
         'person': person,
-        'last_name': person.last_name or '',
-        'first_name': person.first_name or '',
-        'full_name': f'{person.last_name} {person.first_name}'.strip(),
+        'last_name': title_words(person.last_name),
+        'first_name': title_words(person.first_name),
+        'full_name': title_words(f'{person.first_name} {person.last_name}'),
         'matricule': getattr(person, 'matricule', None) or '—',
         'enrollment': enrollment,
         'lines': lines,

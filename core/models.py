@@ -3,7 +3,7 @@ from django.db import models
 
 class SchoolSettings(models.Model):
     """Paramètres généraux de l'établissement (une seule instance)"""
-    name = models.CharField(max_length=200, default='Mon École', verbose_name="Nom de l'école")
+    name = models.CharField(max_length=200, blank=True, default='', verbose_name="Nom de l'école")
     short_name = models.CharField(max_length=50, blank=True, verbose_name='Sigle')
     motto = models.CharField(max_length=255, blank=True, verbose_name='Devise')
     address = models.TextField(blank=True, verbose_name='Adresse')

@@ -932,9 +932,9 @@ def staff_card(request, pk):
 @login_required
 def staff_card_pdf(request, pk):
     """PDF CR80 d'un membre du personnel, avec QR de pointage."""
-    from students.card_mali import render_badge_pdf
+    from core.badge_pdf import render_badge_pdf
     teacher = get_object_or_404(Teacher, pk=pk)
-    resp = HttpResponse(render_badge_pdf(_staff_badge(teacher, request)).read(),
+    resp = HttpResponse(render_badge_pdf(_staff_badge(teacher, request)),
                         content_type='application/pdf')
     filename = f"badge_{teacher.matricule}.pdf".replace(' ', '_')
     resp['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -969,21 +969,13 @@ def staff_card_preview(request, pk):
 @login_required
 def staff_cards_all_pdf(request):
     """Tous les badges du personnel actif, un par page."""
-    from reportlab.lib.units import mm
-    from reportlab.pdfgen import canvas
-    from students.card_mali import draw_badge_pdf
+    from core.badge_pdf import render_badges_pdf
     if not can(request.user, 'personnel.list'):
         messages.error(request, 'Accès refusé.')
         return redirect('core:dashboard')
     school = _school_settings()
     qs = Teacher.objects.filter(status='actif').order_by('last_name', 'first_name')
-    buf = BytesIO()
-    c = canvas.Canvas(buf, pagesize=(85.6 * mm, 54 * mm))
-    for teacher in qs:
-        draw_badge_pdf(c, _staff_badge(teacher, request, school), y0=0)
-        c.showPage()
-    c.save()
-    buf.seek(0)
-    resp = HttpResponse(buf.read(), content_type='application/pdf')
+    badges = [_staff_badge(teacher, request, school) for teacher in qs]
+    resp = HttpResponse(render_badges_pdf(badges), content_type='application/pdf')
     resp['Content-Disposition'] = 'attachment; filename="badges_personnel.pdf"'
     return resp

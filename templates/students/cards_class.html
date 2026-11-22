@@ -1,6 +1,13 @@
 {% extends "base.html" %}
+{% load badge_extras %}
 {% block title %}Badges — {{ classroom.name }} — SiraScol{% endblock %}
 {% block content %}
+
+{% if school_name_missing %}
+<div class="mb-4 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs font-semibold text-amber-800">
+  <i class="fas fa-triangle-exclamation"></i> Renseignez le nom de l'école dans les paramètres.
+</div>
+{% endif %}
 
 <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
   <div>
@@ -42,10 +49,10 @@
   {% for item in items %}
   <div class="bg-white rounded-2xl border border-slate-200 p-4 break-inside-avoid">
     <div class="pointer-events-none">{% include "core/badge.html" with badge=item.badge %}</div>
-    <p class="text-xs font-bold text-slate-800 mt-3">{{ item.student.last_name }} {{ item.student.first_name }}</p>
+    <p class="text-xs font-bold text-slate-800 mt-3">{{ item.student.first_name|capwords }} {{ item.student.last_name|capwords }}</p>
     <p class="text-[11px] text-slate-400">{{ item.student.matricule }}</p>
     <div class="flex flex-wrap gap-2 mt-3 print:hidden">
-      <button type="button" onclick="openModalUrl('{% url 'students:card_preview' item.student.pk %}?template={{ current_template }}','Badge — {{ item.student.last_name }}')" class="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">
+      <button type="button" onclick="openModalUrl('{% url 'students:card_preview' item.student.pk %}?template={{ current_template }}','Badge — {{ item.student.first_name|capwords }} {{ item.student.last_name|capwords }}')" class="px-3 py-2 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">
         <i class="fas fa-eye"></i> Aperçu
       </button>
       <a href="{% url 'students:card_pdf' item.student.pk %}?template={{ current_template }}" class="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold">

@@ -1,5 +1,6 @@
 from django import forms
 from .models import Student, Enrollment, Parent
+from .validators import check_birth_date
 from academics.models import ClassRoom, AcademicYear
 
 
@@ -25,6 +26,13 @@ class StudentForm(forms.ModelForm):
             'enrollment_date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
             'notes': forms.Textarea(attrs={'class': 'form-input', 'rows': 2}),
         }
+
+    def clean_date_of_birth(self):
+        value = self.cleaned_data.get('date_of_birth')
+        error = check_birth_date(value)
+        if error:
+            raise forms.ValidationError(error)
+        return value
 
 
 class ParentInfoForm(forms.Form):

@@ -482,8 +482,8 @@ def student_card(request, pk):
 @login_required
 def student_card_pdf(request, pk):
     """PDF CR80 d'un élève, avec QR de pointage."""
-    from core.badge import build_badge_context
-    from students.card_mali import render_badge_pdf
+    from core.badge import build_badge_context, title_words
+    from core.badge_pdf import render_badge_pdf
 
     student = get_student_for_user(request.user, pk)
     school = _get_school()
@@ -491,8 +491,9 @@ def student_card_pdf(request, pk):
         student, 'eleve', school, student.current_enrollment(),
         _badge_design_key(request, school),
     )
-    resp = HttpResponse(render_badge_pdf(badge).read(), content_type='application/pdf')
-    filename = f"carte_{student.matricule}.pdf".replace(' ', '_')
+    resp = HttpResponse(render_badge_pdf(badge), content_type='application/pdf')
+    name = title_words(f"{badge['first_name']} {badge['last_name']}")
+    filename = f"carte_{name}.pdf".replace(' ', '_')
     resp['Content-Disposition'] = f'attachment; filename="{filename}"'
     return resp
 
@@ -605,6 +606,8 @@ def cards_home(request):
         'current_template': current, 'school': school, 'selected_year': year,
         'staff_rows': staff_rows, 'categories': Teacher.CATEGORY_CHOICES,
         'category': category, 'q': q,
+        'school_name_missing': not bool(school and school.name
+                                        and school.name.strip().lower() not in ('mon école', 'mon ecole')),
     })
 
 
@@ -634,18 +637,17 @@ def cards_class(request, classroom_id):
     return render(request, 'students/cards_class.html', {
         'classroom': classroom, 'items': items, 'enrollments': enrollments,
         'designs': BADGE_DESIGNS, 'current_template': current, 'school': school,
+        'school_name_missing': not bool(school and school.name
+                                        and school.name.strip().lower() not in ('mon école', 'mon ecole')),
     })
 
 
 @login_required
 def cards_class_pdf(request, classroom_id):
     """PDF groupé : un badge par page (élèves de la classe)."""
-    from io import BytesIO
-    from reportlab.lib.units import mm
-    from reportlab.pdfgen import canvas
     from academics.models import ClassRoom
     from core.badge import build_badge_context
-    from students.card_mali import draw_badge_pdf
+    from core.badge_pdf import render_badges_pdf
     from students.models import Enrollment
 
     classroom = get_object_or_404(ClassRoom, pk=classroom_id)
@@ -656,16 +658,11 @@ def cards_class_pdf(request, classroom_id):
     )
     school = _get_school()
     key = _badge_design_key(request, school)
-
-    buf = BytesIO()
-    c = canvas.Canvas(buf, pagesize=(85.6 * mm, 54 * mm))
-    for enr in enrollments:
-        badge = build_badge_context(enr.student, 'eleve', school, enr, key)
-        draw_badge_pdf(c, badge, y0=0)
-        c.showPage()
-    c.save()
-    buf.seek(0)
-    resp = HttpResponse(buf.read(), content_type='application/pdf')
+    badges = [
+        build_badge_context(enr.student, 'eleve', school, enr, key)
+        for enr in enrollments
+    ]
+    resp = HttpResponse(render_badges_pdf(badges), content_type='application/pdf')
     filename = f"cartes_{classroom.name}.pdf".replace(' ', '_')
     resp['Content-Disposition'] = f'attachment; filename="{filename}"'
     return resp
