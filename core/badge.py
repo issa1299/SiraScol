@@ -18,9 +18,10 @@ CARD_H_MM = 54.0
 # Les clés correspondent exactement à SchoolSettings.CARD_TEMPLATE_CHOICES
 BADGE_DESIGNS = {
     'official': {
-        'label': 'Officiel — fond blanc',
-        'primary': '#1e40af', 'secondary': '#1d4ed8', 'accent': '#dc2626',
-        'band': '#1e40af', 'bg': '#ffffff', 'ink': '#0f172a', 'muted': '#475569',
+        'label': 'Officiel — vert & or',
+        'primary': '#0c4a37', 'secondary': '#0c4a37', 'accent': '#e8b94a',
+        'band': '#0c4a37', 'bg': '#fcfbf7', 'ink': '#111827', 'muted': '#6b7280',
+        'photo_bg': '#e7eee9', 'footer': '#0c4a37', 'caption': '#6b7280',
     },
     'modern': {
         'label': 'Moderne — bleu nuit & or',
@@ -121,6 +122,28 @@ def school_context(school):
                 pass
 
     director = (getattr(school, 'director_name', None) if school else None) or '—'
+    city = (getattr(school, 'city', None) if school else None) or ''
+    country = (getattr(school, 'country', None) if school else None) or 'Mali'
+    place = ', '.join(x for x in (city, country) if x)
+
+    logo_url = stamp_url = None
+    if school:
+        try:
+            if school.logo:
+                logo_url = school.logo.url
+        except Exception:
+            pass
+        try:
+            if school.stamp:
+                stamp_url = school.stamp.url
+        except Exception:
+            pass
+
+    year_label = (getattr(school, 'academic_year_label', None) if school else None) or ''
+    if not year_label:
+        today = date.today()
+        year_label = f'{today.year}-{today.year + 1}'
+
     return {
         'name': name,
         'motto': motto.upper(),
@@ -129,6 +152,11 @@ def school_context(school):
         'director': director,
         'logo_path': logo_path,
         'stamp_path': stamp_path,
+        'logo_url': logo_url,
+        'stamp_url': stamp_url,
+        'city': city,
+        'place': place,
+        'year_label': year_label,
     }
 
 
@@ -177,17 +205,24 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
                 parent_phone = link.parent.phone or ''
         except Exception:
             pass
+        classe = str(enrollment.classroom) if enrollment else '—'
+        if enrollment and getattr(enrollment, 'academic_year_id', None):
+            year_label = str(enrollment.academic_year.name)
+        else:
+            year_label = school_ctx['year_label']
         lines = [
             ('NOM', (person.last_name or '').upper()),
             ('PRÉNOM', person.first_name or ''),
             ('MATRICULE', person.matricule or '—'),
-            ('CLASSE', str(enrollment.classroom) if enrollment else '—'),
+            ('CLASSE', classe),
             (born_word.upper(), _fmt_date(person.date_of_birth)),
             (child_word.upper(), father),
             ('ET DE', mother),
             ('TÉL.', parent_phone or (person.phone or '—')),
         ]
-        title = "CARTE D'IDENTITÉ SCOLAIRE"
+        main_fields = [('CLASSE', classe), ('MATRICULE', person.matricule or '—'),
+                       (born_word.upper(), _fmt_date(person.date_of_birth))]
+        title = "CARTE SCOLAIRE"
         role_label = 'ÉLÈVE'
     else:
         category = dict(getattr(person, 'CATEGORY_CHOICES', []) or []).get(
@@ -203,7 +238,13 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
             ('SERVICE', getattr(person, 'department', None) or '—'),
             ('TÉL.', getattr(person, 'phone', None) or '—'),
         ]
-        title = 'BADGE DU PERSONNEL'
+        main_fields = [
+            ('FONCTION', function or '—'),
+            ('MATRICULE', person.matricule or '—'),
+            ('CATÉGORIE', category or '—'),
+        ]
+        year_label = school_ctx['year_label']
+        title = 'CARTE SCOLAIRE'
         role_label = 'PERSONNEL'
 
     payload = badge_payload(kind, getattr(person, 'matricule', None) or person.pk)
@@ -229,6 +270,9 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
         'matricule': getattr(person, 'matricule', None) or '—',
         'enrollment': enrollment,
         'lines': lines,
+        'main_fields': main_fields,
+        'year_label': year_label,
+        'place': school_ctx['place'],
         'photo_path': _photo_path(person),
         'photo_url': _photo_url(person),
         'initials': ((person.last_name or '?')[:1] + (person.first_name or '?')[:1]).upper(),
