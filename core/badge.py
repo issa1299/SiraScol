@@ -64,12 +64,39 @@ def get_badge_design(key):
     return BADGE_DESIGNS.get(key) or BADGE_DESIGNS['official']
 
 
+PARTICLES = {'de', 'du', 'des', 'la', 'le', 'et'}
+
+
+def format_person_name(text):
+    """Capitalise chaque mot sauf les particules (de, du, des, la, le, et). Accents préservés."""
+    if not text:
+        return ''
+    words = str(text).strip().split()
+    result = []
+    for i, word in enumerate(words):
+        w_lower = word.lower()
+        if i > 0 and w_lower in PARTICLES:
+            result.append(w_lower)
+        elif "'" in word and len(word) > 2:
+            prefix, rest = word.split("'", 1)
+            p_low = prefix.lower()
+            if i > 0 and p_low in PARTICLES:
+                p_res = p_low
+            else:
+                p_res = prefix[:1].upper() + (prefix[1:].lower() if prefix.isupper() else prefix[1:])
+            r_res = rest[:1].upper() + (rest[1:].lower() if rest.isupper() else rest[1:])
+            result.append(f"{p_res}'{r_res}")
+        else:
+            if word.isupper() and len(word) > 1:
+                result.append(word[:1].upper() + word[1:].lower())
+            else:
+                result.append(word[:1].upper() + word[1:])
+    return ' '.join(result)
+
+
 def title_words(text):
-    """Majuscule au premier mot de chaque mot, accents préservés."""
-    return ' '.join(
-        (word[:1].upper() + word[1:]) if word else ''
-        for word in str(text or '').split()
-    )
+    """Alias rétro-compatible utilisant le formatage respectueux des particules."""
+    return format_person_name(text)
 
 
 def parents_pair(student):

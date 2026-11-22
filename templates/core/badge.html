@@ -1,5 +1,4 @@
-{% comment %}Badge CR80. Grille 1012×638 px partagée avec PNG/PDF.
-Le contenu est en flux (flex column) : nom, 16 px, puis les groupes étiquette + valeur.{% endcomment %}
+{% comment %}Badge CR80 (85,6 × 54 mm). Grille 1012×638 px partagée avec PNG et PDF.{% endcomment %}
 <style>
   .badge-card {
     --primary: {{ badge.design.primary }};
@@ -18,105 +17,114 @@ Le contenu est en flux (flex column) : nom, 16 px, puis les groupes étiquette +
   }
   .badge-card * { box-sizing: border-box; }
 
-  {# ── En-tête vert, texte centré verticalement ── #}
+  {# ── En-tête vert (hauteur 150 px = 23.51cqh) ── #}
   .badge-top {
-    position:absolute; left:0; right:0; top:0; height:23.51cqh;
-    background:var(--primary); display:flex; align-items:center;
-    padding:0 3.56cqw; gap:2cqw;
+    position: absolute; left: 0; right: 0; top: 0; height: 23.51cqh;
+    background: var(--primary); display: flex; align-items: center;
+    padding: 0 3.56cqw; gap: 1.98cqw;
   }
   .badge-logo {
-    width:8.10cqw; aspect-ratio:1; flex-shrink:0; border-radius:50%;
-    border:.38cqw solid var(--accent); display:flex; align-items:center;
-    justify-content:center; overflow:hidden; background:#fff;
+    width: 8.10cqw; aspect-ratio: 1; flex-shrink: 0; border-radius: 50%;
+    border: .38cqw solid var(--accent); display: flex; align-items: center;
+    justify-content: center; overflow: hidden; background: #fff;
   }
-  .badge-logo img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
-  .badge-logo span { font-size:1.15cqw; font-weight:800; color:var(--accent); }
-  .badge-brand { flex:1 1 auto; min-width:0; }
+  .badge-logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+  .badge-logo span { font-size: 1.15cqw; font-weight: 800; color: var(--accent); }
+  .badge-brand { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
   .badge-school-name {
-    font-size:2.17cqw; font-weight:800; line-height:1.1; color:#fff;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-size: 2.17cqw; /* ~22 px */
+    font-weight: 800; line-height: 1.15; color: #fff;
+    display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2;
+    -webkit-box-orient: vertical; overflow: hidden;
+    word-break: normal; overflow-wrap: break-word;
   }
   .badge-school-place {
-    font-size:1.55cqw; line-height:1.1; color:#d5e6db; margin-top:.5cqh;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-size: 1.55cqw; line-height: 1.1; color: #d5e6db; margin-top: .4cqh;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .badge-head { flex:0 0 auto; text-align:right; }
+  .badge-head { flex: 0 0 auto; text-align: right; }
   .badge-head-title {
-    font-size:3.36cqw; font-weight:800; color:var(--accent); line-height:1.05;
-    white-space:nowrap;
+    font-size: 2.96cqw; font-weight: 800; color: var(--accent); line-height: 1.05;
+    white-space: nowrap;
   }
-  .badge-head-title.staff { font-size:2.65cqw; }
+  .badge-head-title.staff { font-size: 2.37cqw; }
   .badge-head-year {
-    font-size:1.55cqw; color:#d5e6db; line-height:1.1; margin-top:.5cqh;
-    white-space:nowrap;
+    font-size: 1.55cqw; color: #d5e6db; line-height: 1.1; margin-top: .4cqh;
+    white-space: nowrap;
   }
 
-  {# ── Corps en flux : photo | infos | QR ── #}
+  {# ── Corps : photo | infos | QR — centré verticalement dans la zone crème (150 px à 558 px) ── #}
   .badge-body {
-    position:absolute; left:3.56cqw; right:3.56cqw; top:27.5cqh; bottom:9.6cqh;
-    display:flex; align-items:flex-start; gap:3cqw;
+    position: absolute; left: 3.56cqw; right: 3.56cqw; top: 23.51cqh; bottom: 12.54cqh;
+    display: flex; align-items: center; gap: 2.77cqw;
   }
   .badge-photo {
-    flex:0 0 19.76cqw; height:39.19cqh; border-radius:1cqw;
-    background:var(--photo-bg); border:.2cqw solid #d8e2da;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    overflow:hidden; gap:.8cqh;
+    flex: 0 0 19.76cqw; height: 39.18cqh; border-radius: 1cqw;
+    background: var(--photo-bg); border: .2cqw solid #d8e2da;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    overflow: hidden; gap: .8cqh;
   }
-  .badge-photo img { width:100%; height:100%; object-fit:cover; object-position:center; }
-  .badge-photo svg { width:7cqw; height:7cqw; fill:none; stroke:#6b8a78; stroke-width:1.6; }
-  .badge-photo .ph-label { font-size:1.5cqw; font-weight:800; color:#6b8a78; letter-spacing:.1em; }
+  .badge-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
+  .badge-photo svg { width: 7cqw; height: 7cqw; fill: none; stroke: #6b8a78; stroke-width: 1.6; }
+  .badge-photo .ph-label { font-size: 1.5cqw; font-weight: 800; color: #6b8a78; letter-spacing: .1em; }
 
-  .badge-info { flex:1 1 auto; min-width:0; display:flex; flex-direction:column; }
+  .badge-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
   .badge-name {
-    font-size:3.8cqw; font-weight:800; line-height:1.1;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-size: 3.16cqw; /* ~32 px gras */
+    font-weight: 800; line-height: 1.1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .badge-fields {
-    margin-top:1.58cqh;              /* 16 px sous le nom */
-    display:flex; flex-direction:column;
+    margin-top: 2.51cqh; /* 16 px sous le nom */
+    display: flex; flex-direction: column;
   }
-  .badge-field { margin-bottom:2.98cqh; }  /* 19 px entre les groupes */
+  .badge-field { margin-bottom: 2.82cqh; } /* 18 px entre chaque groupe */
+  .badge-field:last-child { margin-bottom: 0; }
   .badge-field .lab {
-    font-size:1.78cqw; font-weight:700; color:var(--label);
-    text-transform:uppercase; letter-spacing:.12em; line-height:1.1;
+    font-size: 1.28cqw; /* ~13 px */
+    font-weight: 700; color: var(--label);
+    text-transform: uppercase; letter-spacing: .08em; line-height: 1.1;
   }
   .badge-field .val {
-    margin-top:.63cqh; font-size:2.4cqw; font-weight:700; line-height:1.15;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    margin-top: .63cqh; /* 4 px sous l'étiquette */
+    font-size: 1.98cqw; /* ~20 px */
+    font-weight: 700; line-height: 1.15;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
 
+  {# ── QR Code à droite (3 mm de marge) avec légende centrée sous le QR ── #}
   .badge-qr-block {
-    flex:0 0 23cqw; display:flex; flex-direction:column; align-items:center;
+    margin-left: auto; flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
   }
   .badge-qr {
-    width:18.78cqw; padding:1.2cqw; background:#fff;
-    border:.2cqw solid #d1d5db; border-radius:1cqw;
+    width: 18.77cqw; aspect-ratio: 1; padding: 1.2cqw; background: #fff;
+    border: .2cqw solid #d1d5db; border-radius: 1.2cqw;
   }
-  .badge-qr img { width:100%; aspect-ratio:1; display:block; }
+  .badge-qr img { width: 100%; height: 100%; display: block; }
   .badge-qr-legend {
-    position:absolute; left:50.65cqw; width:40cqw; top:69.7cqh;
-    font-size:clamp(8px, 2.4cqw, 12px); line-height:1.1;
-    color:var(--caption); text-align:center; white-space:nowrap;
+    margin-top: 1.25cqh; /* 8 px sous le QR */
+    font-size: 1.18cqw; /* 12 px (8 pt) */
+    line-height: 1.1; color: var(--caption);
+    text-align: center; white-space: nowrap;
   }
 
-  {# ── Pied vert, texte centré verticalement ── #}
+  {# ── Pied vert (hauteur 80 px = 12.54cqh) ── #}
   .badge-footer {
-    position:absolute; left:0; right:0; bottom:0; height:9.26cqh;
-    background:var(--primary); color:#fff;
-    display:flex; align-items:center; justify-content:space-between;
-    padding:0 3.56cqw;
+    position: absolute; left: 0; right: 0; bottom: 0; height: 12.54cqh;
+    background: var(--primary); color: #fff;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 3.56cqw;
   }
-  .badge-footer .note { font-size:2.0cqw; line-height:1.1; }
+  .badge-footer .note { font-size: 1.68cqw; line-height: 1.1; }
   .badge-footer .stamp-label {
-    font-size:2.0cqw; font-weight:700; color:var(--accent); white-space:nowrap;
+    font-size: 1.68cqw; font-weight: 700; color: var(--accent); white-space: nowrap;
   }
 
-  {# ── Impression PVC : carte carrée, sans ombre ni bordure ── #}
+  {# ── Impression PVC : sans ombre ni bordure externe ── #}
   @media print {
     .badge-card, .badge-photo, .badge-qr {
       border-radius: 0 !important;
       box-shadow: none !important;
-      border: 0 !important;
     }
     .badge-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
@@ -166,10 +174,9 @@ Le contenu est en flux (flex column) : nom, 16 px, puis les groupes étiquette +
       <div class="badge-qr">
         {% if badge.qr_url %}<img src="{{ badge.qr_url }}" alt="QR {{ badge.qr_payload }}">{% endif %}
       </div>
+      <div class="badge-qr-legend">Scanner pour vérifier la carte</div>
     </div>
   </div>
-
-  <div class="badge-qr-legend">Scanner pour vérifier la carte</div>
 
   <div class="badge-footer">
     <span class="note">Cette carte est personnelle et doit être présentée à l'entrée.</span>
@@ -179,21 +186,32 @@ Le contenu est en flux (flex column) : nom, 16 px, puis les groupes étiquette +
 
 <script>
 (function () {
-  // Le nom reste sur une ligne et rétrécit automatiquement s'il est trop long.
-  function shrink(root) {
+  function adjust(root) {
+    // 1. Nom de l'école : jusqu'à 2 lignes, réduit auto jusqu'à 14 px pour que tout tienne
+    root.querySelectorAll('.badge-school-name').forEach(function (el) {
+      var size = parseFloat(getComputedStyle(el).fontSize) || 22;
+      var minSize = 14;
+      var guard = 30;
+      while ((el.scrollHeight > el.clientHeight + 1 || el.scrollWidth > el.clientWidth + 1) && size > minSize && guard--) {
+        size -= 0.5;
+        el.style.fontSize = size + 'px';
+      }
+    });
+
+    // 2. Nom de la personne : réduit automatiquement s'il dépasse la colonne
     root.querySelectorAll('.badge-name').forEach(function (el) {
-      var size = parseFloat(getComputedStyle(el).fontSize) || 16;
-      var guard = 40;
-      while (el.scrollWidth > el.clientWidth + 1 && size > 9 && guard--) {
+      var size = parseFloat(getComputedStyle(el).fontSize) || 32;
+      var guard = 30;
+      while (el.scrollWidth > el.clientWidth + 1 && size > 18 && guard--) {
         size -= 0.5;
         el.style.fontSize = size + 'px';
       }
     });
   }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () { shrink(document); });
+    document.addEventListener('DOMContentLoaded', function () { adjust(document); });
   } else {
-    shrink(document);
+    adjust(document);
   }
 })();
 </script>

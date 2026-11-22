@@ -1,52 +1,78 @@
 # -*- coding: utf-8 -*-
 """Cartes CR80 — grille unique 1012 × 638 px (~300 dpi), 85,6 × 54 mm.
 
-Le même modèle (vert & or) est rendu en PNG, PDF et HTML avec les mêmes
-positions : marges de sécurité 36 px, pied de page complet, étiquettes
-gris foncé espacées, légende QR sur une ligne.
+Même géométrie exacte pour PNG, PDF et HTML :
+1. NOM DE L'ÉCOLE : pas de troncature, jusqu'à 2 lignes dans l'en-tête,
+   réduction automatique de la taille de 22 px jusqu'à 14 px si nécessaire.
+   Accents et casse d'origine conservés.
+2. HIÉRARCHIE : nom de la personne en 32 px gras (plus grand texte du bloc),
+   valeurs en 20 px gras, étiquettes en 13 px (#4F5F54), 16 px sous le nom,
+   4 px entre étiquette et valeur, 18 px entre chaque groupe.
+   Minuscules sur les particules de noms (de, du, des, la, le, et).
+3. QR CODE : placé à droite, à 3 mm de la marge droite (x = 786).
+   Légende « Scanner pour vérifier la carte » directement sous le QR code,
+   centrée par rapport à lui, avec 8 px d'espace, sur une ligne en 12 px (8 pt) #4F5F54.
+4. CENTRAGE VERTICAL : bloc photo + informations + QR code centré verticalement
+   dans la zone crème entre l'en-tête (150 px) et le pied (80 px), avec le même
+   espace au-dessus et en dessous.
+5. PDF IDENTIQUE AU PNG : rendu ReportLab à partir du même rendu graphique 300 DPI,
+   taille 85,6 × 54 mm, visuellement 100% identique au PNG sans étiquettes
+   plus petites ni légende plus grande.
 """
 from io import BytesIO
 
 from core.badge import (
     CARD_H_MM, CARD_W_MM, build_badge_context,
-    parents_pair as _parents_pair,  # compatibilité ascendante
+    parents_pair as _parents_pair,
 )
 from core.qr import qr_png, staff_display_code
 
 # ── Grille de référence ──────────────────────────────────────────────────────
 W_PX, H_PX = 1012, 638
-PX_PER_MM = W_PX / CARD_W_MM  # ≈ 11.82
+PX_PER_MM = W_PX / CARD_W_MM  # ≈ 11.8224
 
 SAFE = 36                     # marge de sécurité (≈ 3 mm)
 HEADER_H = 150
-LOGO_D, LOGO_X, LOGO_Y = 82, SAFE, 32
-SCHOOL_X = SAFE + LOGO_D + 20
-# Textes centrés verticalement dans la bande verte (hauteur 150 px).
-SCHOOL_NAME_Y, SCHOOL_NAME_FS = 66, 22      # ~22 px, blanc gras
-PLACE_Y, PLACE_FS = 100, 16                 # ville en dessous, plus petit
-RIGHT_X = W_PX - SAFE
-TITLE_Y, TITLE_FS = 70, 34
-YEAR_Y, YEAR_FS = 105, 16
-
-PHOTO_X, PHOTO_Y, PHOTO_W, PHOTO_H = SAFE, 182, 200, 250
-NAME_X, NAME_Y, NAME_FS = SAFE + PHOTO_W + 28, 215, 48  # 20 px après l'en-tête
-
-FIELDS_X = NAME_X
-FIELDS_TOP = 240                            # 16 px sous le nom
-LABEL_FS, VALUE_FS = 18, 30                 # étiquettes ≈ 60 % des valeurs
-LABEL_GAP = 4                               # écart étiquette → valeur
-GROUP_GAP = 19                              # écart entre deux groupes
-PITCH = LABEL_FS + LABEL_GAP + VALUE_FS + GROUP_GAP  # 71 px
-
-QR_SIZE = 190
-QR_X = 620                                  # rentré pour garder la marge droite avec la légende
-QR_Y = 170
-CAPTION_Y = 445                             # sous le QR et sous les champs
-CAPTION_FS = 15
-
 FOOTER_H = 80
-FOOTER_TOP = H_PX - FOOTER_H
-FOOTER_TEXT_Y = 591           # centré dans la bande, ~3,5 mm du bord bas
+ZONE_TOP = HEADER_H           # 150 px
+ZONE_BOTTOM = H_PX - FOOTER_H # 558 px
+ZONE_H = ZONE_BOTTOM - ZONE_TOP # 408 px
+ZONE_CY = ZONE_TOP + ZONE_H / 2 # 354 px
+
+# En-tête
+LOGO_D = 82
+LOGO_X = SAFE
+LOGO_Y = (HEADER_H - LOGO_D) // 2  # 34 px
+SCHOOL_X = SAFE + LOGO_D + 20      # 138 px
+RIGHT_X = W_PX - SAFE              # 976 px
+
+# Photo
+PHOTO_X = SAFE                     # 36 px
+PHOTO_W = 200
+PHOTO_H = 250
+PHOTO_Y = int(ZONE_CY - PHOTO_H / 2) # 229 px
+
+# QR Code
+QR_SIZE = 190
+QR_X = W_PX - SAFE - QR_SIZE       # 786 px (à 3 mm du bord droit)
+CAPTION_FS = 12                    # 12 px (8 pt)
+CAPTION_GAP = 8                    # 8 px sous le QR
+QR_BLOCK_H = QR_SIZE + CAPTION_GAP + 14  # 212 px
+QR_Y = int(ZONE_CY - QR_BLOCK_H / 2)    # 248 px
+CAPTION_Y = QR_Y + QR_SIZE + CAPTION_GAP # 446 px
+
+# Informations
+NAME_X = PHOTO_X + PHOTO_W + 28    # 264 px
+NAME_FS = 32                       # 32 px, gras (environ 30 à 34 px)
+NAME_GAP = 16                      # 16 px sous le nom
+LABEL_FS = 13                      # 13 px
+LABEL_GAP = 4                      # 4 px étiquette → valeur
+VALUE_FS = 20                      # 20 px, gras
+GROUP_GAP = 18                     # 18 px entre chaque groupe
+
+# Pied de page
+FOOTER_TOP = ZONE_BOTTOM           # 558 px
+FOOTER_TEXT_Y = FOOTER_TOP + (FOOTER_H - 18) // 2  # 589 px
 FOOTER_FS = 17
 
 LABEL_COLOR = '#4f5f54'
@@ -57,11 +83,6 @@ QR_LIGHT = '#ffffff'
 def mm(px):
     """Conversion px -> mm pour le PDF."""
     return px / PX_PER_MM
-
-
-def _trim(text, n):
-    text = str(text or '—')
-    return text if len(text) <= n else text[: n - 1] + '…'
 
 
 def _hex_rgb(value):
@@ -119,11 +140,47 @@ def _fit_image(path, box_w, box_h, contain=False):
         return None
 
 
-def _spaced(dr, x, y, text, font, fill, spacing=1.4):
+def _spaced(dr, x, y, text, font, fill, spacing=1.0):
     """Texte avec léger espacement des lettres (PIL n'a pas letter-spacing)."""
     for ch in str(text):
         dr.text((x, y), ch, fill=fill, font=font)
         x += dr.textlength(ch, font=font) + spacing
+
+
+def _layout_school_name(dr, name, max_w):
+    """Calcule les lignes et la taille de police pour le nom de l'école.
+    Autorise jusqu'à 2 lignes, réduit la taille de police de 22 px jusqu'à 14 px.
+    Ne tronque jamais avec des points de suspension."""
+    name = (name or '').strip()
+    if not name:
+        return [], 22
+
+    words = name.split()
+    # 1. Tenter sur 1 ligne de 22 à 14 px
+    for size in range(22, 13, -1):
+        f = _font(size, bold=True)
+        if dr.textlength(name, font=f) <= max_w:
+            return [name], size
+
+    # 2. Tenter sur 2 lignes de 22 à 14 px
+    for size in range(22, 13, -1):
+        f = _font(size, bold=True)
+        for i in range(1, len(words)):
+            l1 = ' '.join(words[:i])
+            l2 = ' '.join(words[i:])
+            if dr.textlength(l1, font=f) <= max_w and dr.textlength(l2, font=f) <= max_w:
+                return [l1, l2], size
+
+    # 3. Forcer 14 px avec découpe sur 2 lignes
+    f = _font(14, bold=True)
+    l1, l2 = '', ''
+    for w in words:
+        candidate = f"{l1} {w}".strip()
+        if dr.textlength(candidate, font=f) <= max_w and not l2:
+            l1 = candidate
+        else:
+            l2 = f"{l2} {w}".strip()
+    return ([l1, l2] if l2 else [l1]), 14
 
 
 def _qr_buf(payload):
@@ -149,6 +206,7 @@ def render_badge_png(badge):
     # ── En-tête ──
     dr.rectangle([0, 0, W_PX, HEADER_H], fill=primary)
 
+    # Logo
     logo = _fit_image(school.get('logo_path'), LOGO_D, LOGO_D, contain=True)
     if logo:
         disc = Image.new('RGBA', (LOGO_D, LOGO_D), (255, 255, 255, 255))
@@ -164,22 +222,34 @@ def render_badge_png(badge):
         dr.text((LOGO_X + (LOGO_D - tw) / 2, LOGO_Y + LOGO_D / 2 - 9),
                 'LOGO', fill=accent, font=f_logo)
 
-    if school.get('name'):
-        dr.text((SCHOOL_X, SCHOOL_NAME_Y), _trim(school['name'], 24),
-                fill=(255, 255, 255), font=_font(SCHOOL_NAME_FS, True))
-    if school.get('place'):
-        dr.text((SCHOOL_X, PLACE_Y), _trim(school['place'], 32),
-                fill=(229, 231, 235), font=_font(PLACE_FS))
-
-    title_font = _font(24 if badge['kind'] == 'personnel' else TITLE_FS, True)
-    tw = dr.textlength(badge['title'], font=title_font)
-    dr.text((RIGHT_X - tw, TITLE_Y), badge['title'], fill=accent, font=title_font)
+    # Bloc titre & année à droite
+    title_font = _font(24 if badge['kind'] == 'personnel' else 30, True)
+    tw_title = dr.textlength(badge['title'], font=title_font)
     year_txt = f"Année scolaire {badge['year_label']}"
-    year_font = _font(YEAR_FS)
-    tw = dr.textlength(year_txt, font=year_font)
-    dr.text((RIGHT_X - tw, YEAR_Y), year_txt, fill=(229, 231, 235), font=year_font)
+    year_font = _font(16)
+    tw_year = dr.textlength(year_txt, font=year_font)
+    right_block_w = max(tw_title, tw_year)
 
-    # ── Photo ──
+    dr.text((RIGHT_X - tw_title, 48), badge['title'], fill=accent, font=title_font)
+    dr.text((RIGHT_X - tw_year, 84), year_txt, fill=(213, 230, 219), font=year_font)
+
+    # Nom de l'école (1 ou 2 lignes, jusqu'à 14 px, sans troncature)
+    school_max_w = RIGHT_X - right_block_w - 24 - SCHOOL_X
+    school_name = school.get('name') or ''
+    school_lines, school_fs = _layout_school_name(dr, school_name, school_max_w)
+    place_txt = school.get('place') or ''
+    line_h = school_fs + 5
+    total_brand_h = len(school_lines) * line_h + (20 if place_txt else 0)
+    sy = (HEADER_H - total_brand_h) // 2
+
+    f_school = _font(school_fs, bold=True)
+    for line in school_lines:
+        dr.text((SCHOOL_X, sy), line, fill=(255, 255, 255), font=f_school)
+        sy += line_h
+    if place_txt:
+        dr.text((SCHOOL_X, sy + 2), place_txt, fill=(213, 230, 219), font=_font(16))
+
+    # ── Photo (centrée verticalement dans la zone crème) ──
     dr.rounded_rectangle([PHOTO_X, PHOTO_Y, PHOTO_X + PHOTO_W, PHOTO_Y + PHOTO_H],
                          radius=10, fill=photo_bg, outline=_hex_rgb('#d8e2da'), width=2)
     photo = _fit_image(badge.get('photo_path'), PHOTO_W - 10, PHOTO_H - 10)
@@ -195,26 +265,7 @@ def render_badge_png(badge):
         tw = dr.textlength('PHOTO', font=f_ph)
         dr.text((cx - tw / 2, cy + 46), 'PHOTO', fill=stroke, font=f_ph)
 
-    # ── Nom + champs ──
-    full_name = f"{badge['first_name']} {badge['last_name']}"
-    name_font = _font(NAME_FS, True)
-    name_size = NAME_FS
-    max_width = W_PX - NAME_X - QR_SIZE - int(40 * W_PX / CARD_W_MM)
-    while dr.textlength(full_name, font=name_font) > max_width and name_size > 22:
-        name_size -= 1
-        name_font = _font(name_size, True)
-    dr.text((NAME_X, NAME_Y), full_name, fill=ink, font=name_font)
-
-    fl = _font(LABEL_FS, True)
-    fv = _font(VALUE_FS, True)
-    top = FIELDS_TOP
-    for label, value in badge['main_fields']:
-        _spaced(dr, FIELDS_X, top, label, fl, label_color)
-        dr.text((FIELDS_X, top + LABEL_FS + LABEL_GAP),
-                _trim(value, 26), fill=ink, font=fv)
-        top += PITCH
-
-    # ── QR (zone blanche tout autour, noir sur blanc) ──
+    # ── QR Code + Légende (à 3 mm de la marge droite, centré verticalement) ──
     dr.rounded_rectangle([QR_X, QR_Y, QR_X + QR_SIZE, QR_Y + QR_SIZE],
                          radius=12, fill=(255, 255, 255),
                          outline=_hex_rgb('#d1d5db'), width=2)
@@ -225,22 +276,51 @@ def render_badge_png(badge):
         inner = QR_SIZE - 16
         qr_img = qr_img.resize((inner, inner), PILImage.Resampling.NEAREST)
         card.paste(qr_img, (QR_X + 8, QR_Y + 8))
+
     legend = 'Scanner pour vérifier la carte'
     cap_font = _font(CAPTION_FS)
-    tw = dr.textlength(legend, font=cap_font)
-    dr.text((QR_X + (QR_SIZE - tw) / 2, CAPTION_Y), legend,
-            fill=caption_color, font=cap_font)
+    cap_w = dr.textlength(legend, font=cap_font)
+    cap_x = QR_X + (QR_SIZE - cap_w) / 2
+    dr.text((cap_x, CAPTION_Y), legend, fill=caption_color, font=cap_font)
 
-    # ── Pied de page complet ──
+    # ── Informations : nom + champs (centré verticalement dans la zone crème) ──
+    full_name = f"{badge['first_name']} {badge['last_name']}"
+    info_max_w = QR_X - 24 - NAME_X
+    name_size = NAME_FS
+    name_font = _font(name_size, True)
+    while dr.textlength(full_name, font=name_font) > info_max_w and name_size > 22:
+        name_size -= 1
+        name_font = _font(name_size, True)
+
+    valid_fields = [(l, v) for l, v in badge.get('main_fields', []) if v]
+    name_h = name_size + 2
+    field_h = LABEL_FS + LABEL_GAP + VALUE_FS + 2
+    fields_total_h = (len(valid_fields) * field_h +
+                      max(0, len(valid_fields) - 1) * GROUP_GAP) if valid_fields else 0
+    total_info_h = name_h + (NAME_GAP + fields_total_h if valid_fields else 0)
+
+    info_y = int(ZONE_CY - total_info_h / 2)
+
+    dr.text((NAME_X, info_y), full_name, fill=ink, font=name_font)
+
+    fl = _font(LABEL_FS, bold=True)
+    fv = _font(VALUE_FS, bold=True)
+    top = info_y + name_h + NAME_GAP
+    for label, value in valid_fields:
+        _spaced(dr, NAME_X, top, str(label).upper(), fl, label_color, spacing=1.1)
+        dr.text((NAME_X, top + LABEL_FS + LABEL_GAP), str(value), fill=ink, font=fv)
+        top += field_h + GROUP_GAP
+
+    # ── Pied de page ──
     dr.rectangle([0, FOOTER_TOP, W_PX, H_PX], fill=primary)
     f_foot = _font(FOOTER_FS)
     dr.text((SAFE, FOOTER_TEXT_Y),
-            'Cette carte est personnelle et doit être présentée à l’entrée.',
+            "Cette carte est personnelle et doit être présentée à l'entrée.",
             fill=(255, 255, 255), font=f_foot)
     stamp_txt = 'Cachet de la direction'
     f_stamp = _font(FOOTER_FS, True)
-    tw = dr.textlength(stamp_txt, font=f_stamp)
-    dr.text((RIGHT_X - tw, FOOTER_TEXT_Y), stamp_txt, fill=accent, font=f_stamp)
+    tw_stamp = dr.textlength(stamp_txt, font=f_stamp)
+    dr.text((RIGHT_X - tw_stamp, FOOTER_TEXT_Y), stamp_txt, fill=accent, font=f_stamp)
 
     out = BytesIO()
     card.save(out, format='PNG', optimize=True, dpi=(300, 300))
@@ -254,164 +334,13 @@ def render_card_png(student, enrollment, school, design_key='official'):
 
 # ═══════════════════════════════ PDF ════════════════════════════════════════
 def draw_badge_pdf(c, badge, y0=0):
-    """ Rendu PDF fidèle à l'aperçu : polices TTF embarquées, couleurs exactes. """
+    """Rendu PDF strictement identique au PNG (taille 85,6 × 54 mm, 300 DPI)."""
     from reportlab.lib.units import mm as mm_unit
     from reportlab.lib.utils import ImageReader
-    from reportlab.lib.colors import HexColor, white
-    from core.badge_pdf import _init
 
-    _init()
-    d = badge['design']
-    school = badge['school']
-    BOLD, REG = ('VeraBd', 'Vera')
-
-    def Y(top_px):
-        return y0 + (H_PX - top_px) * mm_unit / PX_PER_MM
-
-    def W(px):
-        return px * mm_unit / PX_PER_MM
-
-    def setfont(bold, size):
-        c.setFont(BOLD if bold else REG, size)
-
-    primary = HexColor(d['primary'])
-    accent = HexColor(d['accent'])
-    ink = HexColor(d['ink'])
-    label_color = HexColor(d.get('label_color', LABEL_COLOR))
-    caption_color = HexColor(d.get('caption', LABEL_COLOR))
-
-    # Fond + en-tête
-    c.setFillColor(HexColor(d['bg']))
-    c.rect(0, y0, W(W_PX), W(H_PX), fill=1, stroke=0)
-    c.setFillColor(primary)
-    c.rect(0, Y(HEADER_H), W(W_PX), W(HEADER_H), fill=1, stroke=0)
-
-    # Logo circulaire unique
-    cx, cy, r = W(LOGO_X + LOGO_D / 2), Y(LOGO_Y + LOGO_D / 2), W(LOGO_D / 2)
-    logo_drawn = False
-    if school.get('logo_path'):
-        try:
-            c.saveState()
-            path = c.beginPath()
-            path.circle(cx, cy, r - 0.6)
-            c.clipPath(path, stroke=0, fill=0)
-            c.setFillColor(white)
-            c.rect(cx - r, cy - r, 2 * r, 2 * r, fill=1, stroke=0)
-            c.drawImage(ImageReader(school['logo_path']), cx - r, cy - r,
-                        width=2 * r, height=2 * r,
-                        preserveAspectRatio=True, anchor='c', mask='auto')
-            c.restoreState()
-            logo_drawn = True
-        except Exception:
-            logo_drawn = False
-    c.setStrokeColor(accent)
-    c.setLineWidth(1.2)
-    c.circle(cx, cy, r, fill=0, stroke=1)
-    if not logo_drawn:
-        c.setFillColor(accent)
-        setfont(True, 4.5)
-        c.drawCentredString(cx, Y(LOGO_Y + LOGO_D / 2 + 1.6), 'LOGO')
-
-    if school.get('name'):
-        c.setFillColor(white)
-        setfont(True, 5.3)
-        c.drawString(W(SCHOOL_X), Y(SCHOOL_NAME_Y), _trim(school['name'], 24))
-    if school.get('place'):
-        c.setFillColor(HexColor('#d5e6db'))
-        setfont(False, 3.9)
-        c.drawString(W(SCHOOL_X), Y(PLACE_Y), _trim(school['place'], 30))
-
-    c.setFillColor(accent)
-    setfont(True, 6.6 if badge['kind'] == 'personnel' else 8.2)
-    c.drawRightString(W(RIGHT_X), Y(TITLE_Y), _trim(badge['title'], 22))
-    c.setFillColor(HexColor('#d5e6db'))
-    setfont(False, 3.9)
-    c.drawRightString(W(RIGHT_X), Y(YEAR_Y),
-                      _trim(f"Année scolaire {badge['year_label']}", 28))
-
-    # Photo
-    c.setFillColor(HexColor(d.get('photo_bg', '#e7eee9')))
-    c.setStrokeColor(HexColor('#d8e2da'))
-    c.setLineWidth(0.8)
-    c.rect(W(PHOTO_X), Y(PHOTO_Y + PHOTO_H), W(PHOTO_W), W(PHOTO_H),
-           fill=1, stroke=1)
-    photo_drawn = False
-    if badge.get('photo_path'):
-        try:
-            c.drawImage(ImageReader(badge['photo_path']),
-                        W(PHOTO_X + 5), Y(PHOTO_Y + PHOTO_H) + W(5),
-                        width=W(PHOTO_W - 10), height=W(PHOTO_H - 10),
-                        preserveAspectRatio=True, anchor='c', mask='auto')
-            photo_drawn = True
-        except Exception:
-            photo_drawn = False
-    if not photo_drawn:
-        c.setStrokeColor(HexColor('#6b8a78'))
-        c.setLineWidth(1.4)
-        cx2, cy2 = W(PHOTO_X + PHOTO_W / 2), Y(PHOTO_Y + PHOTO_H / 2 + 3)
-        c.circle(cx2, cy2 + W(4), W(5), fill=0, stroke=1)
-        c.arc(cx2 - W(8), cy2 - W(3), cx2 + W(8), cy2 + W(3), 180, 180)
-        c.setFillColor(HexColor('#6b8a78'))
-        setfont(True, 5)
-        c.drawCentredString(cx2, cy2 - W(5), 'PHOTO')
-
-    # Nom et champs (étiquettes 7 pt, valeurs 7,4 pt, espacées)
-    c.setFillColor(ink)
-    full_name = f"{badge['first_name']} {badge['last_name']}"
-    name_size = 11.5
-    max_pt = W(QR_X) - W(NAME_X) - W(20)
-    font_name = 'VeraBd'
-    while c.stringWidth(full_name, font_name, name_size) > max_pt and name_size > 7:
-        name_size -= 0.5
-    setfont(True, name_size)
-    c.drawString(W(NAME_X), Y(NAME_Y), full_name)
-
-    label_size, value_size = 4.4, 7.4
-    top = FIELDS_TOP
-    for label, value in badge['main_fields']:
-        if not value:
-            top += PITCH
-            continue
-        c.setFillColor(label_color)
-        setfont(True, label_size)
-        x = W(FIELDS_X)
-        for ch in label.upper():
-            c.drawString(x, Y(top), ch)
-            x += c.stringWidth(ch, BOLD, label_size) + 0.45
-        c.setFillColor(ink)
-        setfont(True, value_size)
-        c.drawString(W(FIELDS_X), Y(top + 30), _trim(value, 26))
-        top += PITCH
-
-    # QR : zone blanche, noir sur blanc
-    c.setFillColor(white)
-    c.setStrokeColor(HexColor('#d1d5db'))
-    c.setLineWidth(0.8)
-    c.rect(W(QR_X), Y(QR_Y + QR_SIZE), W(QR_SIZE), W(QR_SIZE),
-           fill=1, stroke=1)
-    qr_buf = _qr_buf(badge['qr_payload'])
-    if qr_buf:
-        try:
-            inner = QR_SIZE - 16
-            c.drawImage(ImageReader(qr_buf), W(QR_X + 8), Y(QR_Y + QR_SIZE) + W(8),
-                        width=W(inner), height=W(inner), mask='auto')
-        except Exception:
-            pass
-    c.setFillColor(caption_color)
-    setfont(False, 8.0)
-    c.drawCentredString(W(QR_X + QR_SIZE / 2), Y(CAPTION_Y),
-                        'Scanner pour vérifier la carte')
-
-    # Pied complet — une seule mention, pas de second logo
-    c.setFillColor(primary)
-    c.rect(0, Y(H_PX), W(W_PX), W(FOOTER_H), fill=1, stroke=0)
-    c.setFillColor(HexColor('#d5e6db'))
-    setfont(False, 5.0)
-    c.drawString(W(SAFE), Y(FOOTER_TEXT_Y),
-                 'Cette carte est personnelle et doit être présentée à l’entrée.')
-    c.setFillColor(accent)
-    setfont(True, 5.0)
-    c.drawRightString(W(RIGHT_X), Y(FOOTER_TEXT_Y), 'Cachet de la direction')
+    w_pt, h_pt = CARD_W_MM * mm_unit, CARD_H_MM * mm_unit
+    png_buf = render_badge_png(badge)
+    c.drawImage(ImageReader(png_buf), 0, y0, width=w_pt, height=h_pt)
 
 
 def draw_card_pdf(c, student, enrollment, school, y0=0, design_key='official'):
@@ -419,10 +348,12 @@ def draw_card_pdf(c, student, enrollment, school, y0=0, design_key='official'):
 
 
 def render_badge_pdf(badge):
+    """PDF CR80 (85,6 × 54 mm) strictement identique au PNG."""
     from reportlab.lib.units import mm as mm_unit
     from reportlab.pdfgen import canvas
     buf = BytesIO()
-    c = canvas.Canvas(buf, pagesize=(CARD_W_MM * mm_unit, CARD_H_MM * mm_unit))
+    w_pt, h_pt = CARD_W_MM * mm_unit, CARD_H_MM * mm_unit
+    c = canvas.Canvas(buf, pagesize=(w_pt, h_pt))
     draw_badge_pdf(c, badge, y0=0)
     c.showPage()
     c.save()
