@@ -40,7 +40,10 @@ cqw = 1% de 1012 px, cqh = 1% de 638 px. Marge de sécurité : 36 px.{% endcomme
   .badge-head-title {
     position:absolute; right:3.56cqw; top:10.97cqh;
     font-size:3.36cqw; font-weight:800; color:var(--accent); line-height:1;
+    white-space:nowrap;
   }
+  /* Le titre personnel est plus long : on le réduit pour ne pas toucher l'année. */
+  .badge-head-title.staff { font-size:2.65cqw; }
   .badge-head-year {
     position:absolute; right:3.56cqw; top:16.46cqh;
     font-size:1.58cqw; line-height:1; color:#e5e7eb; white-space:nowrap;
@@ -111,7 +114,7 @@ cqw = 1% de 1012 px, cqh = 1% de 638 px. Marge de sécurité : 36 px.{% endcomme
     </div>
     {% if badge.school.name %}<div class="badge-school-name">{{ badge.school.name }}</div>{% endif %}
     {% if badge.school.place %}<div class="badge-school-place">{{ badge.school.place }}</div>{% endif %}
-    <div class="badge-head-title">{{ badge.title }}</div>
+    <div class="badge-head-title {% if badge.kind == 'personnel' %}staff{% endif %}">{{ badge.title }}</div>
     <div class="badge-head-year">Année scolaire {{ badge.year_label }}</div>
   </div>
 

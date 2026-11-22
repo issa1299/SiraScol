@@ -171,7 +171,7 @@ def render_badge_png(badge):
         dr.text((SCHOOL_X, PLACE_Y), _trim(school['place'], 32),
                 fill=(229, 231, 235), font=_font(PLACE_FS))
 
-    title_font = _font(TITLE_FS, True)
+    title_font = _font(24 if badge['kind'] == 'personnel' else TITLE_FS, True)
     tw = dr.textlength(badge['title'], font=title_font)
     dr.text((RIGHT_X - tw, TITLE_Y), badge['title'], fill=accent, font=title_font)
     year_txt = f"Année scolaire {badge['year_label']}"
@@ -317,7 +317,7 @@ def draw_badge_pdf(c, badge, y0=0):
         c.drawString(W(SCHOOL_X), Y(PLACE_Y), _trim(school['place'], 30))
 
     c.setFillColor(accent)
-    setfont(True, 8.2)
+    setfont(True, 6.6 if badge['kind'] == 'personnel' else 8.2)
     c.drawRightString(W(RIGHT_X), Y(TITLE_Y), _trim(badge['title'], 22))
     c.setFillColor(HexColor('#d5e6db'))
     setfont(False, 3.9)
