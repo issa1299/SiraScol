@@ -1,0 +1,56 @@
+{% extends "surveillant/base_surveillant.html" %}
+{% block title %}Absences{% endblock %}
+{% block header_title %}Absences{% endblock %}
+{% block header_sub %}Absences du jour, justificatifs et historique{% endblock %}
+{% block content %}
+<div class="flex flex-wrap gap-3 mb-4">
+  <a href="{% url 'surveillant:rapports' %}?kind=absences" class="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold min-h-[44px]"><i class="fas fa-file-pdf"></i> Rapport absences</a>
+  <a href="{% url 'attendance:list_pdf' %}?period=day" target="_blank" class="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-semibold min-h-[44px]"><i class="fas fa-print"></i> Imprimer la liste des absents</a>
+  <button onclick="window.print()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold min-h-[44px] no-print"><i class="fas fa-print"></i> Imprimer cette page</button>
+</div>
+
+<form method="get" class="bg-white rounded-xl border p-3 mb-4 flex flex-wrap gap-2">
+  <input type="date" name="date" value="{{ day|date:'Y-m-d' }}" class="form-input sm:w-44">
+  <select name="classroom" class="form-input sm:w-48"><option value="">Toutes classes</option>
+    {% for c in classes %}<option value="{{ c.id }}" {% if classroom and classroom.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+  <button class="bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-semibold min-h-[44px]">Filtrer</button>
+</form>
+
+<div class="bg-white rounded-xl border p-4 mb-4 no-print">
+  <p class="text-xs font-bold text-slate-700 mb-2"><i class="fas fa-plus text-rose-600"></i> Enregistrer une absence ou un retard</p>
+  <form method="post" action="{% url 'surveillant:absence_create' %}" class="flex flex-wrap gap-2 items-end">
+    {% csrf_token %}
+    <select name="student" class="form-input sm:w-56" required><option value="">Choisir un élève</option>
+      {% for s in students %}<option value="{{ s.pk }}">{{ s.last_name|title }} {{ s.first_name|title }} — {{ s.matricule }}</option>{% endfor %}</select>
+    <input type="hidden" name="date" value="{{ day|date:'Y-m-d' }}">
+    <select name="kind" class="form-input sm:w-36"><option value="absent">Absence</option><option value="retard">Retard</option></select>
+    <input type="time" name="arrival_time" class="form-input sm:w-32">
+    <input type="text" name="reason" placeholder="Motif" class="form-input flex-1 min-w-[10rem]">
+    <button class="bg-rose-600 text-white px-4 py-2.5 rounded-xl text-xs font-semibold min-h-[44px]">Enregistrer</button>
+  </form>
+</div>
+
+<div class="bg-white rounded-xl border overflow-hidden">
+  <div class="px-4 py-3 border-b"><p class="text-sm font-bold">Absents du {{ day|date:"d/m/Y" }}</p></div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm min-w-[600px]">
+      <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500"><th class="px-3 py-2 text-left">Élève</th><th class="px-3 py-2 text-left">Classe</th><th class="px-3 py-2 text-left">Motif</th><th class="px-3 py-2">Justificatif</th></tr></thead>
+      <tbody class="divide-y">
+        {% for r in rows %}
+        <tr>
+          <td class="px-3 py-2 font-semibold">{{ r.student.first_name|title }} {{ r.student.last_name|title }}</td>
+          <td class="px-3 py-2 text-xs">{{ r.classroom.name|default:'—' }}</td>
+          <td class="px-3 py-2 text-xs">{{ r.reason|default:'—' }}</td>
+          <td class="px-3 py-2 text-center no-print">
+            <form method="post" action="{% url 'surveillant:absence_justify' r.pk %}" class="flex gap-1 justify-center">{% csrf_token %}
+              <input type="text" name="reason" placeholder="Justificatif" class="border rounded-lg px-2 py-1 text-xs w-32">
+              <button class="bg-emerald-600 text-white px-2 py-1.5 rounded-lg text-[10px] font-semibold">Valider</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="4" class="py-10 text-center text-slate-400">Aucune absence pour cette date.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

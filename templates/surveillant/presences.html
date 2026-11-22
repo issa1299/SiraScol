@@ -1,0 +1,48 @@
+{% extends "surveillant/base_surveillant.html" %}
+{% block title %}Présences{% endblock %}
+{% block header_title %}Présences{% endblock %}
+{% block header_sub %}Consulter et modifier les présences avec traçabilité{% endblock %}
+{% block content %}
+<form method="get" class="bg-white rounded-xl border p-3 mb-4 flex flex-wrap gap-2">
+  <input type="date" name="date" value="{{ day|date:'Y-m-d' }}" class="form-input sm:w-44">
+  <select name="classroom" class="form-input sm:w-48"><option value="">Toutes classes</option>
+    {% for c in classes %}<option value="{{ c.id }}" {% if classroom and classroom.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+  <select name="status" class="form-input sm:w-40"><option value="">Tous statuts</option>
+    {% for v, l in statuses %}<option value="{{ v }}" {% if status_filter == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+  <input type="text" name="q" value="{{ q }}" placeholder="Rechercher…" class="form-input flex-1 min-w-[10rem]">
+  <button class="bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-semibold min-h-[44px]">Filtrer</button>
+</form>
+
+<div class="bg-white rounded-xl border overflow-hidden">
+  <div class="px-4 py-3 border-b flex justify-between"><p class="text-sm font-bold">Présences du {{ day|date:"d/m/Y" }}</p><span class="text-xs text-slate-400">{{ records|length }} résultat(s)</span></div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm min-w-[700px]">
+      <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500">
+        <th class="px-3 py-2 text-left">Élève</th><th class="px-3 py-2 text-left">Classe</th>
+        <th class="px-3 py-2">Statut</th><th class="px-3 py-2">Arrivée</th><th class="px-3 py-2 text-left">Motif</th><th class="px-3 py-2">Modifier</th>
+      </tr></thead>
+      <tbody class="divide-y">
+        {% for r in records %}
+        <tr>
+          <td class="px-3 py-2 font-semibold">{{ r.student.first_name|title }} {{ r.student.last_name|title }}<span class="block text-[10px] font-normal text-slate-400">{{ r.student.matricule }}</span></td>
+          <td class="px-3 py-2 text-xs">{{ r.classroom.name|default:'—' }}</td>
+          <td class="px-3 py-2 text-center"><span class="px-2 py-1 rounded-lg text-[10px] font-bold {% if r.status == 'present' %}bg-emerald-50 text-emerald-700{% elif r.status == 'absent' %}bg-rose-50 text-rose-700{% elif r.status == 'retard' %}bg-amber-50 text-amber-700{% else %}bg-purple-50 text-purple-700{% endif %}">{{ r.get_status_display }}</span></td>
+          <td class="px-3 py-2 text-center">{{ r.arrival_time|time:'H:i'|default:'—' }}</td>
+          <td class="px-3 py-2 text-xs text-slate-500">{{ r.reason|default:'—' }}</td>
+          <td class="px-3 py-2 text-center"><details class="relative"><summary class="cursor-pointer text-teal-600 text-xs font-semibold">Modifier</summary>
+            <form method="post" action="{% url 'surveillant:presence_edit' r.pk %}" class="absolute right-0 z-20 mt-2 w-64 bg-white border rounded-xl shadow-lg p-3 text-left space-y-2">
+              {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+              <select name="status" class="form-input">{% for v, l in statuses %}<option value="{{ v }}" {% if r.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select>
+              <input type="time" name="arrival_time" value="{{ r.arrival_time|time:'H:i'|default:'' }}" class="form-input">
+              <input type="text" name="reason" value="{{ r.reason|default:'' }}" placeholder="Motif" class="form-input">
+              <input type="text" name="note" placeholder="Note de traçabilité" class="form-input">
+              <button class="w-full bg-teal-600 text-white py-2 rounded-lg text-xs font-semibold">Enregistrer</button>
+            </form>
+          </details></td>
+        </tr>
+        {% empty %}<tr><td colspan="6" class="py-10 text-center text-slate-400">Aucune présence enregistrée.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -73,6 +73,8 @@ def dashboard(request):
         return redirect('secretariat:dashboard')
     if role == 'comptable':
         return redirect('comptabilite:dashboard')
+    if role == 'surveillant':
+        return redirect('surveillant:dashboard')
     # directeur, admin, superuser → tableau de bord direction
     return _dashboard_staff(request, year, school, today)
 

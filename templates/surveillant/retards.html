@@ -1,0 +1,32 @@
+{% extends "surveillant/base_surveillant.html" %}
+{% block title %}Retards{% endblock %}
+{% block header_title %}Gestion des retards{% endblock %}
+{% block header_sub %}Heure d'arrivée, élève, classe et motif{% endblock %}
+{% block content %}
+<div class="flex flex-wrap gap-3 mb-4">
+  <a href="{% url 'surveillant:rapports' %}?kind=retards" class="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold min-h-[44px]"><i class="fas fa-file-pdf"></i> Rapport des retards</a>
+  <a href="{% url 'surveillant:pointage' %}" class="px-4 py-2.5 rounded-xl bg-teal-600 text-white text-xs font-semibold min-h-[44px]"><i class="fas fa-plus"></i> Enregistrer un retard</a>
+</div>
+<form method="get" class="bg-white rounded-xl border p-3 mb-4 flex flex-wrap gap-2">
+  <input type="date" name="date" value="{{ day|date:'Y-m-d' }}" class="form-input sm:w-44">
+  <select name="classroom" class="form-input sm:w-48"><option value="">Toutes classes</option>
+    {% for c in classes %}<option value="{{ c.id }}" {% if request.GET.classroom == c.id|stringformat:'s' %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select>
+  <button class="bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-semibold min-h-[44px]">Filtrer</button>
+</form>
+<div class="bg-white rounded-xl border overflow-hidden">
+  <div class="px-4 py-3 border-b"><p class="text-sm font-bold">Retards du {{ day|date:"d/m/Y" }}</p></div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm min-w-[560px]">
+      <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500"><th class="px-3 py-2">Heure</th><th class="px-3 py-2 text-left">Élève</th><th class="px-3 py-2 text-left">Classe</th><th class="px-3 py-2 text-left">Motif</th></tr></thead>
+      <tbody class="divide-y">
+        {% for r in rows %}<tr>
+          <td class="px-3 py-2 text-center font-mono">{{ r.arrival_time|time:'H:i'|default:'—' }}</td>
+          <td class="px-3 py-2 font-semibold">{{ r.student.first_name|title }} {{ r.student.last_name|title }}</td>
+          <td class="px-3 py-2 text-xs">{{ r.classroom.name|default:'—' }}</td>
+          <td class="px-3 py-2 text-xs text-slate-500">{{ r.reason|default:'—' }}</td>
+        </tr>{% empty %}<tr><td colspan="4" class="py-10 text-center text-slate-400">Aucun retard enregistré.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -362,6 +362,11 @@
                 <a href="{% url 'core:dashboard' %}" class="nav-link {% if request.path == '/' or request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
                     <i class="fas fa-home w-5 text-center"></i> Tableau de bord
                 </a>
+                {% if user_role == 'surveillant' %}
+                <a href="{% url 'surveillant:dashboard' %}" class="nav-link">
+                    <i class="fas fa-shield-halved w-5 text-center"></i> Espace Surveillant
+                </a>
+                {% endif %}
                 {% if can_nav_students %}
                 <a href="{% url 'attendance:scan' %}" class="nav-link {% if '/absences/scan' in request.path %}active{% endif %}">
                     <i class="fas fa-qrcode w-5 text-center"></i> Scan QR Code

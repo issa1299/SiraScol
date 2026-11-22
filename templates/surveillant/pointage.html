@@ -1,0 +1,77 @@
+{% extends "surveillant/base_surveillant.html" %}
+{% block title %}Pointage des élèves{% endblock %}
+{% block header_title %}Pointage des élèves{% endblock %}
+{% block header_sub %}Sélectionnez une classe, cochez la présence et validez la liste{% endblock %}
+{% block content %}
+<form method="get" class="bg-white rounded-xl border p-3 mb-4 flex flex-wrap gap-2 items-end">
+  <div><label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Classe</label>
+    <select name="classroom" class="form-input" onchange="this.form.submit()">
+      <option value="">— Choisir —</option>
+      {% for c in classes %}<option value="{{ c.id }}" {% if classroom and classroom.id == c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+    </select>
+  </div>
+  <div><label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Date</label>
+    <input type="date" name="date" value="{{ day|date:'Y-m-d' }}" class="form-input"></div>
+  <div><label class="block text-[10px] uppercase text-slate-400 font-bold mb-1">Période</label>
+    <select name="period" class="form-input">
+      <option value="journee" {% if period == 'journee' %}selected{% endif %}>Journée</option>
+      <option value="matin" {% if period == 'matin' %}selected{% endif %}>Matin</option>
+      <option value="apres_midi" {% if period == 'apres_midi' %}selected{% endif %}>Après-midi</option>
+    </select>
+  </div>
+  <button class="bg-slate-800 text-white px-4 py-2.5 rounded-xl text-xs font-semibold min-h-[44px]">Afficher</button>
+</form>
+
+{% if validated %}
+<div class="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-xs text-emerald-800">
+  <i class="fas fa-check-circle"></i> Pointage déjà validé pour cette classe par {{ validated.validated_by.get_full_name|default:validated.validated_by.username }} le {{ validated.validated_at|date:"d/m/Y H:i" }}.
+</div>
+{% endif %}
+
+{% if classroom %}
+<form method="post" class="bg-white rounded-xl border overflow-hidden">
+  {% csrf_token %}
+  <input type="hidden" name="classroom" value="{{ classroom.id }}">
+  <input type="hidden" name="date" value="{{ day|date:'Y-m-d' }}">
+  <input type="hidden" name="period" value="{{ period }}">
+  <div class="px-4 py-3 border-b flex flex-wrap justify-between gap-2">
+    <p class="text-sm font-bold">{{ classroom.name }} — {{ day|date:"d/m/Y" }}</p>
+    <span class="text-xs text-slate-400">{{ rows|length }} élève(s)</span>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm min-w-[640px]">
+      <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500">
+        <th class="px-3 py-2 text-left">Élève</th><th class="px-3 py-2 text-left">Matricule</th>
+        <th class="px-3 py-2">Présence</th><th class="px-3 py-2">Heure d'arrivée</th><th class="px-3 py-2 text-left">Motif</th>
+      </tr></thead>
+      <tbody class="divide-y">
+        {% for r in rows %}
+        <tr>
+          <td class="px-3 py-2 font-semibold">{{ r.student.first_name|title }} {{ r.student.last_name|title }}</td>
+          <td class="px-3 py-2 font-mono text-xs text-slate-500">{{ r.student.matricule }}</td>
+          <td class="px-3 py-2">
+            <select name="status_{{ r.student.pk }}" class="border rounded-lg px-2 py-1.5 text-xs">
+              {% for v, l in statuses %}
+              <option value="{{ v }}" {% if r.record.status == v %}selected{% elif not r.record and v == 'present' %}selected{% endif %}>{{ l }}</option>
+              {% endfor %}
+            </select>
+          </td>
+          <td class="px-3 py-2"><input type="time" name="arrival_{{ r.student.pk }}" value="{{ r.record.arrival_time|time:'H:i'|default:'' }}" class="border rounded-lg px-2 py-1.5 text-xs"></td>
+          <td class="px-3 py-2"><input type="text" name="reason_{{ r.student.pk }}" value="{{ r.record.reason|default:'' }}" placeholder="—" class="border rounded-lg px-2 py-1.5 text-xs w-full"></td>
+        </tr>
+        {% empty %}<tr><td colspan="5" class="py-8 text-center text-slate-400">Aucun élève dans cette classe.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="p-4 flex flex-wrap gap-3 border-t">
+    <button type="submit" class="bg-teal-600 text-white px-5 py-3 rounded-xl text-xs font-semibold min-h-[44px]"><i class="fas fa-save"></i> Enregistrer le pointage</button>
+    <button type="submit" name="validate" value="1" class="bg-emerald-700 text-white px-5 py-3 rounded-xl text-xs font-semibold min-h-[44px]"><i class="fas fa-check-double"></i> Valider la liste</button>
+  </div>
+</form>
+{% else %}
+<div class="bg-white rounded-xl border p-12 text-center text-slate-400 text-sm">
+  <i class="fas fa-user-check text-4xl mb-3 opacity-40 block"></i>
+  Choisissez une classe pour afficher le pointage du jour.
+</div>
+{% endif %}
+{% endblock %}

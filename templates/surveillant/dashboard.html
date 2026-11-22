@@ -1,0 +1,36 @@
+{% extends "surveillant/base_surveillant.html" %}
+{% block title %}Tableau de bord{% endblock %}
+{% block header_title %}Tableau de bord{% endblock %}
+{% block header_sub %}{{ today|date:"l d F Y" }}{% endblock %}
+{% block content %}
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+  <div class="bg-white rounded-xl border p-4"><p class="text-[10px] uppercase text-slate-400 font-bold">Total élèves</p><p class="text-2xl font-bold text-slate-900">{{ total_students }}</p></div>
+  <div class="bg-white rounded-xl border p-4"><p class="text-[10px] uppercase text-slate-400 font-bold">Présents aujourd'hui</p><p class="text-2xl font-bold text-emerald-600">{{ present }}</p></div>
+  <div class="bg-white rounded-xl border p-4"><p class="text-[10px] uppercase text-slate-400 font-bold">Absents</p><p class="text-2xl font-bold text-rose-600">{{ absent }}</p></div>
+  <div class="bg-white rounded-xl border p-4"><p class="text-[10px] uppercase text-slate-400 font-bold">En retard</p><p class="text-2xl font-bold text-amber-600">{{ late }}</p></div>
+  <div class="bg-white rounded-xl border p-4 col-span-2 lg:col-span-1"><p class="text-[10px] uppercase text-slate-400 font-bold">Exclus temporairement</p><p class="text-2xl font-bold text-purple-600">{{ excluded }}</p></div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  <div class="bg-white rounded-xl border p-5">
+    <h2 class="text-sm font-bold text-slate-900 mb-3"><i class="fas fa-bolt text-teal-600"></i> Actions rapides</h2>
+    <div class="grid grid-cols-2 gap-3">
+      <a href="{% url 'surveillant:pointage' %}" class="bg-teal-600 text-white rounded-xl p-4 text-center text-xs font-semibold"><i class="fas fa-user-check block text-xl mb-1"></i> Faire le pointage</a>
+      <a href="{% url 'surveillant:absences' %}" class="bg-rose-50 text-rose-700 rounded-xl p-4 text-center text-xs font-semibold"><i class="fas fa-user-slash block text-xl mb-1"></i> Absents du jour</a>
+      <a href="{% url 'surveillant:retards' %}" class="bg-amber-50 text-amber-700 rounded-xl p-4 text-center text-xs font-semibold"><i class="fas fa-clock block text-xl mb-1"></i> Retards</a>
+      <a href="{% url 'surveillant:sorties' %}" class="bg-blue-50 text-blue-700 rounded-xl p-4 text-center text-xs font-semibold"><i class="fas fa-door-open block text-xl mb-1"></i> Sorties</a>
+    </div>
+  </div>
+  <div class="bg-white rounded-xl border p-5">
+    <h2 class="text-sm font-bold text-slate-900 mb-3"><i class="fas fa-clock-rotate-left text-blue-600"></i> Dernières activités</h2>
+    <ul class="divide-y">
+      {% for a in activities %}
+      <li class="py-2.5 text-xs flex items-start gap-2">
+        <span class="w-7 h-7 rounded-lg bg-{{ a.color }}-50 text-{{ a.color }}-600 flex items-center justify-center shrink-0"><i class="fas {{ a.icon }}"></i></span>
+        <div class="min-w-0"><p class="text-slate-800">{{ a.text }}</p><p class="text-[10px] text-slate-400">{{ a.when|date:"d/m/Y H:i" }}{% if a.author %} · {{ a.author.get_full_name|default:a.author.username }}{% endif %}</p></div>
+      </li>
+      {% empty %}<li class="py-6 text-center text-slate-400">Aucune activité récente.</li>{% endfor %}
+    </ul>
+  </div>
+</div>
+{% endblock %}

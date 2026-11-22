@@ -113,6 +113,16 @@ Chaque badge contient un **QR code généré localement** (`core/qr.py`, dépend
 
 Actions disponibles : aperçu en boîte de dialogue, PDF individuel ou groupé (une carte par page), image PNG haute définition et impression navigateur. Les badges du personnel sont aussi accessibles depuis `/enseignants/qr-codes/`.
 
+## Espace Surveillant
+
+Portail dédié sur `/mon-espace-surveillant/` (`surveillant`), avec 11 menus : Tableau de bord, Pointage des élèves, Présences, Absences, Retards, Discipline, Sorties des élèves, Historique, Rapports, Notifications, Mon profil.
+
+Le pointage quotidien intelligent permet de sélectionner une classe, une date et une période, puis d'enregistrer en une seule validation la présence de chaque élève (présent / absent / retard / sortie). Une contrainte d'unicité empêche qu'un élève soit pointé deux fois pour la même date et la même période.
+
+Les présences modifiées sont tracées (`PresenceChange`), les sorties enregistrent la personne venant récupérer l'élève et l'heure de retour, et la discipline couvre avertissements, observations, retenues et exclusions avec commentaires de suivi. Les rapports (présence, absences, retards, discipline, sorties) s'exportent en PDF et Excel. Les alertes (absences/retards répétés) et la transmission d'informations à la direction passent par les notifications.
+
+Accès réservé au rôle `surveillant` (le directeur y a accès par héritage) : ni notes, ni paiements, ni inscription, ni gestion des utilisateurs.
+
 ## Espace Secrétaire
 
 Portail dédié sur `/mon-espace-secretaire/` : tableau de bord administratif, élèves (recherche, archive, transfert), inscriptions/réinscriptions, classes et effectifs, enseignants, documents PDF (certificat de scolarité, attestation, fiche d'inscription, liste de classe), annonces et messages à transmettre à la direction, notifications, profil.

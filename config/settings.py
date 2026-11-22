@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     'secretariat',
     'comptabilite',
     'classe',
+    'surveillant.apps.SurveillantConfig',
     'core.apps.CoreConfig',
 ]
 

@@ -1,0 +1,41 @@
+{% extends "surveillant/base_surveillant.html" %}
+{% block title %}Sorties des élèves{% endblock %}
+{% block header_title %}Sorties des élèves{% endblock %}
+{% block header_sub %}Sorties anticipées, personne venant récupérer et heure de retour{% endblock %}
+{% block content %}
+<div class="bg-white rounded-xl border p-4 mb-4">
+  <p class="text-xs font-bold text-slate-700 mb-2"><i class="fas fa-plus text-blue-600"></i> Enregistrer une sortie</p>
+  <form method="post" action="{% url 'surveillant:sortie_create' %}" class="flex flex-wrap gap-2 items-end">
+    {% csrf_token %}
+    <select name="student" class="form-input sm:w-52" required><option value="">Choisir un élève</option>
+      {% for s in students %}<option value="{{ s.pk }}">{{ s.last_name|title }} {{ s.first_name|title }}</option>{% endfor %}</select>
+    <input type="hidden" name="date" value="{{ day|date:'Y-m-d' }}">
+    <input type="time" name="exit_time" value="{{ today|time:'H:i' }}" class="form-input sm:w-32">
+    <input type="text" name="reason" placeholder="Motif de sortie" class="form-input flex-1 min-w-[12rem]">
+    <input type="text" name="picked_up_by" placeholder="Récupéré par" class="form-input sm:w-40">
+    <input type="time" name="return_time" class="form-input sm:w-32">
+    <button class="bg-blue-600 text-white px-4 py-2.5 rounded-xl text-xs font-semibold min-h-[44px]">Enregistrer</button>
+  </form>
+</div>
+<form method="get" class="mb-4"><input type="date" name="date" value="{{ day|date:'Y-m-d' }}" class="form-input sm:w-44"></form>
+<div class="bg-white rounded-xl border overflow-hidden">
+  <div class="px-4 py-3 border-b"><p class="text-sm font-bold">Sorties du {{ day|date:"d/m/Y" }}</p></div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm min-w-[680px]">
+      <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500"><th class="px-3 py-2 text-left">Élève</th><th class="px-3 py-2">Sortie</th><th class="px-3 py-2 text-left">Motif</th><th class="px-3 py-2 text-left">Récupéré par</th><th class="px-3 py-2">Retour</th><th class="px-3 py-2"></th></tr></thead>
+      <tbody class="divide-y">
+        {% for s in rows %}<tr>
+          <td class="px-3 py-2 font-semibold">{{ s.student.first_name|title }} {{ s.student.last_name|title }}</td>
+          <td class="px-3 py-2 text-center font-mono">{{ s.exit_time|time:'H:i' }}</td>
+          <td class="px-3 py-2 text-xs">{{ s.reason|default:'—' }}</td>
+          <td class="px-3 py-2 text-xs">{{ s.picked_up_by|default:'—' }}</td>
+          <td class="px-3 py-2 text-center font-mono">{{ s.return_time|time:'H:i'|default:'—' }}</td>
+          <td class="px-3 py-2 no-print">
+            {% if not s.return_time %}<form method="post" action="{% url 'surveillant:sortie_return' s.pk %}">{% csrf_token %}<input type="hidden" name="return_time" value="{{ today|time:'H:i' }}"><button class="text-xs text-teal-600 font-semibold">Noter retour</button></form>{% endif %}
+          </td>
+        </tr>{% empty %}<tr><td colspan="6" class="py-10 text-center text-slate-400">Aucune sortie enregistrée.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
