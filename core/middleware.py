@@ -8,8 +8,10 @@ from django.shortcuts import redirect, render
 class ForcePasswordChangeMiddleware:
     """Bloque l'accès à l'application tant que le mot de passe initial n'a pas été changé."""
 
+    # L'admin Django n'est PAS exempté : un compte avec mot de passe initial
+    # ne doit pas pouvoir y accéder avant de l'avoir changé.
     EXEMPT_PREFIXES = (
-        '/accounts/', '/admin/', '/static/', '/media/', '/health',
+        '/accounts/', '/static/', '/media/', '/health',
     )
 
     def __init__(self, get_response):

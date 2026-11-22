@@ -78,7 +78,10 @@ def ensure_user_for_teacher(teacher):
         is_active=bool(teacher.is_active),
     )
     Profile.objects.update_or_create(
-        user=user, defaults={'role': role, 'phone': teacher.phone or ''}
+        user=user, defaults={
+            'role': role, 'phone': teacher.phone or '',
+            'must_change_password': True,
+        }
     )
     type(teacher).objects.filter(pk=teacher.pk).update(user=user)
     teacher.user = user

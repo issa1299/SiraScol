@@ -12,17 +12,26 @@ from django.utils import timezone
 
 from .models import Assessment, Grade
 from .forms import AssessmentForm, level_is_primary, level_cycle_code
-from core.permissions import get_role, get_teacher_classrooms, get_parent_students, is_staff_role
+from core.permissions import (
+    get_role, get_teacher_classrooms, get_parent_students, is_staff_role,
+    can, permission_required,
+)
 from academics.models import ClassRoom, Subject, AcademicYear
 from students.models import Enrollment, Student
 
 
 def _teacher_can_classroom(user, classroom):
-    role = get_role(user)
-    if role not in ('enseignant',) or user.is_superuser:
+    """Seuls les utilisateurs autorisés à saisir des notes peuvent modifier une classe.
+
+    Les enseignants sont en plus limités à leurs propres affectations. Les
+    parents, élèves, comptables, secrétaires et surveillants sont refusés.
+    """
+    if not can(user, 'grades.entry'):
+        return False
+    if user.is_superuser or get_role(user) == 'directeur':
         return True
-    if is_staff_role(user) and role != 'enseignant':
-        return True
+    if get_role(user) != 'enseignant':
+        return False
     ids = set(get_teacher_classrooms(user).values_list('id', flat=True))
     return classroom.id in ids
 
@@ -115,27 +124,6 @@ def grades_classes(request):
             return _deny_classroom(request)
         from django.urls import reverse
         return redirect(reverse('grades:saisie_classe') + f'?classroom={classroom.id}')
-        if is_primary_cycle is None:
-            is_primary_cycle = level_is_primary(classroom.level)
-            cycle_filter = level_cycle_code(classroom.level)
-            if cycle_filter == 'primaire':
-                classrooms = primaire_classes
-            elif cycle_filter == 'lycee':
-                classrooms = lycee_classes
-            else:
-                classrooms = secondaire_classes
-            if year:
-                ptype = 'mois' if is_primary_cycle else 'trimestre'
-                periods = list(Period.objects.filter(
-                    academic_year=year, period_type=ptype, is_active=True
-                ).order_by('order'))
-                if not periods:
-                    periods = list(Period.objects.filter(academic_year=year, is_active=True).order_by('order'))
-        students = [
-            e.student for e in Enrollment.objects.filter(
-                classroom=classroom, is_active=True
-            ).select_related('student').order_by('student__last_name', 'student__first_name')
-        ]
 
     ctx = {
         'primaire_classes': primaire_classes,
@@ -166,6 +154,7 @@ def grades_classes(request):
 
 
 
+@permission_required('grades.entry')
 @login_required
 @_students_use_portal
 def saisie_classe(request):
@@ -527,6 +516,7 @@ def saisie_classe(request):
     })
 
 
+@permission_required('grades.entry')
 @login_required
 @_students_use_portal
 def saisie_eleve(request):
@@ -546,7 +536,12 @@ def saisie_eleve(request):
     classroom = get_object_or_404(ClassRoom.objects.select_related('level__cycle'), pk=classroom_id)
     if not _teacher_can_classroom(request.user, classroom):
         return _deny_classroom(request)
-    student = get_object_or_404(Student, pk=student_id)
+    student = get_object_or_404(
+        Student,
+        pk=student_id,
+        enrollments__classroom=classroom,
+        enrollments__is_active=True,
+    )
     period = get_object_or_404(Period, pk=period_id)
     is_primary = level_is_primary(classroom.level)
     max_score = Decimal('10') if is_primary else Decimal('20')
@@ -785,6 +780,7 @@ def assessment_list(request):
     return redirect('grades:classes')
 
 
+@permission_required('grades.entry')
 @login_required
 @_students_use_portal
 def assessment_create(request):
@@ -827,6 +823,7 @@ def assessment_create(request):
     return render(request, 'grades/assessment_form.html', ctx)
 
 
+@permission_required('grades.entry')
 @login_required
 @_students_use_portal
 def grade_entry(request, pk):
@@ -1027,6 +1024,7 @@ def cotes_liste_eleves(request):
     })
 
 
+@permission_required('grades.entry')
 @login_required
 @_students_use_portal
 def cotes_modifier(request):
@@ -1051,6 +1049,7 @@ def cotes_modifier(request):
     })
 
 
+@permission_required('grades.validate')
 @login_required
 @_students_use_portal
 def cotes_valider(request):

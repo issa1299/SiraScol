@@ -326,8 +326,16 @@ def user_save(request):
                 user=u, defaults={'role': role, 'phone': phone}
             )
             if password:
+                from django.contrib.auth.password_validation import validate_password
+                from django.core.exceptions import ValidationError
+                try:
+                    validate_password(password, user=u)
+                except ValidationError as exc:
+                    messages.error(request, ' '.join(exc.messages))
+                    return redirect('core:config_users')
                 u.set_password(password)
                 u.save()
+                Profile.objects.filter(user=u).update(must_change_password=True)
             messages.success(request, 'Utilisateur mis à jour.')
         else:
             if not username or not password:
@@ -335,6 +343,13 @@ def user_save(request):
                 return redirect('core:config_users')
             if User.objects.filter(username=username).exists():
                 messages.error(request, 'Cet identifiant existe déjà.')
+                return redirect('core:config_users')
+            from django.contrib.auth.password_validation import validate_password
+            from django.core.exceptions import ValidationError
+            try:
+                validate_password(password)
+            except ValidationError as exc:
+                messages.error(request, ' '.join(exc.messages))
                 return redirect('core:config_users')
             u = User.objects.create_user(
                 username=username, password=password, email=email,
@@ -417,12 +432,19 @@ def user_toggle_active(request, pk):
 @require_POST
 def user_reset_password(request, pk):
     u = get_object_or_404(User, pk=pk)
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError
+    from accounts.models import Profile
+
     new_pwd = request.POST.get('password', '').strip()
-    if len(new_pwd) < 4:
-        messages.error(request, 'Mot de passe trop court (min. 4 caractères).')
+    try:
+        validate_password(new_pwd, user=u)
+    except ValidationError as exc:
+        messages.error(request, ' '.join(exc.messages))
         return redirect('core:config_users')
     u.set_password(new_pwd)
     u.save()
+    Profile.objects.filter(user=u).update(must_change_password=True)
     messages.success(request, f'Mot de passe de {u.username} réinitialisé.')
     return redirect('core:config_users')
 

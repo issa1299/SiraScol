@@ -1,4 +1,6 @@
 from django.contrib.auth.decorators import login_required
+
+from core.permissions import permission_required
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.utils import timezone
@@ -29,10 +31,11 @@ class AnnouncementForm(forms.ModelForm):
         self.fields['expires_at'].required = False
 
 
-@login_required
+@permission_required('announcements.view')
 def announcement_list(request):
     qs = Announcement.objects.select_related('author', 'classroom', 'level').order_by('-published_at')
-    show_all = request.GET.get('all') == '1'
+    from core.permissions import can
+    show_all = request.GET.get('all') == '1' and can(request.user, 'announcements.publish')
     if not show_all:
         qs = qs.filter(is_published=True)
         # non expirées
@@ -44,13 +47,18 @@ def announcement_list(request):
     })
 
 
-@login_required
+@permission_required('announcements.view')
 def announcement_detail(request, pk):
     ann = get_object_or_404(Announcement, pk=pk)
+    from core.permissions import can
+    if not ann.is_published or (ann.expires_at and ann.expires_at < timezone.now()):
+        if not can(request.user, 'announcements.publish'):
+            from django.http import Http404
+            raise Http404("Annonce indisponible.")
     return render(request, 'communication/announcement_detail.html', {'announcement': ann})
 
 
-@login_required
+@permission_required('announcements.publish')
 def announcement_create(request):
     if request.method == 'POST':
         form = AnnouncementForm(request.POST)
@@ -68,7 +76,7 @@ def announcement_create(request):
     return render(request, 'communication/announcement_form.html', ctx)
 
 
-@login_required
+@permission_required('announcements.publish')
 def announcement_edit(request, pk):
     ann = get_object_or_404(Announcement, pk=pk)
     if request.method == 'POST':

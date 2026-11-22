@@ -1,4 +1,5 @@
 from django.db import models
+from core.validators import validate_upload
 from django.contrib.auth.models import User
 from academics.models import ClassRoom, Level, AcademicYear
 
@@ -39,7 +40,7 @@ class Message(models.Model):
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
     subject = models.CharField(max_length=200, verbose_name='Sujet')
     body = models.TextField(verbose_name='Message')
-    attachment = models.FileField(
+    attachment = models.FileField(validators=[validate_upload], 
         upload_to='messages/%Y/%m/', blank=True, null=True,
         verbose_name='Pièce jointe',
     )
@@ -78,7 +79,7 @@ class SchoolDocument(models.Model):
     title = models.CharField(max_length=200, verbose_name='Titre')
     category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='autre')
     description = models.TextField(blank=True, verbose_name='Description')
-    file = models.FileField(upload_to='documents/%Y/%m/', verbose_name='Fichier')
+    file = models.FileField(validators=[validate_upload], upload_to='documents/%Y/%m/', verbose_name='Fichier')
     academic_year = models.ForeignKey(
         AcademicYear, on_delete=models.SET_NULL, null=True, blank=True, related_name='school_documents'
     )

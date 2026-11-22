@@ -586,7 +586,7 @@ def student_card_preview(request, pk):
     })
 
 
-@login_required
+@role_required('directeur', 'secretaire', 'enseignant')
 def cards_home(request):
     """Interface des badges : aperçus réels, réglage du modèle, élèves et personnel."""
     from academics.models import ClassRoom
@@ -601,6 +601,9 @@ def cards_home(request):
         tab = 'eleves'
 
     if request.method == 'POST' and request.POST.get('action') == 'set_template':
+        if not can(request.user, 'cards.configure'):
+            messages.error(request, 'Accès refusé.')
+            return redirect('students:cards_home')
         key = request.POST.get('card_template', 'official')
         if school and key in BADGE_DESIGNS:
             school.card_template = key
@@ -661,7 +664,7 @@ def cards_home(request):
     })
 
 
-@login_required
+@role_required('directeur', 'secretaire', 'enseignant')
 def cards_class(request, classroom_id):
     """Cartes d'une classe : aperçus réels + téléchargements individuels / lot."""
     from academics.models import ClassRoom
@@ -692,7 +695,7 @@ def cards_class(request, classroom_id):
     })
 
 
-@login_required
+@role_required('directeur', 'secretaire', 'enseignant')
 def cards_class_pdf(request, classroom_id):
     """PDF groupé : un badge par page (élèves de la classe)."""
     from academics.models import ClassRoom
@@ -718,7 +721,7 @@ def cards_class_pdf(request, classroom_id):
     return resp
 
 
-@login_required
+@role_required('directeur', 'secretaire', 'enseignant')
 def student_list_pdf(request):
     """Liste des élèves en PDF propre (sans interface)."""
     from core.year_context import get_selected_year

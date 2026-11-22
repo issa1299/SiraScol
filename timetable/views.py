@@ -245,6 +245,7 @@ def generate_edt(request):
     return redirect('timetable:home')
 
 
+@permission_required('timetable.edit')
 @login_required
 @_students_use_portal
 @require_POST
@@ -340,6 +341,7 @@ def timetable_entry_save(request, classroom_id):
     return redirect(f'/emploi-du-temps/?classroom={classroom_id}')
 
 
+@permission_required('timetable.edit')
 @login_required
 @_students_use_portal
 @require_POST

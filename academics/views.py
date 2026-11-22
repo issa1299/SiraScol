@@ -1,4 +1,5 @@
 from core.year_context import get_selected_year
+from core.permissions import permission_required
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.shortcuts import render, get_object_or_404, redirect
@@ -78,7 +79,7 @@ def clone_classrooms_to_year(source_year, target_year):
 
 
 
-@login_required
+@permission_required('nav.classrooms')
 def classroom_list(request):
     qs = (
         ClassRoom.objects.select_related('level__cycle', 'academic_year', 'main_teacher')
@@ -161,7 +162,7 @@ def classroom_list(request):
     })
 
 
-@login_required
+@permission_required('nav.classrooms')
 def classroom_detail(request, pk):
     from classe.service import TABS, build_context
 
@@ -177,7 +178,7 @@ def classroom_detail(request, pk):
 
 
 
-@login_required
+@permission_required('academics.classes')
 def classroom_bulk_add(request):
     """Sélection multiple de classes du programme Mali."""
     year = get_selected_year(request)
@@ -250,7 +251,7 @@ def classroom_bulk_add(request):
     return render(request, 'academics/classroom_bulk_modal.html', ctx)
 
 
-@login_required
+@permission_required('academics.classes')
 def classroom_create(request):
     if request.method == 'POST':
         form = ClassRoomForm(request.POST)
@@ -269,7 +270,7 @@ def classroom_create(request):
     })
 
 
-@login_required
+@permission_required('academics.classes')
 def classroom_edit(request, pk):
     classroom = get_object_or_404(ClassRoom, pk=pk)
     if request.method == 'POST':
@@ -293,7 +294,7 @@ def classroom_edit(request, pk):
     })
 
 
-@login_required
+@permission_required('academics.classes')
 def clone_classrooms(request):
     """Reprend la structure des classes de l'année précédente vers l'année de travail."""
     target = get_selected_year(request)
@@ -315,7 +316,7 @@ def clone_classrooms(request):
     return redirect('academics:classroom_list')
 
 
-@login_required
+@permission_required('academics.classes')
 def classroom_subjects(request, pk):
     """
     Matières par classe + règles d'affectation :

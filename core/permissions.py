@@ -112,6 +112,9 @@ PERMISSIONS = {
     'finance.expenses': ['directeur', 'comptable'],
     'finance.reports': ['directeur', 'comptable'],
 
+    # Cartes & badges
+    'cards.configure': ['directeur', 'secretaire'],
+
     # Présences
     'attendance.view': ['directeur', 'surveillant', 'enseignant', 'parent', 'eleve'],
     'attendance.take': ['directeur', 'surveillant', 'enseignant'],

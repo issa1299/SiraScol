@@ -3,6 +3,8 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth.decorators import login_required
+
+from .permissions import role_required
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse
 from django.contrib import messages
@@ -18,7 +20,7 @@ from .forms import SchoolSettingsForm
 from .year_context import get_selected_year, set_selected_year
 
 
-@login_required
+@role_required('admin', 'directeur')
 def set_academic_year(request):
     """POST ou GET ?year=id — change l'année de travail pour toute l'app."""
     year_id = request.POST.get('year') or request.GET.get('year')
@@ -412,7 +414,7 @@ def _dashboard_student(request, year, school, today):
     })
 
 
-@login_required
+@role_required('admin', 'directeur')
 def school_settings(request):
     """Paramètres globaux style EduNet — une seule page."""
     from django.contrib.auth import get_user_model

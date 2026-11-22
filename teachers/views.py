@@ -347,6 +347,7 @@ def _render_assign_modal(request, teacher, cycle=None):
     })
 
 
+@login_required
 def teacher_assign(request, pk):
     if not can(request.user, 'personnel.assign'):
         messages.error(request, 'Accès refusé pour votre rôle.')

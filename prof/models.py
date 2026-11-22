@@ -1,4 +1,5 @@
 from django.db import models
+from core.validators import validate_upload
 
 from academics.models import ClassRoom, Subject
 from grades.models import Period
@@ -20,7 +21,7 @@ class TeachingMaterial(models.Model):
     )
     title = models.CharField(max_length=200, verbose_name='Titre')
     description = models.TextField(blank=True, verbose_name='Description')
-    file = models.FileField(
+    file = models.FileField(validators=[validate_upload], 
         upload_to='supports/%Y/%m/', verbose_name='Fichier (PDF, exercice…)',
     )
     is_published = models.BooleanField(default=True, verbose_name='Publié')

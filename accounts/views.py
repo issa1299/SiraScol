@@ -48,12 +48,8 @@ class ForcePasswordChangeView(PasswordChangeView):
 
 
 class CustomLogoutView(View):
-    """Déconnexion en POST (sécurité) ou GET (lien simple)."""
+    """Déconnexion en POST uniquement (protection CSRF)."""
 
     def post(self, request):
-        logout(request)
-        return redirect('accounts:login')
-
-    def get(self, request):
         logout(request)
         return redirect('accounts:login')

@@ -11,7 +11,10 @@ from django.core.paginator import Paginator
 from .models import Absence
 from students.models import Student, Enrollment
 from academics.models import ClassRoom
-from core.permissions import get_role, get_teacher_classrooms, get_parent_students, get_linked_student
+from core.permissions import (
+    get_role, get_teacher_classrooms, get_parent_students, get_linked_student,
+    permission_required,
+)
 
 
 def _students_use_portal(view_func):
@@ -24,6 +27,7 @@ def _students_use_portal(view_func):
     return _wrapped
 
 
+@permission_required('attendance.view')
 @login_required
 @_students_use_portal
 def absence_list(request):
@@ -210,6 +214,7 @@ def absence_list(request):
     return render(request, 'attendance/absence_list.html', context)
 
 
+@permission_required('attendance.take')
 @login_required
 @_students_use_portal
 def absence_create(request):
@@ -290,6 +295,7 @@ def attendance_classes(request):
     })
 
 
+@permission_required('attendance.take')
 @login_required
 @_students_use_portal
 def class_attendance(request, classroom_id):
@@ -356,6 +362,7 @@ def class_attendance(request, classroom_id):
     })
 
 
+@permission_required('attendance.take')
 @login_required
 @_students_use_portal
 def scan_qr(request):
@@ -397,6 +404,7 @@ def scan_qr(request):
     })
 
 
+@permission_required('attendance.take')
 @login_required
 @_students_use_portal
 def scan_qr_api(request):
@@ -544,6 +552,7 @@ def scan_qr_api(request):
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
 
+@permission_required('attendance.view')
 @login_required
 @_students_use_portal
 def absence_list_pdf(request):

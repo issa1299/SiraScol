@@ -6,6 +6,8 @@ Développement par défaut. Production via variables d'environnement.
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Charge .env s'il existe (sans dépendance externe)
@@ -22,14 +24,27 @@ if _env_file.exists():
 
 
 # ── Sécurité de base ─────────────────────────────────────────────────────────
-# En production : définir SIRASCOL_SECRET_KEY dans l'environnement
-SECRET_KEY = os.environ.get(
-    'SIRASCOL_SECRET_KEY',
-    'django-insecure-dev-only-change-me-before-production-9vq)e&gwf6a7$wm',
-)
+# DEBUG=0 ou DEBUG=false en production. Le défaut est SÉCURISÉ (False) :
+# le développement doit explicitement définir SIRASCOL_DEBUG=1.
+DEBUG = os.environ.get('SIRASCOL_DEBUG', '0').strip().lower() in ('1', 'true', 'yes', 'on')
 
-# DEBUG=0 ou DEBUG=false en production
-DEBUG = os.environ.get('SIRASCOL_DEBUG', '1') not in ('0', 'false', 'False', 'no', 'NO')
+# En production, une clé secrète explicite est OBLIGATOIRE (anti-falsification
+# des sessions et cookies). En développement seulement, une clé locale est
+# générée et conservée dans un fichier ignoré par Git.
+SECRET_KEY = os.environ.get('SIRASCOL_SECRET_KEY', '').strip()
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured(
+            'SIRASCOL_SECRET_KEY doit être défini dans l’environnement en production.'
+        )
+    from pathlib import Path as _Path
+    import secrets as _secrets
+    _dev_key_file = BASE_DIR / '.dev_secret_key'
+    if _dev_key_file.exists():
+        SECRET_KEY = _dev_key_file.read_text(encoding='utf-8').strip()
+    if not SECRET_KEY:
+        SECRET_KEY = 'django-insecure-' + _secrets.token_urlsafe(50)
+        _dev_key_file.write_text(SECRET_KEY, encoding='utf-8')
 
 # Ex: SIRASCOL_ALLOWED_HOSTS=ecole.example.com,www.ecole.example.com
 _hosts = os.environ.get('SIRASCOL_ALLOWED_HOSTS', '').strip()
@@ -146,19 +161,22 @@ WEBAUTHN_RP_NAME = 'SiraScol'
 
 # ── Durcissement production (activé si DEBUG=False) ──────────────────────────
 if not DEBUG:
-    # SSL redirect UNIQUEMENT si explicitement demandé (évite Bad Request en local)
-    SECURE_SSL_REDIRECT = os.environ.get('SIRASCOL_SSL_REDIRECT', '0') in ('1', 'true', 'True')
-    # Cookies sécurisés seulement si SSL forcé
-    SESSION_COOKIE_SECURE = SECURE_SSL_REDIRECT
-    CSRF_COOKIE_SECURE = SECURE_SSL_REDIRECT
+    # Production : HTTPS et cookies sécurisés par défaut.
+    # SIRASCOL_SSL_REDIRECT=0 / SIRASCOL_SECURE_COOKIES=0 permettent de désactiver
+    # explicitement ces réglages derrière un proxy qui termine le TLS.
+    def _env_flag(name, default):
+        return os.environ.get(name, default).strip().lower() in ('1', 'true', 'yes', 'on')
+
+    SECURE_SSL_REDIRECT = _env_flag('SIRASCOL_SSL_REDIRECT', '1')
+    SESSION_COOKIE_SECURE = _env_flag('SIRASCOL_SECURE_COOKIES', '1')
+    CSRF_COOKIE_SECURE = _env_flag('SIRASCOL_SECURE_COOKIES', '1')
     SECURE_BROWSER_XSS_FILTER = True
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS = 'DENY'
     SECURE_REFERRER_POLICY = 'same-origin'
-    if SECURE_SSL_REDIRECT:
-        SECURE_HSTS_SECONDS = int(os.environ.get('SIRASCOL_HSTS_SECONDS', '31536000'))
-        SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-        SECURE_HSTS_PRELOAD = True
+    SECURE_HSTS_SECONDS = int(os.environ.get('SIRASCOL_HSTS_SECONDS', '31536000'))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
     if os.environ.get('SIRASCOL_BEHIND_PROXY', '0') in ('1', 'true', 'True'):
         SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 

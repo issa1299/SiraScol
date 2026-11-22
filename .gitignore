@@ -25,6 +25,7 @@ staticfiles/
 backups/
 .env
 .env.local
+.dev_secret_key
 *.log
 local_settings.py
 

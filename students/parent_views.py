@@ -8,7 +8,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 
 from core.account_sync import ensure_user_for_parent
-from core.permissions import can
+from core.permissions import can, role_required
 
 from .models import Parent, ParentStudent, Student, Enrollment
 
@@ -45,14 +45,8 @@ def _parent_kpis():
     }
 
 
-@login_required
+@role_required('directeur', 'secretaire')
 def parent_list(request):
-    if not can(request.user, 'nav.parents') and not can(request.user, 'parents.manage'):
-        # soft allow if students.view
-        if not can(request.user, 'students.view'):
-            messages.error(request, 'Accès refusé.')
-            return redirect('core:dashboard')
-
     qs = Parent.objects.annotate(n_children=Count('children')).order_by('last_name', 'first_name')
     q = request.GET.get('q', '').strip()
     filtre = request.GET.get('filtre', 'tous')
@@ -83,7 +77,7 @@ def parent_list(request):
     })
 
 
-@login_required
+@role_required('directeur', 'secretaire')
 @require_POST
 def parent_sync(request):
     """
@@ -172,7 +166,7 @@ def parent_sync(request):
     return redirect('students:parent_list')
 
 
-@login_required
+@role_required('directeur', 'secretaire')
 def parent_detail(request, pk):
     parent = get_object_or_404(Parent, pk=pk)
     links = parent.children.select_related('student', 'student__enrollments').all()
@@ -193,7 +187,7 @@ def parent_detail(request, pk):
     return render(request, 'students/parent_detail.html', ctx)
 
 
-@login_required
+@role_required('directeur', 'secretaire')
 def parent_children_modal(request, pk):
     """Modal « Voir enfants »."""
     parent = get_object_or_404(Parent, pk=pk)
@@ -212,7 +206,7 @@ def parent_children_modal(request, pk):
     })
 
 
-@login_required
+@role_required('directeur', 'secretaire')
 def parent_link_modal(request, pk):
     """Modal pour lier un élève au parent."""
     parent = get_object_or_404(Parent, pk=pk)
@@ -236,7 +230,7 @@ def parent_link_modal(request, pk):
     })
 
 
-@login_required
+@role_required('directeur', 'secretaire')
 @require_POST
 def parent_unlink(request, pk, student_id):
     parent = get_object_or_404(Parent, pk=pk)
@@ -248,7 +242,7 @@ def parent_unlink(request, pk, student_id):
     return redirect('students:parent_list')
 
 
-@login_required
+@role_required('directeur', 'secretaire')
 def parent_create(request):
     if request.method == 'POST':
         form = ParentForm(request.POST)
@@ -282,7 +276,7 @@ def parent_create(request):
     })
 
 
-@login_required
+@role_required('directeur', 'secretaire')
 def parent_edit(request, pk):
     parent = get_object_or_404(Parent, pk=pk)
     if request.method == 'POST':
@@ -303,7 +297,7 @@ def parent_edit(request, pk):
     })
 
 
-@login_required
+@role_required('directeur', 'secretaire')
 def parent_list_pdf(request):
     from core.list_pdf import build_list_pdf
     from core.models import SchoolSettings

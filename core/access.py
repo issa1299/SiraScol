@@ -91,7 +91,8 @@ def assert_can_manage_grades(user):
 
 
 def assert_can_manage_finance(user):
+    # Le secrétaire ne gère pas les transactions (voir PERMISSIONS['finance.*']).
     role = get_role(user)
-    if role in ('directeur', 'secretaire') or user.is_superuser:
+    if role in ('directeur', 'comptable') or user.is_superuser:
         return
     raise PermissionDenied('Vous ne pouvez pas gérer les finances.')

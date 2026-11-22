@@ -3,7 +3,7 @@
 {% block content %}
 <div class="mb-4 flex justify-between items-center gap-2">
   <h1 class="text-xl font-bold">Messages</h1>
-  <a href="#" onclick="openModalUrl('{% url 'communication:compose' %}', 'Nouveau message'); return false;" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm"><i class="fas fa-pen"></i> Nouveau</a>
+  <button type="button" onclick="openModalUrl('{% url 'communication:compose' %}', 'Nouveau message')" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm"><i class="fas fa-pen"></i> Nouveau</button>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
   <div>

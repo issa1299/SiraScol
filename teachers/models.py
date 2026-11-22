@@ -1,4 +1,5 @@
 from django.db import models
+from core.validators import validate_upload
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator
 from decimal import Decimal
@@ -93,7 +94,7 @@ class StaffContract(models.Model):
         choices=[('actif', 'Actif'), ('termine', 'Terminé'), ('resilie', 'Résilié')],
         default='actif',
     )
-    document = models.FileField(upload_to='staff_contracts/', blank=True, null=True)
+    document = models.FileField(validators=[validate_upload], upload_to='staff_contracts/', blank=True, null=True)
     notes = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -186,7 +187,7 @@ class StaffDocument(models.Model):
     staff = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name='documents')
     doc_type = models.CharField(max_length=20, choices=DOC_TYPES, default='autre')
     title = models.CharField(max_length=150)
-    file = models.FileField(upload_to='staff_docs/')
+    file = models.FileField(validators=[validate_upload], upload_to='staff_docs/')
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

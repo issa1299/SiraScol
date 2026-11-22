@@ -1,4 +1,5 @@
 from django.db import models
+from core.validators import validate_upload
 from django.core.validators import MinValueValidator
 from django.db.models import Sum
 from students.models import Student
@@ -141,7 +142,7 @@ class Expense(models.Model):
     created_by = models.ForeignKey(
         'auth.User', on_delete=models.SET_NULL, null=True, blank=True
     )
-    receipt = models.FileField(
+    receipt = models.FileField(validators=[validate_upload], 
         upload_to='justificatifs/%Y/%m/', blank=True, null=True,
         verbose_name='Pièce justificative',
     )

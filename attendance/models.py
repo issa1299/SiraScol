@@ -1,4 +1,5 @@
 from django.db import models
+from core.validators import validate_upload
 from students.models import Student
 from academics.models import ClassRoom, AcademicYear
 from teachers.models import Teacher
@@ -22,7 +23,7 @@ class Absence(models.Model):
     type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='absence')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='non_justifiee')
     reason = models.TextField(blank=True, verbose_name='Motif')
-    justification_file = models.FileField(upload_to='justificatifs/', blank=True, null=True)
+    justification_file = models.FileField(validators=[validate_upload], upload_to='justificatifs/', blank=True, null=True)
     recorded_by = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True, blank=True)
     notified_parent = models.BooleanField(default=False, verbose_name='Parent notifié')
     created_at = models.DateTimeField(auto_now_add=True)

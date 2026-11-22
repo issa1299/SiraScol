@@ -1,4 +1,5 @@
 from django.db import models
+from core.validators import validate_upload
 
 from academics.models import ClassRoom, Subject
 from students.models import Student
@@ -23,7 +24,7 @@ class Homework(models.Model):
     title = models.CharField(max_length=200, verbose_name='Titre')
     instructions = models.TextField(blank=True, verbose_name='Consignes')
     due_date = models.DateField(verbose_name='Date limite')
-    document = models.FileField(
+    document = models.FileField(validators=[validate_upload], 
         upload_to='devoirs/%Y/%m/', blank=True, null=True,
         verbose_name='Document associé',
     )
