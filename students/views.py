@@ -555,7 +555,10 @@ def cards_home(request):
             school.card_template = key
             school.save(update_fields=['card_template'])
             messages.success(request, f'Modèle « {BADGE_DESIGNS[key]["label"]} » enregistré.')
-        return redirect('students:cards_home' + ('?tab=' + tab if tab != 'eleves' else ''))
+        redirect_url = reverse('students:cards_home')
+        if tab != 'eleves':
+            redirect_url += '?tab=' + tab
+        return redirect(redirect_url)
 
     current = _badge_design_key(request, school)
     # Vrais aperçus du modèle, avec la première élève disponible.
