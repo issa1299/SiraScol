@@ -76,22 +76,30 @@ def draw_badge_pdf(c, badge, y0=0):
     c.rect(0, Y(g['header_h']), w * mm, g['header_h'] * mm, fill=1, stroke=0)
 
     lx, ld, lt = g['pad'], g['logo_d'], g['logo_top']
+    cx, cy, radius = (lx + ld / 2) * mm, Y(lt + ld / 2), (ld / 2) * mm
     logo_drawn = False
     if school.get('logo_path'):
         try:
+            c.saveState()
+            path = c.beginPath()
+            path.circle(cx, cy, radius - 0.2 * mm)
+            c.clipPath(path, stroke=0, fill=0)
+            c.setFillColor(white)
+            c.rect(cx - radius, cy - radius, 2 * radius, 2 * radius, fill=1, stroke=0)
             c.drawImage(ImageReader(school['logo_path']),
-                        lx * mm, Y(lt + ld), width=ld * mm, height=ld * mm,
+                        cx - radius, cy - radius, width=2 * radius, height=2 * radius,
                         preserveAspectRatio=True, anchor='c', mask='auto')
+            c.restoreState()
             logo_drawn = True
         except Exception:
             logo_drawn = False
     c.setStrokeColor(accent)
     c.setLineWidth(0.55)
-    c.circle((lx + ld / 2) * mm, Y(lt + ld / 2), (ld / 2) * mm, fill=0, stroke=1)
+    c.circle(cx, cy, radius, fill=0, stroke=1)
     if not logo_drawn:
         c.setFillColor(accent)
         c.setFont('Helvetica-Bold', 4.5)
-        c.drawCentredString((lx + ld / 2) * mm, Y(lt + ld / 2 + 1.4), 'LOGO')
+        c.drawCentredString(cx, Y(lt + ld / 2 + 1.4), 'LOGO')
 
     tx = lx + ld + 1.9
     c.setFillColor(white)
@@ -182,19 +190,15 @@ def draw_badge_pdf(c, badge, y0=0):
     if school.get('stamp_path'):
         try:
             c.drawImage(ImageReader(school['stamp_path']),
-                        (w - g['pad'] - 12) * mm, Y(h - 0.8) + 0.8 * mm,
-                        width=12 * mm, height=4 * mm,
+                        (w - g['pad'] - 11) * mm, Y(h - 0.6),
+                        width=5.5 * mm, height=4.5 * mm,
                         preserveAspectRatio=True, anchor='c', mask='auto')
         except Exception:
-            c.setFillColor(accent)
-            c.setFont('Helvetica-Bold', 5.0)
-            c.drawRightString((w - g['pad']) * mm, Y(g['footer_text_top']),
-                              'Cachet de la direction')
-    else:
-        c.setFillColor(accent)
-        c.setFont('Helvetica-Bold', 5.0)
-        c.drawRightString((w - g['pad']) * mm, Y(g['footer_text_top']),
-                          'Cachet de la direction')
+            pass
+    c.setFillColor(accent)
+    c.setFont('Helvetica-Bold', 5.0)
+    c.drawRightString((w - g['pad']) * mm, Y(g['footer_text_top']),
+                      'Cachet de la direction')
 
 
 def draw_card_pdf(c, student, enrollment, school, y0=0, design_key='official'):
@@ -283,12 +287,20 @@ def render_badge_png(badge):
 
     # En-tête
     dr.rectangle([0, 0, W_PX, _px(g['header_h'])], fill=primary)
+    from PIL import Image as PILImage
     lx, ld, lt = g['pad'], g['logo_d'], g['logo_top']
-    logo = _fit_image(school.get('logo_path'), _px(ld), _px(ld), contain=True)
+    dpx = _px(ld)
+    logo = _fit_image(school.get('logo_path'), dpx, dpx, contain=True)
     if logo:
-        card.paste(logo, (_px(lx), _px(lt)), logo)
+        # Découpage circulaire sur fond blanc, cerclé d'or (comme la maquette).
+        disc = PILImage.new('RGBA', (dpx, dpx), (255, 255, 255, 255))
+        disc.alpha_composite(logo)
+        mask = PILImage.new('L', (dpx, dpx), 0)
+        PILImageDraw = __import__('PIL.ImageDraw', fromlist=['Draw']).Draw
+        PILImageDraw(mask).ellipse((0, 0, dpx, dpx), fill=255)
+        card.paste(disc, (_px(lx), _px(lt)), mask)
     dr.ellipse([_px(lx), _px(lt), _px(lx + ld), _px(lt + ld)],
-               outline=accent, width=max(2, _px(0.5)))
+               outline=accent, width=max(2, _px(0.45)))
     f_logo = _font(15, True)
     if not logo:
         tw = dr.textlength('LOGO', font=f_logo)
@@ -369,15 +381,15 @@ def render_badge_png(badge):
     dr.text((_px(g['pad']), _px(g['footer_text_top'])),
             'Cette carte est personnelle et doit être présentée à l’entrée.',
             fill=(255, 255, 255), font=f_foot)
-    stamp = _fit_image(school.get('stamp_path'), _px(14), _px(4.5), contain=True)
     f_stamp = _font(15, True)
+    txt = 'Cachet de la direction'
+    tw = dr.textlength(txt, font=f_stamp)
+    right_x = W_PX - _px(g['pad'])
+    stamp = _fit_image(school.get('stamp_path'), _px(6), _px(6), contain=True)
     if stamp:
-        card.paste(stamp, (W_PX - _px(g['pad']) - stamp.width, _px(49.3)), stamp)
-    else:
-        txt = 'Cachet de la direction'
-        tw = dr.textlength(txt, font=f_stamp)
-        dr.text((W_PX - _px(g['pad']) - tw, _px(g['footer_text_top'])),
-                txt, fill=accent, font=f_stamp)
+        card.paste(stamp, (right_x - tw - _px(1.6) - stamp.width,
+                           H_PX - _px(g['footer_h']) + (_px(g['footer_h']) - stamp.height) // 2), stamp)
+    dr.text((right_x - tw, _px(g['footer_text_top'])), txt, fill=accent, font=f_stamp)
 
     out = BytesIO()
     card.save(out, format='PNG', optimize=True)

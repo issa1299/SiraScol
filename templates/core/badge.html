@@ -27,11 +27,11 @@ Géométrie identique à students/card_mali.py.{% endcomment %}
   .badge-school { display:flex; align-items:center; gap:2.2cqw; min-width:0; }
   .badge-logo {
     width:8.41cqw; aspect-ratio:1; flex-shrink:0; border-radius:50%;
-    border:.5cqw solid var(--accent); display:flex; align-items:center;
-    justify-content:center; overflow:hidden; background:transparent;
+    border:.45cqw solid var(--accent); display:flex; align-items:center;
+    justify-content:center; overflow:hidden; background:#fff;
   }
-  .badge-logo img { width:100%; height:100%; object-fit:contain; }
-  .badge-logo span { font-size:1.9cqw; font-weight:800; color:var(--accent); letter-spacing:.04em; }
+  .badge-logo img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
+  .badge-logo span { font-size:1.8cqw; font-weight:800; color:var(--accent); letter-spacing:.02em; }
   .badge-school-name {
     font-size:4.2cqw; font-weight:800; line-height:1.05;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
@@ -87,8 +87,9 @@ Géométrie identique à students/card_mali.py.{% endcomment %}
     padding:0 3.97cqw; gap:2cqw;
   }
   .badge-footer .note { font-size:1.8cqw; line-height:1.2; }
+  .badge-footer .footer-right { display:flex; align-items:center; gap:1cqw; flex-shrink:0; }
   .badge-footer .stamp-label { font-size:1.8cqw; font-weight:700; color:var(--accent); white-space:nowrap; }
-  .badge-stamp { height:7cqh; max-width:14cqw; object-fit:contain; }
+  .badge-stamp { height:5.5cqh; max-width:7cqw; object-fit:contain; border-radius:50%; }
 </style>
 
 <div class="badge-card">
@@ -136,10 +137,9 @@ Géométrie identique à students/card_mali.py.{% endcomment %}
 
   <div class="badge-footer">
     <span class="note">Cette carte est personnelle et doit être présentée à l'entrée.</span>
-    {% if badge.school.stamp_url %}
-    <img class="badge-stamp" src="{{ badge.school.stamp_url }}" alt="Cachet de la direction">
-    {% else %}
-    <span class="stamp-label">Cachet de la direction</span>
-    {% endif %}
+    <span class="footer-right">
+      {% if badge.school.stamp_url %}<img class="badge-stamp" src="{{ badge.school.stamp_url }}" alt="Cachet">{% endif %}
+      <span class="stamp-label">Cachet de la direction</span>
+    </span>
   </div>
 </div>
