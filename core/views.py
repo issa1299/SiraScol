@@ -582,10 +582,10 @@ def _collect_reports_data(request):
     }
     try:
         from finance.models import Payment, Invoice, Expense
-        inv_qs = Invoice.objects.all()
+        inv_qs = Invoice.objects.exclude(status='annule')
         if year:
             inv_qs = inv_qs.filter(academic_year=year)
-        pay_qs = Payment.objects.filter(invoice__in=inv_qs)
+        pay_qs = Payment.objects.filter(invoice__in=inv_qs, is_cancelled=False)
         exp_qs = Expense.objects.all()
         if year:
             exp_qs = exp_qs.filter(Q(academic_year=year) | Q(date__gte=year.start_date, date__lte=year.end_date))

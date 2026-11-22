@@ -199,7 +199,7 @@ def absence_list(request):
             'presences': n_present,
             'absences': n_absences,
             'ont_pointe': n_pointed,
-            'pas_pointe': max(0, 0),  # affiché informatif
+            'pas_pointe': max(0, n_records - n_pointed),
         },
         'weekday_stats': weekday_stats,
         'hour_stats': hour_stats,

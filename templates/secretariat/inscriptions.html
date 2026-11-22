@@ -22,7 +22,7 @@
     <form method="post" class="space-y-3">
       {% csrf_token %}
       <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Élève</label><select name="student" class="form-input" required><option value="">— Choisir —</option>{% for s in students %}<option value="{{ s.id }}">{{ s.last_name }} {{ s.first_name }} ({{ s.matricule }})</option>{% endfor %}</select></div>
-      <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Année scolaire</label><select name="academic_year" class="form-input" required>{% for y in years %}<option value="{{ y.id }}" {% if year and y.id == y.id %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></div>
+      <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Année scolaire</label><select name="academic_year" class="form-input" required>{% for y in years %}<option value="{{ y.id }}" {% if year and y.id == year.id %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></div>
       <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Classe</label><select name="classroom" class="form-input" required><option value="">— Choisir —</option>{% for c in classrooms %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
       <p class="text-[11px] font-bold uppercase text-slate-500 pt-2 border-t">Parent / tuteur (facultatif)</p>
       <div><label class="block text-[11px] text-slate-500 mb-1">Nom et prénom</label><input type="text" name="parent_name" class="form-input" placeholder="Ex. Moussa Bah"></div>

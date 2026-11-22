@@ -27,12 +27,13 @@ def message_compose(request):
         if not to_id or not subject or not body:
             messages.error(request, 'Destinataire, sujet et message requis.')
             return redirect('communication:compose')
-        recipient = get_object_or_404(User, pk=to_id)
+        recipient = get_object_or_404(User, pk=to_id, is_active=True)
         Message.objects.create(
             sender=request.user,
             recipient=recipient,
             subject=subject,
             body=body,
+            attachment=request.FILES.get('attachment'),
         )
         messages.success(request, 'Message envoyé.')
         return redirect('communication:inbox')

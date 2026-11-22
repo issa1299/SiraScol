@@ -119,6 +119,8 @@ def transfert(request, pk):
         target_year = AcademicYear.objects.filter(pk=target_year_id).first()
         if not classroom or not target_year:
             messages.error(request, 'Choisissez une classe et une année valides.')
+        elif classroom.academic_year_id != target_year.pk:
+            messages.error(request, 'La classe choisie n’appartient pas à l’année sélectionnée.')
         else:
             with transaction.atomic():
                 # On clôt les inscriptions actives des AUTRES années pour garder l'historique.
@@ -162,10 +164,31 @@ def inscriptions(request):
         if not (student_id and classroom_id and academic_year_id):
             messages.error(request, 'Élève, classe et année sont obligatoires.')
         else:
+            classroom = ClassRoom.objects.filter(pk=classroom_id).first()
+            if not classroom or str(classroom.academic_year_id) != str(academic_year_id):
+                messages.error(request, 'La classe choisie n’appartient pas à l’année sélectionnée.')
+                return space_redirect(request, 'secretariat:inscriptions')
+            existing = Enrollment.objects.filter(
+                student_id=student_id, academic_year_id=academic_year_id
+            ).first()
+            original_date = existing.enrollment_date if existing else date.today()
             enr, created = Enrollment.objects.update_or_create(
                 student_id=student_id, academic_year_id=academic_year_id,
-                defaults={'classroom_id': classroom_id, 'enrollment_date': date.today(), 'is_active': True},
+                defaults={
+                    'classroom_id': classroom_id,
+                    'enrollment_date': original_date,
+                    'is_active': True,
+                    'end_status': 'en_cours',
+                },
             )
+            if created:
+                try:
+                    from students.views import _create_invoices_for_enrollment
+                    _create_invoices_for_enrollment(
+                        enr.student, classroom, enr.academic_year, enr.enrollment_date
+                    )
+                except Exception:
+                    pass
             if parent_name and parent_phone:
                 parts = parent_name.split()
                 first = parts[0]

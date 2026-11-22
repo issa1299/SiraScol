@@ -169,6 +169,11 @@ def pointage(request):
                 reason = request.POST.get(f'reason_{student.pk}', '').strip()
                 if status == 'retard' and not arrival:
                     arrival = timezone.now().strftime('%H:%M')
+                previous = PresenceRecord.objects.filter(
+                    student=student, date=day, period=period
+                ).first()
+                old_status = previous.status if previous else ''
+                old_reason = previous.reason if previous else ''
                 rec, created = PresenceRecord.objects.update_or_create(
                     student=student, date=day, period=period,
                     defaults={
@@ -178,10 +183,11 @@ def pointage(request):
                         'recorded_by': request.user,
                     },
                 )
-                if not created:
+                if not created and (old_status != status or old_reason != reason):
                     PresenceChange.objects.create(
-                        record=rec, old_status=rec.status, new_status=status,
-                        new_reason=reason, changed_by=request.user,
+                        record=rec, old_status=old_status, new_status=status,
+                        old_reason=old_reason, new_reason=reason,
+                        changed_by=request.user,
                     )
                 saved += 1
             if validate:
@@ -375,17 +381,21 @@ def discipline_create(request):
         student=student, classroom=classroom, type=kind, motif=motif,
         description=request.POST.get('description', ''), date=day, author=request.user,
     )
-    if kind in ('sanction', 'exclusion', 'avertissement'):
+    if kind == 'exclusion':
+        # Seule une exclusion change le statut de présence ; les autres
+        # incidents ne doivent pas écraser un absent/retard déjà saisi.
         PresenceRecord.objects.update_or_create(
             student=student, date=day, period='journee',
             defaults={
-                'classroom': classroom, 'status': 'exclu' if kind == 'exclusion' else 'present',
-                'reason': f'{inc.get_type_display()} : {motif}', 'recorded_by': request.user,
+                'classroom': classroom, 'status': 'exclu',
+                'reason': f'{inc.get_type_display()} : {motif}',
+                'recorded_by': request.user,
             },
         )
+    if kind in ('sanction', 'exclusion', 'avertissement'):
         notify_role(
             'directeur', f'{inc.get_type_display()} — {student.full_name}',
-            f'{motif}. Voir la fiche du élève.', 'info',
+            f'{motif}. Voir la fiche de l’élève.', 'info',
         )
     messages.success(request, 'Incident disciplinaire enregistré.')
     return redirect('surveillant:discipline')
@@ -451,6 +461,19 @@ def sortie_return(request, pk):
     exit = get_object_or_404(StudentExit, pk=pk)
     exit.return_time = request.POST.get('return_time') or timezone.now().strftime('%H:%M')
     exit.save(update_fields=['return_time'])
+    # Le retour restaure une présence normale pour la séance du jour.
+    rec = PresenceRecord.objects.filter(
+        student=exit.student, date=exit.date, period='journee', status='sortie'
+    ).first()
+    if rec:
+        old_status = rec.status
+        rec.status = 'present'
+        rec.updated_by = request.user
+        rec.save(update_fields=['status', 'updated_by', 'updated_at'])
+        PresenceChange.objects.create(
+            record=rec, old_status=old_status, new_status='present',
+            new_reason='Retour de sortie', changed_by=request.user,
+        )
     messages.success(request, 'Heure de retour enregistrée.')
     return redirect('surveillant:sorties')
 

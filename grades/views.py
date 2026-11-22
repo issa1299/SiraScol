@@ -1,3 +1,4 @@
+from decimal import Decimal
 from functools import wraps
 
 from core.year_context import get_selected_year
@@ -34,6 +35,15 @@ def _teacher_can_classroom(user, classroom):
         return False
     ids = set(get_teacher_classrooms(user).values_list('id', flat=True))
     return classroom.id in ids
+
+
+def _bound_score(score, max_score):
+    """Borne une note entre 0 et le maximum de l'évaluation."""
+    value = Decimal(str(score))
+    maximum = Decimal(str(max_score or 20))
+    if value < 0:
+        return Decimal('0')
+    return min(value, maximum)
 
 
 def _deny_classroom(request):
@@ -360,7 +370,7 @@ def saisie_classe(request):
                     score = Decimal(raw.replace(',', '.'))
                 except InvalidOperation:
                     continue
-                sc = min(score, max_score)
+                sc = _bound_score(score, max_score)
                 Grade.objects.update_or_create(
                     assessment=assess, student=st,
                     defaults={
@@ -390,7 +400,7 @@ def saisie_classe(request):
                     Grade.objects.update_or_create(
                         assessment=assess_d, student=st,
                         defaults={
-                            'score': min(note_classe, max_score),
+                            'score': _bound_score(note_classe, max_score),
                             'is_absent': False,
                             'appreciation': f'Devoirs: {detail}',
                         },
@@ -400,7 +410,7 @@ def saisie_classe(request):
                 if raw_co != '':
                     try:
                         score = Decimal(raw_co.replace(',', '.'))
-                        sc = min(score, max_score)
+                        sc = _bound_score(score, max_score)
                         Grade.objects.update_or_create(
                             assessment=assess_c, student=st,
                             defaults={
@@ -591,7 +601,7 @@ def saisie_eleve(request):
                 assess = get_or_create_assessment(subject, type_compo, 'Composition')
                 Grade.objects.update_or_create(
                     assessment=assess, student=student,
-                    defaults={'score': min(score, max_score), 'is_absent': False, 'appreciation': ''},
+                    defaults={'score': _bound_score(score, max_score), 'is_absent': False, 'appreciation': ''},
                 )
             else:
                 # Devoirs → Note de classe (moyenne) + Composition
@@ -612,7 +622,7 @@ def saisie_eleve(request):
                     Grade.objects.update_or_create(
                         assessment=assess, student=student,
                         defaults={
-                            'score': min(note_classe, max_score),
+                            'score': _bound_score(note_classe, max_score),
                             'is_absent': False,
                             'appreciation': f'Devoirs: {detail}',
                         },
@@ -627,7 +637,7 @@ def saisie_eleve(request):
                         assess = get_or_create_assessment(subject, type_compo, 'Composition')
                         Grade.objects.update_or_create(
                             assessment=assess, student=student,
-                            defaults={'score': min(score_c, max_score), 'is_absent': False, 'appreciation': ''},
+                            defaults={'score': _bound_score(score_c, max_score), 'is_absent': False, 'appreciation': ''},
                         )
         messages.success(request, f'Notes enregistrées pour {student}.')
         is_ajax = (

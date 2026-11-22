@@ -1,4 +1,5 @@
 from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_POST
 
 from core.permissions import permission_required
 from django.shortcuts import render, get_object_or_404, redirect
@@ -203,6 +204,7 @@ def document_upload(request):
 
 
 @login_required
+@require_POST
 def document_delete(request, pk):
     from core.permissions import is_staff_role
     if not (is_staff_role(request.user) or request.user.is_superuser):

@@ -306,6 +306,7 @@ def slots_save(request):
     return redirect('/emploi-du-temps/?tab=configuration')
 
 
+@permission_required('timetable.edit')
 @login_required
 @_students_use_portal
 def timetable_entry_save(request, classroom_id):

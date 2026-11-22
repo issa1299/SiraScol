@@ -14,8 +14,27 @@ from core.permissions import get_role
 from core.year_context import get_selected_year
 from students.models import Student, Enrollment
 from grades.models import Grade, Period
-from academics.models import AcademicYear
+from academics.models import AcademicYear, ClassSubject
 from core.models import SchoolSettings
+
+
+def _subject_coefficient(subject, student, academic_year=None):
+    """Coefficient effectif : celui de la classe de l'élève s'il est défini.
+
+    Le coefficient saisi dans la fiche classe (ClassSubject.coefficient) prime
+    sur le coefficient global de la matière (Subject.coefficient).
+    """
+    enrollment = student.enrollments.filter(is_active=True)
+    if academic_year:
+        enrollment = enrollment.filter(academic_year=academic_year)
+    classroom_id = enrollment.values_list('classroom_id', flat=True).first()
+    if classroom_id:
+        class_subject = ClassSubject.objects.filter(
+            classroom_id=classroom_id, subject=subject
+        ).first()
+        if class_subject:
+            return class_subject.effective_coefficient()
+    return subject.coefficient
 
 
 def _students_use_portal(view_func):
@@ -85,7 +104,7 @@ def _compute_grades_primary(student, period=None, academic_year=None):
             total += _normalize(it['score'], it['max_score'], 10)
             n += 1
         avg = _q2(total / n) if n else None
-        coef = subject.coefficient
+        coef = _subject_coefficient(subject, student, academic_year)
         results.append({
             'subject': subject,
             'note_classe': None,
@@ -175,7 +194,7 @@ def _compute_grades_secondary(student, period=None, academic_year=None, formula=
         elif note_classe is not None:
             average = note_classe
 
-        coef = subject.coefficient
+        coef = _subject_coefficient(subject, student, academic_year)
         moy_coef = _q2(Decimal(str(average)) * coef) if average is not None else None
 
         results.append({
@@ -639,7 +658,7 @@ def bulletin_preview(request):
     template_id = request.GET.get('template', '')
     student_ids = request.GET.get('students', '').strip()
 
-    current_year = AcademicYear.objects.filter(is_current=True).first()
+    current_year = get_selected_year(request) or AcademicYear.objects.filter(is_current=True).first()
     classrooms = ClassRoom.objects.select_related('level').order_by('level__order', 'name')
     periods = Period.objects.filter(academic_year=current_year).order_by('period_type', 'order') if current_year else Period.objects.none()
     templates = BulletinTemplate.objects.all()

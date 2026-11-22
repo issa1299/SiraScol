@@ -56,6 +56,34 @@ class SurveillantPointageTests(TestCase):
         self.assertEqual(first, len(self.students))
         self.assertEqual(second, first)
 
+    def test_pointage_trace_keeps_old_status(self):
+        rec = PresenceRecord.objects.create(
+            student=self.students[0], classroom=self.cls,
+            date=date(2026, 11, 22), status='present', reason='arrivé',
+        )
+        payload = {'classroom': str(self.cls.pk), 'date': '2026-11-22', 'period': 'journee'}
+        for s in self.students:
+            payload[f'status_{s.pk}'] = 'absent' if s == self.students[0] else 'present'
+        self.client.post(reverse('surveillant:pointage'), payload)
+        change = rec.changes.first()
+        self.assertIsNotNone(change)
+        self.assertEqual(change.old_status, 'present')
+        self.assertEqual(change.new_status, 'absent')
+
+    def test_warning_does_not_overwrite_absence(self):
+        from surveillant.models import DisciplineIncident
+        rec = PresenceRecord.objects.create(
+            student=self.students[0], classroom=self.cls,
+            date=date.today(), status='absent', reason='malade',
+        )
+        self.client.post(reverse('surveillant:discipline_create'), {
+            'student': self.students[0].pk, 'type': 'avertissement',
+            'motif': 'retard répété', 'date': date.today().isoformat(),
+        })
+        rec.refresh_from_db()
+        self.assertEqual(rec.status, 'absent')
+        self.assertTrue(DisciplineIncident.objects.exists())
+
     def test_presence_edit_is_traced(self):
         rec = PresenceRecord.objects.create(
             student=self.students[0], classroom=self.cls,

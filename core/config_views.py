@@ -95,7 +95,15 @@ def subject_save(request):
     if request.method == 'POST':
         pk = request.POST.get('id')
         name = request.POST.get('name', '').strip()
-        coef = request.POST.get('coefficient') or 1
+        from decimal import Decimal, InvalidOperation
+        try:
+            coef = Decimal(str(request.POST.get('coefficient') or '1').replace(',', '.'))
+        except (InvalidOperation, ValueError):
+            messages.error(request, 'Le coefficient doit être un nombre.')
+            return redirect('core:config_subjects')
+        if coef < 0:
+            messages.error(request, 'Le coefficient ne peut pas être négatif.')
+            return redirect('core:config_subjects')
         code = request.POST.get('code', '').strip()
         if not name or not code:
             messages.error(request, 'Nom et code requis.')

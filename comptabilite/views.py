@@ -200,9 +200,9 @@ def depenses(request):
 def impayes(request):
     year = _year()
     classroom_id = request.GET.get('classroom', '')
-    invoices = Invoice.objects.filter(academic_year=year).select_related(
-        'student', 'fee_type'
-    ).order_by('due_date')
+    invoices = Invoice.objects.filter(academic_year=year).exclude(
+        status='annule'
+    ).select_related('student', 'fee_type').order_by('due_date')
     if classroom_id:
         invoices = invoices.filter(student__enrollments__classroom_id=classroom_id,
                                    student__enrollments__is_active=True)
@@ -233,7 +233,8 @@ def rappel(request, pk):
 @role_required('comptable')
 def impayes_pdf(request):
     year = _year()
-    rows = [i for i in Invoice.objects.filter(academic_year=year).select_related('student', 'fee_type')
+    rows = [i for i in Invoice.objects.filter(academic_year=year)
+            .exclude(status='annule').select_related('student', 'fee_type')
             if i.balance > 0]
     lines = [f'Année scolaire : {year.name if year else "—"}', '']
     for i in rows:

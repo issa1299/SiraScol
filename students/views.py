@@ -189,7 +189,9 @@ def student_list(request):
                     continue
                 fm = finance_map.setdefault(inv.student_id, {'due': Decimal('0'), 'paid': Decimal('0')})
                 fm['due'] += inv.amount
-            for pay in Payment.objects.filter(invoice__student_id__in=student_ids):
+            for pay in Payment.objects.filter(
+                invoice__student_id__in=student_ids, is_cancelled=False
+            ).exclude(invoice__status='annule'):
                 if year and pay.invoice.academic_year_id != year.id:
                     continue
                 fm = finance_map.setdefault(pay.invoice.student_id, {'due': Decimal('0'), 'paid': Decimal('0')})
@@ -267,7 +269,7 @@ def student_detail(request, pk):
         from decimal import Decimal
         from django.db.models import Sum
         invoices = list(
-            Invoice.objects.filter(student=student)
+            Invoice.objects.filter(student=student).exclude(status='annule')
             .select_related('fee_type', 'academic_year')
             .order_by('-created_at')
         )

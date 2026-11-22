@@ -30,10 +30,12 @@ def finance_dashboard(request):
     today = timezone.now().date()
 
     try:
-        invoices = Invoice.objects.all()
+        invoices = Invoice.objects.exclude(status='annule')
         if current_year:
             invoices = invoices.filter(academic_year=current_year)
-        payments = Payment.objects.filter(invoice__in=invoices).select_related(
+        payments = Payment.objects.filter(
+            invoice__in=invoices, is_cancelled=False
+        ).select_related(
             'invoice__student', 'invoice__fee_type', 'invoice'
         )
         expenses = Expense.objects.all()
@@ -139,7 +141,9 @@ def finance_report(request):
     except ValueError:
         report_date = timezone.now().date()
 
-    payments = Payment.objects.filter(payment_date=report_date).select_related(
+    payments = Payment.objects.filter(
+        payment_date=report_date, is_cancelled=False,
+    ).exclude(invoice__status='annule').select_related(
         'invoice__student', 'invoice__fee_type', 'invoice'
     )
     if current_year:
@@ -187,12 +191,14 @@ def student_finance_card(request, student_id):
     """Carte financière d'un élève (payé / dû / reste + historique)."""
     student = get_object_or_404(Student, pk=student_id)
     current_year = get_selected_year(request)
-    invoices = Invoice.objects.filter(student=student)
+    invoices = Invoice.objects.filter(student=student).exclude(status='annule')
     if current_year:
         invoices = invoices.filter(academic_year=current_year)
     invoices = invoices.select_related('fee_type')
     total_due = invoices.aggregate(s=Sum('amount'))['s'] or Decimal('0')
-    payments = Payment.objects.filter(invoice__in=invoices).select_related(
+    payments = Payment.objects.filter(
+        invoice__in=invoices, is_cancelled=False
+    ).select_related(
         'invoice__fee_type'
     ).order_by('-payment_date')
     total_paid = payments.aggregate(s=Sum('amount'))['s'] or Decimal('0')
@@ -289,6 +295,18 @@ def payment_create(request):
         try:
             amount = Decimal(request.POST.get('amount', '').strip().replace(',', '.'))
             invoice = Invoice.objects.get(pk=request.POST.get('invoice'))
+            if amount <= 0:
+                messages.error(request, 'Le montant doit être supérieur à zéro.')
+                return redirect('finance:payment_create')
+            if invoice.status == 'annule':
+                messages.error(request, 'Cette facture est annulée.')
+                return redirect('finance:payment_create')
+            if amount > invoice.balance:
+                messages.error(
+                    request,
+                    f'Le montant dépasse le solde restant ({invoice.balance} FCFA).',
+                )
+                return redirect('finance:payment_create')
             pay = Payment.objects.create(
                 invoice=invoice,
                 amount=amount,
@@ -379,11 +397,13 @@ def finance_classes(request):
             Enrollment.objects.filter(classroom=room, is_active=True)
             .values_list('student_id', flat=True)
         )
-        invoices = Invoice.objects.filter(student_id__in=student_ids)
+        invoices = Invoice.objects.filter(student_id__in=student_ids).exclude(status='annule')
         if year:
             invoices = invoices.filter(academic_year=year)
         total_due = invoices.aggregate(s=Sum('amount'))['s'] or Decimal('0')
-        total_paid = Payment.objects.filter(invoice__in=invoices).aggregate(s=Sum('amount'))['s'] or Decimal('0')
+        total_paid = Payment.objects.filter(
+            invoice__in=invoices, is_cancelled=False
+        ).aggregate(s=Sum('amount'))['s'] or Decimal('0')
         classes_data.append({
             'classroom': room,
             'nb_eleves': room.nb_eleves,
@@ -427,11 +447,13 @@ def finance_class_students(request, classroom_id):
     students_data = []
     for enr in enrollments:
         student = enr.student
-        invoices = Invoice.objects.filter(student=student)
+        invoices = Invoice.objects.filter(student=student).exclude(status='annule')
         if year:
             invoices = invoices.filter(academic_year=year)
         total_due = invoices.aggregate(s=Sum('amount'))['s'] or Decimal('0')
-        total_paid = Payment.objects.filter(invoice__in=invoices).aggregate(s=Sum('amount'))['s'] or Decimal('0')
+        total_paid = Payment.objects.filter(
+            invoice__in=invoices, is_cancelled=False
+        ).aggregate(s=Sum('amount'))['s'] or Decimal('0')
         balance = total_due - total_paid
         students_data.append({
             'student': student,
