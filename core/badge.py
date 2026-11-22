@@ -21,7 +21,8 @@ BADGE_DESIGNS = {
         'label': 'Officiel — vert & or',
         'primary': '#0c4a37', 'secondary': '#0c4a37', 'accent': '#e8b94a',
         'band': '#0c4a37', 'bg': '#fcfbf7', 'ink': '#111827', 'muted': '#6b7280',
-        'photo_bg': '#e7eee9', 'footer': '#0c4a37', 'caption': '#6b7280',
+        'photo_bg': '#e7eee9', 'footer': '#0c4a37', 'caption': '#4f5f54',
+        'label': '#4f5f54',
     },
     'modern': {
         'label': 'Moderne — bleu nuit & or',
@@ -81,7 +82,7 @@ def parents_pair(student):
 
 def school_context(school):
     """En-tête de l'établissement, réutilisé par tous les rendus."""
-    name = (getattr(school, 'name', None) if school else None) or 'Établissement scolaire'
+    name = (getattr(school, 'name', None) if school else None) or ''
     motto = ''
     if school and getattr(school, 'motto', None):
         motto = school.motto
@@ -123,8 +124,7 @@ def school_context(school):
 
     director = (getattr(school, 'director_name', None) if school else None) or '—'
     city = (getattr(school, 'city', None) if school else None) or ''
-    country = (getattr(school, 'country', None) if school else None) or 'Mali'
-    place = ', '.join(x for x in (city, country) if x)
+    place = city  # Ville seule, sans crochets ni pays ajouté.
 
     logo_url = stamp_url = None
     if school:
@@ -205,7 +205,10 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
                 parent_phone = link.parent.phone or ''
         except Exception:
             pass
-        classe = str(enrollment.classroom) if enrollment else '—'
+        classe = (
+            getattr(enrollment.classroom, 'name', str(enrollment.classroom))
+            if enrollment else '—'
+        )
         if enrollment and getattr(enrollment, 'academic_year_id', None):
             year_label = str(enrollment.academic_year.name)
         else:

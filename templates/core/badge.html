@@ -1,113 +1,117 @@
-{% comment %}Badge CR80 — contexte : badge (voir core.badge.build_badge_context).
-Unités : cqw = 1% de la largeur (85,6 mm), cqh = 1% de la hauteur (54 mm).
-Géométrie identique à students/card_mali.py.{% endcomment %}
+{% comment %}Badge CR80. Grille unique 1012×638 px partagée avec PNG/PDF.
+cqw = 1% de 1012 px, cqh = 1% de 638 px. Marge de sécurité : 36 px.{% endcomment %}
 <style>
   .badge-card {
     --primary: {{ badge.design.primary }};
     --accent: {{ badge.design.accent }};
     --bg: {{ badge.design.bg }};
     --ink: {{ badge.design.ink }};
-    --muted: {{ badge.design.muted }};
+    --label: {{ badge.design.label|default:'#4f5f54' }};
+    --caption: {{ badge.design.caption|default:'#4f5f54' }};
     --photo-bg: {{ badge.design.photo_bg|default:'#e7eee9' }};
-    position: relative; width: 100%; aspect-ratio: 85.6 / 54;
+    position: relative; width: 100%; aspect-ratio: 1012 / 638;
     container-type: size; background: var(--bg); color: var(--ink);
-    border-radius: 2.3cqw; overflow: hidden;
+    border-radius: 1cqw; overflow: hidden;
     font-family: 'Segoe UI', system-ui, Arial, sans-serif;
     box-shadow: 0 10px 30px -8px rgba(15,23,42,.35), 0 0 0 1px rgba(15,23,42,.10);
   }
-  .badge-card div, .badge-card span, .badge-card img, .badge-card svg { box-sizing: border-box; }
+  .badge-card * { box-sizing: border-box; }
 
-  /* ── En-tête vert : 11 mm = 20,37 % de la hauteur ── */
-  .badge-top {
-    position:absolute; left:0; right:0; top:0; height:20.37cqh;
-    background:var(--primary); color:#fff;
-    display:flex; align-items:center; justify-content:space-between;
-    padding:0 3.97cqw; gap:2cqw;
-  }
-  .badge-school { display:flex; align-items:center; gap:2.2cqw; min-width:0; }
+  {# ── En-tête : 150 px, marge haute 36 px pour le texte ── #}
+  .badge-top { position:absolute; left:0; right:0; top:0; height:23.51cqh; background:var(--primary); }
   .badge-logo {
-    width:8.41cqw; aspect-ratio:1; flex-shrink:0; border-radius:50%;
-    border:.45cqw solid var(--accent); display:flex; align-items:center;
-    justify-content:center; overflow:hidden; background:#fff;
+    position:absolute; left:3.56cqw; top:5.02cqh; width:8.10cqw; aspect-ratio:1;
+    border-radius:50%; border:.3cqw solid var(--accent); overflow:hidden;
+    display:flex; align-items:center; justify-content:center; background:#fff;
   }
   .badge-logo img { width:100%; height:100%; object-fit:cover; border-radius:50%; }
-  .badge-logo span { font-size:1.8cqw; font-weight:800; color:var(--accent); letter-spacing:.02em; }
+  .badge-logo span { font-size:1.5cqw; font-weight:800; color:var(--accent); }
   .badge-school-name {
-    font-size:4.2cqw; font-weight:800; line-height:1.05;
+    position:absolute; left:13.64cqw; top:6.58cqh;
+    font-size:3.95cqw; font-weight:800; line-height:1;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    max-width:48cqw; color:#fff;
   }
-  .badge-school-place { font-size:2.05cqw; color:#e5e7eb; margin-top:.7cqh; }
-  .badge-head-right { text-align:right; flex-shrink:0; }
-  .badge-head-title { font-size:3.45cqw; font-weight:800; color:var(--accent); letter-spacing:.03em; }
-  .badge-head-year { font-size:2.0cqw; color:#e5e7eb; margin-top:.9cqh; white-space:nowrap; }
+  .badge-school-place {
+    position:absolute; left:13.64cqw; top:13.79cqh;
+    font-size:1.98cqw; line-height:1; color:#e5e7eb; max-width:48cqw;
+  }
+  .badge-head-title {
+    position:absolute; right:3.56cqw; top:7.05cqh;
+    font-size:3.36cqw; font-weight:800; color:var(--accent); line-height:1;
+  }
+  .badge-head-year {
+    position:absolute; right:3.56cqw; top:13.79cqh;
+    font-size:1.88cqw; line-height:1; color:#e5e7eb; white-space:nowrap;
+  }
 
-  /* ── Photo : left 3,4 mm / top 14,9 mm / 18 × 22,3 mm ── */
+  {# ── Photo ── #}
   .badge-photo {
-    position:absolute; left:3.97cqw; top:27.59cqh;
-    width:21.03cqw; height:41.30cqh; border-radius:2.3cqw;
-    background:var(--photo-bg); border:.2cqw solid #d8e2da;
+    position:absolute; left:3.56cqw; top:28.53cqh; width:19.76cqw; height:39.19cqh;
+    border-radius:1cqw; background:var(--photo-bg); border:.2cqw solid #d8e2da;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    overflow:hidden; gap:1cqh;
+    overflow:hidden; gap:.8cqh;
   }
   .badge-photo img { width:100%; height:100%; object-fit:cover; object-position:center; }
-  .badge-photo svg { width:8.5cqw; height:8.5cqw; fill:none; stroke:#6b8a78; stroke-width:1.6; }
-  .badge-photo .ph-label { font-size:1.85cqw; font-weight:800; color:#6b8a78; letter-spacing:.12em; }
+  .badge-photo svg { width:7cqw; height:7cqw; fill:none; stroke:#6b8a78; stroke-width:1.6; }
+  .badge-photo .ph-label { font-size:1.5cqw; font-weight:800; color:#6b8a78; letter-spacing:.1em; }
 
-  /* ── Nom et champs ── */
+  {# ── Nom ── #}
   .badge-name {
-    position:absolute; left:29.5cqw; top:29.6cqh; right:24cqw;
-    font-size:5.0cqw; font-weight:800; line-height:1.05;
+    position:absolute; left:26.09cqw; top:28.21cqh; right:23cqw;
+    font-size:4.74cqw; font-weight:800; line-height:1;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  .badge-fields { position:absolute; left:29.5cqw; top:43.6cqh; right:24cqw; }
-  .badge-field { height:12.96cqh; }
+
+  {# ── Champs : étiquettes gris foncé, 4 px de la valeur, 20 px entre groupes ── #}
+  .badge-fields { position:absolute; left:26.09cqw; top:45.77cqh; right:23cqw; }
+  .badge-field { height:10.82cqh; }
   .badge-field .lab {
-    font-size:1.7cqw; font-weight:800; color:var(--accent);
-    letter-spacing:.12em; text-transform:uppercase; line-height:1;
+    font-size:1.48cqw; font-weight:700; color:var(--label);
+    text-transform:uppercase; letter-spacing:.12em; line-height:1;
   }
   .badge-field .val {
-    font-size:2.85cqw; font-weight:700; line-height:1.1; margin-top:.8cqh;
+    margin-top:.63cqh; font-size:2.96cqw; font-weight:700; line-height:1;
     white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
 
-  /* ── QR : left 66,4 mm / top 14,9 mm / 15,8 mm ── */
-  .badge-qr { position:absolute; left:77.57cqw; top:27.59cqh; width:18.46cqw; text-align:center; }
-  .badge-qr img { width:100%; aspect-ratio:1; display:block; background:#fff;
-    border:.2cqw solid #d1d5db; border-radius:1.6cqw; }
-  .badge-qr .cap {
-    display:block; margin-top:2.6cqh; font-size:1.55cqw;
-    line-height:1.2; color:var(--caption, #6b7280);
+  {# ── QR ── #}
+  .badge-qr {
+    position:absolute; left:77.67cqw; top:26.65cqh; width:18.78cqw;
+    padding:1.6cqw; background:#fff; border:.2cqw solid #d1d5db; border-radius:1.2cqw;
+  }
+  .badge-qr img { width:100%; aspect-ratio:1; display:block; }
+  .badge-qr-legend {
+    position:absolute; left:75cqw; width:23cqw; top:58.31cqh;
+    text-align:center; font-size:1.48cqw; line-height:1;
+    color:var(--caption); white-space:nowrap;
   }
 
-  /* ── Pied vert : 5 mm = 9,26 % de la hauteur ── */
+  {# ── Pied de page complet, pas de second logo ── #}
   .badge-footer {
-    position:absolute; left:0; right:0; bottom:0; height:9.26cqh;
+    position:absolute; left:0; right:0; bottom:0; height:12.54cqh;
     background:var(--primary); color:#fff;
-    display:flex; align-items:center; justify-content:space-between;
-    padding:0 3.97cqw; gap:2cqw;
   }
-  .badge-footer .note { font-size:1.8cqw; line-height:1.2; }
-  .badge-footer .footer-right { display:flex; align-items:center; gap:1cqw; flex-shrink:0; }
-  .badge-footer .stamp-label { font-size:1.8cqw; font-weight:700; color:var(--accent); white-space:nowrap; }
-  .badge-stamp { height:5.5cqh; max-width:7cqw; object-fit:contain; border-radius:50%; }
+  .badge-footer .note {
+    position:absolute; left:3.56cqw; top:4.07cqh;
+    font-size:1.68cqw; line-height:1; white-space:nowrap;
+  }
+  .badge-footer .stamp-label {
+    position:absolute; right:3.56cqw; top:4.07cqh;
+    font-size:1.68cqw; font-weight:700; color:var(--accent); line-height:1;
+  }
 </style>
 
 <div class="badge-card">
   <div class="badge-top">
-    <div class="badge-school">
-      <div class="badge-logo">
-        {% if badge.school.logo_url %}<img src="{{ badge.school.logo_url }}" alt="Logo">
-        {% else %}<span>LOGO</span>{% endif %}
-      </div>
-      <div class="badge-school-text">
-        <div class="badge-school-name">{{ badge.school.name }}</div>
-        <div class="badge-school-place">[{{ badge.place }}]</div>
-      </div>
+    <div class="badge-logo">
+      {% if badge.school.logo_url %}<img src="{{ badge.school.logo_url }}" alt="Logo">
+      {% else %}<span>LOGO</span>{% endif %}
     </div>
-    <div class="badge-head-right">
-      <div class="badge-head-title">{{ badge.title }}</div>
-      <div class="badge-head-year">Année scolaire {{ badge.year_label }}</div>
-    </div>
+    {% if badge.school.name %}<div class="badge-school-name">{{ badge.school.name }}</div>{% endif %}
+    {% if badge.school.place %}<div class="badge-school-place">{{ badge.school.place }}</div>{% endif %}
+    <div class="badge-head-title">{{ badge.title }}</div>
+    <div class="badge-head-year">Année scolaire {{ badge.year_label }}</div>
   </div>
 
   <div class="badge-photo">
@@ -130,16 +134,11 @@ Géométrie identique à students/card_mali.py.{% endcomment %}
     {% endfor %}
   </div>
 
-  <div class="badge-qr">
-    {% if badge.qr_url %}<img src="{{ badge.qr_url }}" alt="QR {{ badge.qr_payload }}">{% endif %}
-    <span class="cap">Scanner pour vérifier la carte</span>
-  </div>
+  {% if badge.qr_url %}<div class="badge-qr"><img src="{{ badge.qr_url }}" alt="QR {{ badge.qr_payload }}"></div>{% endif %}
+  <div class="badge-qr-legend">Scanner pour vérifier la carte</div>
 
   <div class="badge-footer">
-    <span class="note">Cette carte est personnelle et doit être présentée à l'entrée.</span>
-    <span class="footer-right">
-      {% if badge.school.stamp_url %}<img class="badge-stamp" src="{{ badge.school.stamp_url }}" alt="Cachet">{% endif %}
-      <span class="stamp-label">Cachet de la direction</span>
-    </span>
+    <span class="note">Cette carte est personnelle et doit être présentée à l’entrée.</span>
+    <span class="stamp-label">Cachet de la direction</span>
   </div>
 </div>
