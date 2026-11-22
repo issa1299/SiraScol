@@ -40,7 +40,7 @@ PITCH = LABEL_FS + LABEL_GAP + VALUE_FS + GROUP_GAP  # 69 px
 QR_SIZE = 190
 QR_X = W_PX - SAFE - QR_SIZE
 QR_Y = 170
-CAPTION_Y = QR_Y + QR_SIZE + 14
+CAPTION_Y = 470  # sous les champs, pour ne jamais les recouvrir
 CAPTION_FS = 15
 
 FOOTER_H = 80
@@ -388,7 +388,7 @@ def draw_badge_pdf(c, badge, y0=0):
             pass
     c.setFillColor(caption_color)
     setfont(False, 7.0)
-    c.drawCentredString(W(62 * W_PX / CARD_W_MM), Y(CAPTION_Y),
+    c.drawCentredString(W(67 * W_PX / CARD_W_MM), Y(CAPTION_Y),
                         'Scanner pour vérifier la carte')
 
     # Pied complet — une seule mention, pas de second logo
