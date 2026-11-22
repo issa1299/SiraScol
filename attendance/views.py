@@ -392,6 +392,21 @@ def scan_qr(request):
     n_present = len(person_keys)
     n_total = punches.values('student_id', 'teacher_id').distinct().count()
 
+    recent_qs = punches.select_related(
+        'student', 'student__user', 'teacher', 'teacher__user', 'recorded_by'
+    ).order_by('-id')[:12]
+    recent = []
+    for punch in recent_qs:
+        if punch.student_id and punch.student:
+            name = f"{punch.student.first_name} {punch.student.last_name}".strip()
+            code = punch.student.matricule
+        elif punch.teacher_id and punch.teacher:
+            name = f"{punch.teacher.first_name} {punch.teacher.last_name}".strip() or punch.teacher.matricule
+            code = punch.teacher.matricule
+        else:
+            name, code = '—', '—'
+        recent.append({'punch': punch, 'name': name, 'code': code})
+
     return render(request, 'attendance/scan_qr.html', {
         'tab': tab,
         'today': today,
@@ -401,6 +416,39 @@ def scan_qr(request):
             'arrivees': n_arrivee,
             'departs': n_depart,
         },
+        'recent': recent,
+    })
+
+
+@permission_required('attendance.take')
+@login_required
+def scan_manual(request):
+    """Formulaire de saisie manuelle du matricule, affiché en modale."""
+    return render(request, 'attendance/scan_manual_modal.html')
+
+
+@permission_required('attendance.take')
+@login_required
+def scan_camera_help(request):
+    """Aide à la caméra, affichée en modale."""
+    return render(request, 'attendance/scan_camera_help_modal.html')
+
+
+@permission_required('attendance.view')
+@login_required
+def scan_punch_detail(request, pk):
+    """Détail d'un pointage, affiché en modale."""
+    from .models import AttendancePunch
+    punch = get_object_or_404(AttendancePunch, pk=pk)
+    person = punch.student or punch.teacher
+    person_name = (
+        f"{person.first_name} {person.last_name}" if person else ''
+    ).strip()
+    return render(request, 'attendance/scan_punch_detail_modal.html', {
+        'punch': punch,
+        'person': person,
+        'person_name': person_name,
+        'person_url_name': 'students:detail' if punch.student_id else 'teachers:detail',
     })
 
 

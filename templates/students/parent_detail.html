@@ -12,7 +12,7 @@
         {% if parent.profession %}<p class="text-sm text-slate-500">{{ parent.profession }}</p>{% endif %}
         {% if parent.address %}<p class="text-sm text-slate-500 mt-1">{{ parent.address }}</p>{% endif %}
     </div>
-    <a href="{% url 'students:parent_edit' parent.pk %}" class="text-sm text-blue-600 hover:underline"><i class="fas fa-edit"></i> Modifier</a>
+    <button type="button" onclick="openModalUrl('{% url 'students:parent_edit' parent.pk %}','Modifier le parent')" class="text-sm text-blue-600 hover:underline"><i class="fas fa-edit"></i> Modifier</button>
 </div>
 <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
     <h2 class="font-semibold text-slate-800 mb-3">Enfants liés</h2>

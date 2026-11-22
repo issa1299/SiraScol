@@ -13,4 +13,7 @@ urlpatterns = [
     path('ajouter/', views.absence_create, name='create'),
     path('scan/', views.scan_qr, name='scan'),
     path('scan/api/', views.scan_qr_api, name='scan_api'),
+    path('scan/pointe/<int:pk>/', views.scan_punch_detail, name='scan_punch_detail'),
+    path('scan/saisie/', views.scan_manual, name='scan_manual'),
+    path('scan/aide/', views.scan_camera_help, name='scan_camera_help'),
 ]

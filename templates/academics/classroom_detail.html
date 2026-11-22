@@ -68,7 +68,7 @@
 {# ── ÉLÈVES ── #}
 {% if tab == 'eleves' %}
 <div class="flex flex-wrap gap-2 mb-5">
-  <a href="{% url 'students:create' %}" class="px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold"><i class="fas fa-plus"></i> Ajouter un élève</a>
+  <button type="button" onclick="openModalUrl('{% url 'students:create' %}','Ajouter un élève')" class="px-3 py-2.5 min-h-[44px] rounded-xl bg-blue-600 text-white text-xs font-semibold"><i class="fas fa-plus"></i> Ajouter un élève</button>
   <a href="{% url 'students:enroll_existing' %}?classroom={{ classroom.pk }}" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold"><i class="fas fa-user-plus"></i> Inscrire un élève existant</a>
   <a href="{% url 'students:import' %}" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold"><i class="fas fa-file-import"></i> Importer (Excel/CSV)</a>
   <a href="{% url 'classe:rapport' classroom.pk 'effectif' %}" target="_blank" class="px-3 py-2 rounded-xl bg-rose-50 text-rose-700 text-xs font-semibold"><i class="fas fa-file-pdf"></i> PDF</a>

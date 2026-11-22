@@ -1,0 +1,47 @@
+<div class="space-y-4">
+  <p class="text-xs text-slate-500">
+    Saisissez le matricule ou le code QR copié depuis la carte. Les préfixes
+    <code class="bg-slate-100 px-1 rounded">STU:</code> et
+    <code class="bg-slate-100 px-1 rounded">TCH:</code> sont acceptés.
+  </p>
+  <div>
+    <label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Code / matricule</label>
+    <input type="text" id="modal-manual-code" autocomplete="off" autofocus
+           placeholder="Ex: 2026-0001 ou STU:2026-0001"
+           class="form-input text-base font-mono">
+  </div>
+  <p id="modal-manual-error" class="hidden text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2"></p>
+  <div class="flex gap-2 pt-2">
+    <button type="button" id="modal-manual-submit"
+            class="flex-1 bg-emerald-600 text-white py-3 rounded-xl text-sm font-semibold">
+      <i class="fas fa-check"></i> Valider le pointage
+    </button>
+    <button type="button" onclick="closeModal('modal-dynamic')"
+            class="px-4 border rounded-xl text-sm text-slate-600">Annuler</button>
+  </div>
+</div>
+<script>
+(function(){
+  var input = document.getElementById('modal-manual-code');
+  var submit = document.getElementById('modal-manual-submit');
+  var error = document.getElementById('modal-manual-error');
+  function validate(){
+    var code = (input.value || '').trim();
+    if (!code) {
+      error.textContent = 'Veuillez saisir un matricule.';
+      error.classList.remove('hidden');
+      return;
+    }
+    error.classList.add('hidden');
+    if (typeof window.siraScanManual === 'function') {
+      window.siraScanManual(code);
+    }
+    closeModal('modal-dynamic');
+  }
+  if (submit) submit.onclick = validate;
+  if (input) input.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') { e.preventDefault(); validate(); }
+  });
+  setTimeout(function(){ if (input) input.focus(); }, 150);
+})();
+</script>

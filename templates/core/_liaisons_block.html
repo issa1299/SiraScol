@@ -8,13 +8,13 @@
     <li class="text-sm flex justify-between items-center gap-2 py-1 border-b border-slate-50 last:border-0">
       <span class="truncate">{{ obj }}</span>
       {% if type == "teacher_assign" %}
-      <a href="{% url 'teachers:assign' obj.pk %}" class="text-xs text-blue-600 shrink-0">Affecter</a>
+      <button type="button" onclick="openModalUrl('{% url 'teachers:assign' obj.pk %}','Affectations')" class="text-xs text-blue-600 shrink-0">Affecter</button>
       {% elif type == "teacher_user" %}
-      <a href="{% url 'teachers:edit' obj.pk %}" class="text-xs text-blue-600 shrink-0">Fiche</a>
+      <button type="button" onclick="openModalUrl('{% url 'teachers:edit' obj.pk %}','Fiche personnel')" class="text-xs text-blue-600 shrink-0">Fiche</button>
       {% elif type == "student_enroll" or type == "student_user" %}
-      <a href="{% url 'students:detail' obj.pk %}" class="text-xs text-blue-600 shrink-0">Fiche</a>
+      <button type="button" onclick="openModalUrl('{% url 'students:detail' obj.pk %}','Fiche élève')" class="text-xs text-blue-600 shrink-0">Fiche</button>
       {% elif type == "parent_user" or type == "parent_child" %}
-      <a href="{% url 'students:parent_detail' obj.pk %}" class="text-xs text-blue-600 shrink-0">Fiche</a>
+      <button type="button" onclick="openModalUrl('{% url 'students:parent_detail' obj.pk %}','Fiche parent')" class="text-xs text-blue-600 shrink-0">Fiche</button>
       {% elif type == "room_subj" %}
       <a href="{% url 'academics:classroom_subjects' obj.pk %}" class="text-xs text-blue-600 shrink-0">Matières</a>
       {% elif type == "room_main" %}
