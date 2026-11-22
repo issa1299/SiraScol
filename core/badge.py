@@ -9,7 +9,7 @@ from urllib.parse import quote
 
 from django.urls import reverse
 
-from .qr import badge_payload
+from .qr import badge_payload, staff_display_code
 
 # Format CR80 (carte bancaire)
 CARD_W_MM = 85.6
@@ -99,8 +99,14 @@ def parents_pair(student):
 def school_context(school):
     """En-tête de l'établissement, réutilisé par tous les rendus."""
     raw_name = (getattr(school, 'name', None) if school else None) or ''
-    # Ancienne valeur par défaut laissée en base : on la traite comme absente.
-    name = '' if raw_name.strip().lower() in ('mon école', 'mon ecole') else raw_name
+    import unicodedata
+    normalized = ''.join(
+        c for c in unicodedata.normalize('NFKD', raw_name.strip().lower())
+        if not unicodedata.combining(c)
+    )
+    # Anciennes valeurs par défaut (éventuellement avec une faute de frappe
+    # comme « Mon Écolek ») : on les traite comme absentes.
+    name = '' if normalized.startswith('mon ecole') else raw_name
     motto = ''
     if school and getattr(school, 'motto', None):
         motto = school.motto
@@ -262,14 +268,18 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
         ]
         main_fields = [
             ('FONCTION', function or '—'),
-            ('MATRICULE', person.matricule or '—'),
-            ('SERVICE', getattr(person, 'department', None) or '—'),
+            ('MATRICULE', staff_display_code(person)),
         ]
+        department = (getattr(person, 'department', None) or '').strip()
+        if department:
+            main_fields.append(('SERVICE', department))
         year_label = school_ctx['year_label']
         title = 'CARTE DU PERSONNEL'
         role_label = 'PERSONNEL'
 
-    payload = badge_payload(kind, getattr(person, 'matricule', None) or person.pk)
+    code = (staff_display_code(person) if kind == 'personnel'
+            else (getattr(person, 'matricule', None) or person.pk))
+    payload = badge_payload(kind, code)
     try:
         qr_url = reverse('core:qr_image') + '?data=' + quote(payload)
     except Exception:
@@ -289,7 +299,8 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
         'last_name': title_words(person.last_name),
         'first_name': title_words(person.first_name),
         'full_name': title_words(f'{person.first_name} {person.last_name}'),
-        'matricule': getattr(person, 'matricule', None) or '—',
+        'matricule': (staff_display_code(person) if kind == 'personnel'
+                      else (getattr(person, 'matricule', None) or '—')),
         'enrollment': enrollment,
         'lines': lines,
         'main_fields': main_fields,

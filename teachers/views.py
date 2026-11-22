@@ -872,7 +872,7 @@ def _staff_badge(teacher, request=None, school=None):
 @login_required
 def staff_qr_codes(request):
     """QR codes du personnel pour pointage — générés localement (TCH:<matricule>)."""
-    from core.qr import badge_payload
+    from core.qr import badge_payload, staff_display_code
     if not can(request.user, 'personnel.list'):
         messages.error(request, 'Accès refusé.')
         return redirect('core:dashboard')
@@ -887,7 +887,7 @@ def staff_qr_codes(request):
         )
     rows = []
     for tch in qs:
-        code = badge_payload('personnel', tch.matricule or tch.pk)
+        code = badge_payload('personnel', staff_display_code(tch))
         url = reverse('core:qr_image') + '?data=' + quote(code)
         rows.append({
             'teacher': tch,
@@ -905,9 +905,9 @@ def staff_qr_codes(request):
 @login_required
 def staff_qr_one(request, pk):
     """Modal QR d'un membre du personnel."""
-    from core.qr import badge_payload
+    from core.qr import badge_payload, staff_display_code
     teacher = get_object_or_404(Teacher, pk=pk)
-    code = badge_payload('personnel', teacher.matricule or teacher.pk)
+    code = badge_payload('personnel', staff_display_code(teacher))
     url = reverse('core:qr_image') + '?data=' + quote(code)
     return render(request, 'teachers/staff_qr_modal.html', {
         'teacher': teacher, 'code': code,

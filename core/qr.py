@@ -9,8 +9,36 @@ bon type de pointage, quel que soit l'onglet ouvert sur la page de scan.
 """
 from io import BytesIO
 
+import re
+
 KIND_STUDENT = 'STU'
 KIND_STAFF = 'TCH'
+
+ADMIN_CATEGORIES = {
+    'admin', 'administratif', 'administration', 'direction',
+    'comptable', 'comptabilite', 'secretaire', 'secrétaire', 'sec',
+}
+TEACHER_CATEGORIES = {'enseignant', 'teacher', 'prof', 'professeur'}
+
+
+def staff_display_code(person):
+    """Code lisible du personnel : ENS / ADM / PER selon la catégorie.
+
+    Le matricule stocké en base reste inchangé (unicité et historique) ; seul
+    le code affiché sur le badge et encodé dans le QR est adapté.
+    """
+    mat = str(getattr(person, 'matricule', None) or '').strip()
+    category = str(getattr(person, 'category', None) or '').strip().lower()
+    if category in ADMIN_CATEGORIES:
+        prefix = 'ADM'
+    elif category in TEACHER_CATEGORIES:
+        prefix = 'ENS'
+    else:
+        prefix = 'PER'
+    match = re.match(r'^[A-Za-z]{2,4}-(.*)$', mat)
+    if match:
+        return f'{prefix}-{match.group(1)}'
+    return f'{prefix}-{mat}' if mat else prefix
 
 
 def badge_payload(kind, code):

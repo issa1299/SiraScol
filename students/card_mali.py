@@ -11,7 +11,7 @@ from core.badge import (
     CARD_H_MM, CARD_W_MM, build_badge_context,
     parents_pair as _parents_pair,  # compatibilité ascendante
 )
-from core.qr import qr_png
+from core.qr import qr_png, staff_display_code
 
 # ── Grille de référence ──────────────────────────────────────────────────────
 W_PX, H_PX = 1012, 638
@@ -39,9 +39,9 @@ GROUP_GAP = 19                              # écart entre deux groupes
 PITCH = LABEL_FS + LABEL_GAP + VALUE_FS + GROUP_GAP  # 71 px
 
 QR_SIZE = 190
-QR_X = 660                                  # légèrement rentré pour garder la marge droite
+QR_X = 620                                  # rentré pour garder la marge droite avec la légende
 QR_Y = 170
-CAPTION_Y = 398                             # juste sous le QR, sans le chevaucher
+CAPTION_Y = 445                             # sous le QR et sous les champs
 CAPTION_FS = 15
 
 FOOTER_H = 80
@@ -196,9 +196,14 @@ def render_badge_png(badge):
         dr.text((cx - tw / 2, cy + 46), 'PHOTO', fill=stroke, font=f_ph)
 
     # ── Nom + champs ──
-    dr.text((NAME_X, NAME_Y),
-            _trim(f"{badge['first_name']} {badge['last_name']}", 26),
-            fill=ink, font=_font(NAME_FS, True))
+    full_name = f"{badge['first_name']} {badge['last_name']}"
+    name_font = _font(NAME_FS, True)
+    name_size = NAME_FS
+    max_width = W_PX - NAME_X - QR_SIZE - int(40 * W_PX / CARD_W_MM)
+    while dr.textlength(full_name, font=name_font) > max_width and name_size > 22:
+        name_size -= 1
+        name_font = _font(name_size, True)
+    dr.text((NAME_X, NAME_Y), full_name, fill=ink, font=name_font)
 
     fl = _font(LABEL_FS, True)
     fv = _font(VALUE_FS, True)
@@ -328,8 +333,8 @@ def draw_badge_pdf(c, badge, y0=0):
     c.setFillColor(HexColor(d.get('photo_bg', '#e7eee9')))
     c.setStrokeColor(HexColor('#d8e2da'))
     c.setLineWidth(0.8)
-    c.roundRect(W(PHOTO_X), Y(PHOTO_Y + PHOTO_H), W(PHOTO_W), W(PHOTO_H),
-                W(10), fill=1, stroke=1)
+    c.rect(W(PHOTO_X), Y(PHOTO_Y + PHOTO_H), W(PHOTO_W), W(PHOTO_H),
+           fill=1, stroke=1)
     photo_drawn = False
     if badge.get('photo_path'):
         try:
@@ -352,9 +357,14 @@ def draw_badge_pdf(c, badge, y0=0):
 
     # Nom et champs (étiquettes 7 pt, valeurs 7,4 pt, espacées)
     c.setFillColor(ink)
-    setfont(True, 11.5)
-    c.drawString(W(NAME_X), Y(NAME_Y),
-                 _trim(f"{badge['first_name']} {badge['last_name']}", 26))
+    full_name = f"{badge['first_name']} {badge['last_name']}"
+    name_size = 11.5
+    max_pt = W(QR_X) - W(NAME_X) - W(20)
+    font_name = 'VeraBd'
+    while c.stringWidth(full_name, font_name, name_size) > max_pt and name_size > 7:
+        name_size -= 0.5
+    setfont(True, name_size)
+    c.drawString(W(NAME_X), Y(NAME_Y), full_name)
 
     label_size, value_size = 4.4, 7.4
     top = FIELDS_TOP
@@ -377,8 +387,8 @@ def draw_badge_pdf(c, badge, y0=0):
     c.setFillColor(white)
     c.setStrokeColor(HexColor('#d1d5db'))
     c.setLineWidth(0.8)
-    c.roundRect(W(QR_X), Y(QR_Y + QR_SIZE), W(QR_SIZE), W(QR_SIZE),
-                W(12), fill=1, stroke=1)
+    c.rect(W(QR_X), Y(QR_Y + QR_SIZE), W(QR_SIZE), W(QR_SIZE),
+           fill=1, stroke=1)
     qr_buf = _qr_buf(badge['qr_payload'])
     if qr_buf:
         try:
@@ -388,8 +398,8 @@ def draw_badge_pdf(c, badge, y0=0):
         except Exception:
             pass
     c.setFillColor(caption_color)
-    setfont(False, 7.0)
-    c.drawCentredString(W(67 * W_PX / CARD_W_MM), Y(CAPTION_Y),
+    setfont(False, 8.0)
+    c.drawCentredString(W(QR_X + QR_SIZE / 2), Y(CAPTION_Y),
                         'Scanner pour vérifier la carte')
 
     # Pied complet — une seule mention, pas de second logo

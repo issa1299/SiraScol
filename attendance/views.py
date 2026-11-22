@@ -439,6 +439,11 @@ def scan_qr_api(request):
 
         if kind == 'personnel':
             teacher = Teacher.objects.filter(matricule__iexact=code).first()
+            if not teacher and '-' in code:
+                # Codes de badge ADM-/PER-/ENS- : on retrouve le matricule
+                # stocké par son suffixe, sans dépendre du préfixe affiché.
+                suffix = code.split('-', 1)[1]
+                teacher = Teacher.objects.filter(matricule__iendswith=f'-{suffix}').first()
             if not teacher and code.isdigit():
                 teacher = Teacher.objects.filter(pk=int(code)).first()
             if not teacher:
