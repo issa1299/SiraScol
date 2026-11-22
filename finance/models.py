@@ -86,6 +86,10 @@ class Payment(models.Model):
     reference = models.CharField(max_length=100, blank=True, verbose_name='Référence')
     received_by = models.CharField(max_length=100, blank=True, verbose_name='Reçu par')
     notes = models.TextField(blank=True)
+    tranche = models.CharField(
+        max_length=30, blank=True, verbose_name='Tranche',
+        help_text='Ex. Tranche 1/3, Acompte, Solde…',
+    )
     is_cancelled = models.BooleanField(default=False, verbose_name='Annulé')
     cancelled_reason = models.CharField(max_length=255, blank=True, verbose_name='Motif d’annulation')
     cancelled_at = models.DateTimeField(null=True, blank=True)

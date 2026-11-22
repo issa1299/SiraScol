@@ -16,6 +16,7 @@ from core.access import filter_students_for_user, get_student_for_user, filter_c
 from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
+from django.views.decorators.http import require_POST
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.core.paginator import Paginator
@@ -276,7 +277,9 @@ def student_detail(request, pk):
             .order_by('-payment_date')[:20]
         )
         total_due = sum((Decimal(str(i.amount)) for i in invoices), Decimal('0'))
-        total_paid = Payment.objects.filter(invoice__student=student).aggregate(s=Sum('amount'))['s'] or Decimal('0')
+        total_paid = Payment.objects.filter(
+            invoice__student=student, is_cancelled=False
+        ).aggregate(s=Sum('amount'))['s'] or Decimal('0')
         balance = total_due - total_paid
     except Exception:
         pass
@@ -287,10 +290,57 @@ def student_detail(request, pk):
         'current_enrollment': student.current_enrollment(),
         'invoices': invoices, 'payments': payments,
         'total_due': total_due, 'total_paid': total_paid, 'balance': balance,
+        'school': _get_school(),
     }
     if request.GET.get('modal') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest':
         return render(request, 'students/student_detail_modal.html', ctx)
     return render(request, 'students/student_detail.html', ctx)
+
+
+@login_required
+@permission_required('students.edit')
+@require_POST
+def student_payment_installment(request, pk):
+    """Enregistre une tranche de paiement sur une facture de l'élève."""
+    from finance.models import Invoice, Payment
+    from decimal import InvalidOperation
+
+    student = get_student_for_user(request.user, pk)
+    invoice = get_object_or_404(
+        Invoice, pk=request.POST.get('invoice_id'), student=student
+    )
+    raw = (request.POST.get('amount') or '').strip().replace(',', '.')
+    try:
+        amount = Decimal(raw)
+    except (InvalidOperation, ValueError):
+        messages.error(request, 'Montant de la tranche invalide.')
+        return redirect('students:detail', pk=pk)
+    if amount <= 0:
+        messages.error(request, 'Le montant doit être supérieur à zéro.')
+        return redirect('students:detail', pk=pk)
+    if amount > invoice.balance:
+        messages.error(
+            request,
+            f'Le montant dépasse le solde restant ({invoice.balance:.0f} FCFA).',
+        )
+        return redirect('students:detail', pk=pk)
+
+    count = invoice.payments.filter(is_cancelled=False).count() + 1
+    Payment.objects.create(
+        invoice=invoice,
+        amount=amount,
+        payment_date=request.POST.get('payment_date') or timezone.now().date(),
+        method=request.POST.get('method') or 'especes',
+        reference=request.POST.get('reference') or '',
+        received_by=request.user.get_full_name() or request.user.username,
+        notes=request.POST.get('notes') or '',
+        tranche=f'Tranche {count}',
+    )
+    messages.success(
+        request,
+        f'Tranche {count} de {amount:.0f} FCFA enregistrée sur {invoice.fee_type}.',
+    )
+    return redirect('students:detail', pk=pk)
 
 
 @login_required

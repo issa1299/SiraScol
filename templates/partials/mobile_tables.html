@@ -1,6 +1,9 @@
 {# Tableaux → cartes compactes + boîte de dialogue au tap (mobile). #}
 <style>
   @media (max-width: 767px) {
+    /* La largeur minimale des tableaux n'a plus de sens une fois en cartes. */
+    table.mobile-card-table { min-width: 0 !important; width: 100% !important; }
+
     table.mobile-card-table,
     table.mobile-card-table tbody,
     table.mobile-card-table tr,

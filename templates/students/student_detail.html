@@ -1,196 +1,286 @@
 {% extends "base.html" %}
-{% block title %}{{ student.last_name }} {{ student.first_name }}{% endblock %}
+{% load badge_extras %}
+{% block title %}{{ student.first_name|capwords }} {{ student.last_name|capwords }}{% endblock %}
 {% block content %}
 
 <div class="mb-3">
   <a href="{% url 'students:list' %}" class="text-sm text-slate-500 hover:text-blue-600">
-    <i class="fas fa-arrow-left"></i> Retour
+    <i class="fas fa-arrow-left"></i> Retour à la liste des élèves
   </a>
 </div>
 
-{# En-tête #}
+{# ── En-tête ── #}
 <div class="bg-white rounded-xl border p-4 mb-4 flex flex-col sm:flex-row sm:items-center gap-4">
   {% if student.photo %}
   <img src="{{ student.photo.url }}" alt="" class="w-16 h-16 rounded-xl object-cover">
   {% else %}
   <div class="w-16 h-16 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-xl font-bold">
-    {{ student.last_name|first|upper }}{{ student.first_name|first|upper }}
+    {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
   </div>
   {% endif %}
   <div class="flex-1 min-w-0">
-    <h1 class="text-xl font-bold text-slate-800">{{ student.last_name }} {{ student.first_name }}</h1>
+    <h1 class="text-xl font-bold text-slate-800">{{ student.first_name|capwords }} {{ student.last_name|capwords }}</h1>
     <p class="text-xs text-slate-500 mt-0.5">
-      {% if current_enrollment %}{{ current_enrollment.classroom }} · {% endif %}
+      {% if current_enrollment %}{{ current_enrollment.classroom.name }} · {% endif %}
       <span class="font-mono">{{ student.matricule }}</span>
       · <span class="text-emerald-600 font-medium">{{ student.get_status_display }}</span>
     </p>
   </div>
   <div class="flex flex-wrap gap-2">
     <button type="button" onclick="openModalUrl('{% url 'students:card_preview' student.pk %}?modal=1','Carte scolaire')"
-            class="border text-sm px-3 py-2 rounded-xl inline-flex items-center gap-1.5 text-violet-700 border-violet-200 bg-violet-50 hover:bg-violet-100">
+            class="border border-violet-200 bg-violet-50 text-violet-700 text-sm px-3 py-3 min-h-[44px] rounded-xl inline-flex items-center gap-1.5">
       <i class="fas fa-id-card"></i> Carte scolaire
     </button>
     <button type="button" onclick="openModalUrl('{% url 'students:edit' student.pk %}?modal=1','Modifier')"
-            class="bg-blue-600 text-white text-sm px-3 py-2 rounded-xl">
+            class="bg-blue-600 text-white text-sm px-3 py-3 min-h-[44px] rounded-xl">
       <i class="fas fa-edit"></i> Modifier
     </button>
   </div>
 </div>
 
-{# Onglets #}
-<div class="flex gap-1 border-b mb-4 text-sm overflow-x-auto" id="profile-tabs">
-  <button type="button" data-tab="infos" class="tab-btn px-4 py-2 border-b-2 border-blue-600 text-blue-700 font-semibold whitespace-nowrap">
-    <i class="fas fa-user"></i> Infos
+{# ── Onglets ── #}
+<div class="flex gap-1 border-b mb-4 overflow-x-auto" id="profile-tabs" role="tablist">
+  <button type="button" role="tab" aria-selected="true" data-tab="identite" class="tab-btn px-4 py-3 min-h-[44px] border-b-2 border-blue-600 text-blue-700 font-semibold whitespace-nowrap text-sm">
+    <i class="fas fa-user mr-1"></i> Identité
   </button>
-  <button type="button" data-tab="finances" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">
-    <i class="fas fa-wallet"></i> Finances
+  <button type="button" role="tab" aria-selected="false" data-tab="famille" class="tab-btn px-4 py-3 min-h-[44px] border-b-2 border-transparent text-slate-500 whitespace-nowrap text-sm">
+    <i class="fas fa-users mr-1"></i> Famille &amp; tuteurs
   </button>
-  <button type="button" data-tab="presence" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">
-    <i class="fas fa-calendar-check"></i> Présence
+  <button type="button" role="tab" aria-selected="false" data-tab="scolarite" class="tab-btn px-4 py-3 min-h-[44px] border-b-2 border-transparent text-slate-500 whitespace-nowrap text-sm">
+    <i class="fas fa-school mr-1"></i> Scolarité
   </button>
-  <button type="button" data-tab="docs" class="tab-btn px-4 py-2 border-b-2 border-transparent text-slate-500 whitespace-nowrap">
-    <i class="fas fa-folder"></i> Documents
+  <button type="button" role="tab" aria-selected="false" data-tab="finances" class="tab-btn px-4 py-3 min-h-[44px] border-b-2 border-transparent text-slate-500 whitespace-nowrap text-sm">
+    <i class="fas fa-wallet mr-1"></i> Finances
+  </button>
+  <button type="button" role="tab" aria-selected="false" data-tab="notes" class="tab-btn px-4 py-3 min-h-[44px] border-b-2 border-transparent text-slate-500 whitespace-nowrap text-sm">
+    <i class="fas fa-chart-line mr-1"></i> Notes
+  </button>
+  <button type="button" role="tab" aria-selected="false" data-tab="assiduite" class="tab-btn px-4 py-3 min-h-[44px] border-b-2 border-transparent text-slate-500 whitespace-nowrap text-sm">
+    <i class="fas fa-calendar-check mr-1"></i> Assiduité
+  </button>
+  <button type="button" role="tab" aria-selected="false" data-tab="documents" class="tab-btn px-4 py-3 min-h-[44px] border-b-2 border-transparent text-slate-500 whitespace-nowrap text-sm">
+    <i class="fas fa-folder mr-1"></i> Documents
   </button>
 </div>
 
-{# —— INFOS —— #}
-<div id="tab-infos" class="tab-panel">
+{# ── IDENTITÉ ── #}
+<div id="tab-identite" class="tab-panel" role="tabpanel">
   <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
     <div class="bg-white rounded-xl border p-4">
       <p class="text-sm font-semibold mb-3"><i class="fas fa-id-badge text-blue-600"></i> Informations personnelles</p>
-      <dl class="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-        <div><dt class="text-[10px] uppercase text-slate-400">Nom</dt><dd class="font-medium">{{ student.last_name }}</dd></div>
-        <div><dt class="text-[10px] uppercase text-slate-400">Prénom</dt><dd class="font-medium">{{ student.first_name }}</dd></div>
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-2 text-sm">
+        <div><dt class="text-[10px] uppercase text-slate-400">Nom</dt><dd class="font-medium">{{ student.last_name|capwords }}</dd></div>
+        <div><dt class="text-[10px] uppercase text-slate-400">Prénom</dt><dd class="font-medium">{{ student.first_name|capwords }}</dd></div>
         <div><dt class="text-[10px] uppercase text-slate-400">Sexe</dt><dd>{{ student.get_gender_display }}</dd></div>
-        <div><dt class="text-[10px] uppercase text-slate-400">Naissance</dt><dd>{{ student.date_of_birth|date:"d/m/Y" }}</dd></div>
+        <div><dt class="text-[10px] uppercase text-slate-400">Naissance</dt><dd>{{ student.date_of_birth|date:"d/m/Y"|default:"—" }}</dd></div>
         <div><dt class="text-[10px] uppercase text-slate-400">Lieu</dt><dd>{{ student.place_of_birth|default:"—" }}</dd></div>
-        <div class="col-span-2"><dt class="text-[10px] uppercase text-slate-400">Adresse</dt><dd>{{ student.address|default:"—" }}</dd></div>
+        <div class="sm:col-span-2"><dt class="text-[10px] uppercase text-slate-400">Adresse</dt><dd>{{ student.address|default:"—" }}</dd></div>
+        <div><dt class="text-[10px] uppercase text-slate-400">Téléphone</dt><dd>{{ student.phone|default:"—" }}</dd></div>
+        <div><dt class="text-[10px] uppercase text-slate-400">E-mail</dt><dd class="truncate">{{ student.email|default:"—" }}</dd></div>
       </dl>
-    </div>
-
-    <div class="bg-white rounded-xl border p-4">
-      <p class="text-sm font-semibold mb-3"><i class="fas fa-school text-blue-600"></i> Scolarité</p>
-      <dl class="space-y-2 text-sm">
-        <div class="flex justify-between"><dt class="text-slate-500">Matricule</dt><dd class="font-mono">{{ student.matricule }}</dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">Classe</dt><dd>{% if current_enrollment %}{{ current_enrollment.classroom }}{% else %}—{% endif %}</dd></div>
-        <div class="flex justify-between"><dt class="text-slate-500">Statut</dt>
-          <dd><span class="text-xs px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">{{ student.get_status_display }}</span></dd>
-        </div>
-        <div class="flex justify-between"><dt class="text-slate-500">Inscription</dt><dd>{{ student.enrollment_date|date:"d/m/Y"|default:"—" }}</dd></div>
-      </dl>
-      <a href="{% url 'grades:bulletin' student.pk %}" class="mt-3 inline-flex text-sm text-blue-600">
-        <i class="fas fa-file-alt"></i> Voir bulletin
-      </a>
-    </div>
-
-    {# Carte d'élève #}
-    <div class="bg-white rounded-xl border p-4">
-      <div class="flex justify-between items-center mb-2">
-        <p class="text-sm font-semibold"><i class="fas fa-id-card text-violet-600"></i> Carte d'élève</p>
-        <a href="{% url 'students:card' student.pk %}" class="text-xs text-violet-600 font-medium"><i class="fas fa-external-link-alt"></i> Ouvrir / Imprimer</a>
-      </div>
-      <div class="rounded-xl overflow-hidden text-white shadow-lg" style="background: linear-gradient(135deg,#5b21b6,#7c3aed);">
-        <div class="px-3 py-2 text-[10px] uppercase tracking-wide opacity-90 border-b border-white/20">
-          Carte d'élève · {% if school %}{{ school.name }}{% else %}Établissement{% endif %}
-        </div>
-        <div class="p-3 flex gap-3">
-          {% if student.photo %}
-          <img src="{{ student.photo.url }}" class="w-16 h-20 object-cover rounded-lg bg-white/20" alt="">
-          {% else %}
-          <div class="w-16 h-20 rounded-lg bg-white/20 flex items-center justify-center text-2xl"><i class="fas fa-user"></i></div>
-          {% endif %}
-          <div class="text-xs space-y-0.5 min-w-0">
-            <p class="font-bold text-sm truncate">{{ student.last_name }} {{ student.first_name }}</p>
-            <p class="opacity-90">{{ student.get_gender_display }}</p>
-            <p class="font-mono opacity-90">{{ student.matricule }}</p>
-            <p class="opacity-90">{% if current_enrollment %}{{ current_enrollment.classroom }}{% endif %}</p>
-            <p class="opacity-80">{{ student.date_of_birth|date:"d/m/Y" }}</p>
-          </div>
-        </div>
-        <div class="px-3 pb-3 flex items-end justify-between">
-          <img src="https://api.qrserver.com/v1/create-qr-code/?size=64x64&data={{ student.matricule|urlencode }}"
-               class="w-12 h-12 rounded bg-white p-0.5" alt="QR">
-          <span class="text-[9px] opacity-70">Pointage QR</span>
-        </div>
-      </div>
     </div>
 
     <div class="bg-white rounded-xl border p-4 lg:col-span-2">
-      <p class="text-sm font-semibold mb-3"><i class="fas fa-users text-blue-600"></i> Parent / Tuteur</p>
-      {% for link in parents %}
-      <div class="flex justify-between text-sm border-b py-2 last:border-0">
-        <div>
-          <p class="font-medium">{{ link.parent.last_name }} {{ link.parent.first_name }}</p>
-          <p class="text-xs text-slate-400">{{ link.get_relation_display|default:link.relation }}</p>
-        </div>
-        <div class="text-right text-xs text-slate-500">
-          {{ link.parent.phone|default:"" }}
-        </div>
+      <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+        <p class="text-sm font-semibold"><i class="fas fa-id-card text-violet-600"></i> Carte scolaire</p>
+        <a href="{% url 'students:card' student.pk %}" class="text-xs text-violet-600 font-medium">
+          <i class="fas fa-external-link-alt"></i> Ouvrir / Imprimer
+        </a>
       </div>
-      {% empty %}
-      <p class="text-sm text-slate-400">Aucun parent lié</p>
-      {% endfor %}
-    </div>
-
-    <div class="bg-white rounded-xl border p-4 text-center">
-      <p class="text-sm font-semibold mb-2"><i class="fas fa-qrcode"></i> Identification</p>
-      <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data={{ student.matricule|urlencode }}"
-           class="mx-auto rounded-lg border" alt="QR">
-      <p class="text-[11px] text-slate-400 mt-2">Scanner pour vérifier · {{ student.matricule }}</p>
+      <div class="flex flex-col sm:flex-row gap-4 items-center">
+        <div class="w-full max-w-[300px]">
+          <img src="{% url 'students:card_image' student.pk %}?preview=1" alt="Carte scolaire de {{ student.first_name|capwords }}"
+               class="w-full rounded-xl shadow border border-slate-200">
+        </div>
+        <p class="text-xs text-slate-500">
+          Le QR <span class="font-mono text-blue-700">STU:{{ student.matricule }}</span> permet le pointage
+          automatique des présences.
+          <a href="{% url 'students:card_pdf' student.pk %}" class="block mt-2 text-blue-600 underline">Télécharger la carte en PDF</a>
+        </p>
+      </div>
     </div>
   </div>
 </div>
 
-{# —— FINANCES —— #}
-<div id="tab-finances" class="tab-panel hidden">
-  <div class="grid grid-cols-3 gap-3 mb-4">
+{# ── FAMILLE & TUTEURS ── #}
+<div id="tab-famille" class="tab-panel hidden" role="tabpanel">
+  <div class="bg-white rounded-xl border p-4">
+    <p class="text-sm font-semibold mb-3"><i class="fas fa-users text-blue-600"></i> Parent / Tuteur</p>
+    {% for link in parents %}
+    <div class="flex flex-wrap justify-between gap-2 border-b py-3 last:border-0 text-sm">
+      <div>
+        <p class="font-medium">{{ link.parent.first_name|capwords }} {{ link.parent.last_name|capwords }}</p>
+        <p class="text-xs text-slate-400">{{ link.get_relation_display|default:link.relation }}</p>
+      </div>
+      <div class="text-right text-xs text-slate-500">
+        {{ link.parent.phone|default:"—" }}<br>{{ link.parent.email|default:"" }}
+      </div>
+    </div>
+    {% empty %}
+    <p class="text-sm text-slate-400">Aucun parent lié</p>
+    {% endfor %}
+  </div>
+</div>
+
+{# ── SCOLARITÉ ── #}
+<div id="tab-scolarite" class="tab-panel hidden" role="tabpanel">
+  <div class="bg-white rounded-xl border p-4 mb-4">
+    <p class="text-sm font-semibold mb-3"><i class="fas fa-school text-blue-600"></i> Inscription en cours</p>
+    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+      <div><dt class="text-[10px] uppercase text-slate-400">Année</dt><dd>{{ current_enrollment.academic_year.name|default:"—" }}</dd></div>
+      <div><dt class="text-[10px] uppercase text-slate-400">Classe</dt><dd>{{ current_enrollment.classroom.name|default:"—" }}</dd></div>
+      <div><dt class="text-[10px] uppercase text-slate-400">Inscrit le</dt><dd>{{ current_enrollment.enrollment_date|date:"d/m/Y"|default:"—" }}</dd></div>
+      <div><dt class="text-[10px] uppercase text-slate-400">Matricule</dt><dd class="font-mono">{{ student.matricule }}</dd></div>
+    </dl>
+  </div>
+  <div class="bg-white rounded-xl border overflow-hidden">
+    <p class="px-4 py-3 border-b text-sm font-semibold">Historique des inscriptions</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm min-w-[480px]">
+        <thead class="bg-slate-50 text-xs text-slate-500"><tr>
+          <th class="px-3 py-2 text-left">Année</th><th class="px-3 py-2 text-left">Classe</th>
+          <th class="px-3 py-2">Date</th><th class="px-3 py-2">Décision</th>
+        </tr></thead>
+        <tbody class="divide-y">
+          {% for e in enrollments %}
+          <tr>
+            <td class="px-3 py-2">{{ e.academic_year.name }}</td>
+            <td class="px-3 py-2">{{ e.classroom.name }}</td>
+            <td class="px-3 py-2 text-center">{{ e.enrollment_date|date:"d/m/Y" }}</td>
+            <td class="px-3 py-2 text-center text-xs">{{ e.get_end_status_display }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-3 py-6 text-center text-slate-400">Aucune inscription</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+{# ── FINANCES ── #}
+<div id="tab-finances" class="tab-panel hidden" role="tabpanel">
+  <div class="grid grid-cols-3 gap-2 sm:gap-3 mb-4">
     <div class="bg-white rounded-xl border p-3 text-center">
       <p class="text-[10px] text-slate-400 uppercase">Dû</p>
-      <p class="text-lg font-bold">{{ total_due|floatformat:0 }}</p>
+      <p class="text-base sm:text-lg font-bold">{{ total_due|floatformat:0 }}</p>
     </div>
     <div class="bg-white rounded-xl border p-3 text-center">
       <p class="text-[10px] text-slate-400 uppercase">Payé</p>
-      <p class="text-lg font-bold text-emerald-600">{{ total_paid|floatformat:0 }}</p>
+      <p class="text-base sm:text-lg font-bold text-emerald-600">{{ total_paid|floatformat:0 }}</p>
     </div>
     <div class="bg-white rounded-xl border p-3 text-center">
       <p class="text-[10px] text-slate-400 uppercase">Reste</p>
-      <p class="text-lg font-bold text-amber-600">{{ balance|floatformat:0 }}</p>
+      <p class="text-base sm:text-lg font-bold text-amber-600">{{ balance|floatformat:0 }}</p>
     </div>
   </div>
-  <div class="bg-white rounded-xl border overflow-hidden">
-    <p class="px-4 py-3 border-b text-sm font-semibold">Factures</p>
-    <table class="w-full text-sm">
-      <thead class="bg-slate-50 text-xs text-slate-500"><tr>
-        <th class="px-3 py-2 text-left">Type</th><th class="px-3 py-2">Montant</th><th class="px-3 py-2">Statut</th>
-      </tr></thead>
-      <tbody class="divide-y">
-        {% for inv in invoices %}
-        <tr>
-          <td class="px-3 py-2">{{ inv.fee_type }}</td>
-          <td class="px-3 py-2 text-center">{{ inv.amount|floatformat:0 }}</td>
-          <td class="px-3 py-2 text-center text-xs">{{ inv.get_status_display }}</td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="3" class="px-3 py-6 text-center text-slate-400">Aucune facture</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+
+  <div class="bg-white rounded-xl border overflow-hidden mb-4">
+    <p class="px-4 py-3 border-b text-sm font-semibold"><i class="fas fa-layer-group text-blue-600"></i> Paiement par tranches</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm min-w-[640px]">
+        <thead class="bg-slate-50 text-xs text-slate-500"><tr>
+          <th class="px-3 py-2 text-left">Facture</th>
+          <th class="px-3 py-2">Total</th>
+          <th class="px-3 py-2">Payé</th>
+          <th class="px-3 py-2">Reste</th>
+          <th class="px-3 py-2 text-left">Nouvelle tranche</th>
+        </tr></thead>
+        <tbody class="divide-y">
+          {% for inv in invoices %}
+          {% if inv.balance > 0 %}
+          <tr>
+            <td class="px-3 py-2 font-medium">{{ inv.fee_type }} <span class="block text-[10px] text-slate-400">{{ inv.get_status_display }}</span></td>
+            <td class="px-3 py-2 text-center">{{ inv.amount|floatformat:0 }}</td>
+            <td class="px-3 py-2 text-center text-emerald-700">{{ inv.amount_paid|floatformat:0 }}</td>
+            <td class="px-3 py-2 text-center text-amber-700 font-bold">{{ inv.balance|floatformat:0 }}</td>
+            <td class="px-3 py-2">
+              <form method="post" action="{% url 'students:payment_installment' student.pk %}" class="flex flex-wrap gap-2 items-center">
+                {% csrf_token %}
+                <input type="hidden" name="invoice_id" value="{{ inv.pk }}">
+                <input type="number" name="amount" min="1" step="1" max="{{ inv.balance }}" placeholder="Montant" required
+                       class="w-28 border border-slate-200 rounded-lg px-2 py-2 text-xs">
+                <input type="date" name="payment_date" value="{% now 'Y-m-d' %}" class="w-36 border border-slate-200 rounded-lg px-2 py-2 text-xs">
+                <select name="method" class="border border-slate-200 rounded-lg px-2 py-2 text-xs">
+                  <option value="especes">Espèces</option><option value="virement">Virement</option>
+                  <option value="cheque">Chèque</option><option value="mobile_money">Mobile Money</option>
+                </select>
+                <button type="submit" class="bg-emerald-600 text-white px-3 py-2 min-h-[44px] rounded-lg text-xs font-semibold">
+                  <i class="fas fa-plus"></i> Ajouter
+                </button>
+              </form>
+            </td>
+          </tr>
+          {% endif %}
+          {% empty %}
+          <tr><td colspan="5" class="px-3 py-6 text-center text-slate-400">Aucune facture</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-  {% if balance > 0 %}
-  <button type="button" class="mt-3 bg-emerald-600 text-white text-sm px-4 py-2.5 rounded-xl"
-          onclick="openModalUrl('{% url 'finance:student_payment' student.pk %}?modal=1','Paiement')">
-    <i class="fas fa-money-bill"></i> Enregistrer un paiement
-  </button>
-  {% endif %}
+
+  <div class="bg-white rounded-xl border overflow-hidden">
+    <p class="px-4 py-3 border-b text-sm font-semibold">Historique des versements</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm min-w-[520px]">
+        <thead class="bg-slate-50 text-xs text-slate-500"><tr>
+          <th class="px-3 py-2 text-left">Date</th><th class="px-3 py-2 text-left">Tranche</th>
+          <th class="px-3 py-2 text-left">Facture</th><th class="px-3 py-2">Montant</th><th class="px-3 py-2">Mode</th>
+        </tr></thead>
+        <tbody class="divide-y">
+          {% for p in payments %}
+          <tr>
+            <td class="px-3 py-2">{{ p.payment_date|date:"d/m/Y" }}</td>
+            <td class="px-3 py-2 font-semibold text-blue-700">{{ p.tranche|default:p.notes|default:"—" }}</td>
+            <td class="px-3 py-2">{{ p.invoice.fee_type }}</td>
+            <td class="px-3 py-2 text-center">{{ p.amount|floatformat:0 }}</td>
+            <td class="px-3 py-2 text-center text-xs">{{ p.get_method_display }}{% if p.is_cancelled %} · <span class="text-rose-600">annulé</span>{% endif %}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="5" class="px-3 py-6 text-center text-slate-400">Aucun versement</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
 </div>
 
-{# —— PRÉSENCE —— #}
-<div id="tab-presence" class="tab-panel hidden">
+{# ── NOTES ── #}
+<div id="tab-notes" class="tab-panel hidden" role="tabpanel">
+  <div class="bg-white rounded-xl border overflow-hidden">
+    <p class="px-4 py-3 border-b text-sm font-semibold">Notes récentes</p>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm min-w-[520px]">
+        <thead class="bg-slate-50 text-xs text-slate-500"><tr>
+          <th class="px-3 py-2 text-left">Matière</th><th class="px-3 py-2 text-left">Évaluation</th>
+          <th class="px-3 py-2">Note</th><th class="px-3 py-2">Date</th>
+        </tr></thead>
+        <tbody class="divide-y">
+          {% for g in recent_grades %}
+          <tr>
+            <td class="px-3 py-2">{{ g.assessment.subject.name|default:"—" }}</td>
+            <td class="px-3 py-2">{{ g.assessment.title|default:"—" }}</td>
+            <td class="px-3 py-2 text-center font-bold">{{ g.score }}</td>
+            <td class="px-3 py-2 text-center">{{ g.assessment.date|date:"d/m/Y"|default:"—" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="px-3 py-6 text-center text-slate-400">Aucune note</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="px-4 py-3 text-xs"><a href="{% url 'grades:bulletin' student.pk %}" class="text-blue-600 underline">Voir le bulletin complet</a></p>
+  </div>
+</div>
+
+{# ── ASSIDUITÉ ── #}
+<div id="tab-assiduite" class="tab-panel hidden" role="tabpanel">
   <div class="bg-white rounded-xl border overflow-hidden">
     <p class="px-4 py-3 border-b text-sm font-semibold">Absences / retards récents</p>
     <ul class="divide-y">
       {% for a in absences %}
-      <li class="px-4 py-2.5 text-sm flex justify-between">
+      <li class="px-4 py-3 text-sm flex flex-wrap justify-between gap-2">
         <span>{{ a.date|date:"d/m/Y" }} · {{ a.get_type_display }}</span>
         <span class="text-xs text-slate-500">{{ a.get_status_display }}</span>
       </li>
@@ -201,13 +291,28 @@
   </div>
 </div>
 
-{# —— DOCS —— #}
-<div id="tab-docs" class="tab-panel hidden">
-  <div class="bg-white rounded-xl border p-6 text-center text-slate-400 text-sm">
-    <i class="fas fa-folder-open text-3xl mb-2 block opacity-40"></i>
-    Documents de l'élève (bulletins PDF, reçus…)
-    <div class="mt-3">
-      <a href="{% url 'grades:bulletin' student.pk %}" class="text-blue-600 underline">Bulletins</a>
+{# ── DOCUMENTS ── #}
+<div id="tab-documents" class="tab-panel hidden" role="tabpanel">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="bg-white rounded-xl border p-4">
+      <p class="text-sm font-semibold"><i class="fas fa-file-signature text-emerald-600"></i> Attestation d'inscription</p>
+      <p class="text-xs text-slate-500 mt-1 mb-3">Atteste l'inscription de l'élève pour l'année en cours.</p>
+      <a href="{% url 'secretariat:attestation' student.pk %}" target="_blank" class="inline-block bg-emerald-700 text-white px-4 py-3 min-h-[44px] rounded-xl text-xs font-semibold"><i class="fas fa-file-pdf"></i> PDF</a>
+    </div>
+    <div class="bg-white rounded-xl border p-4">
+      <p class="text-sm font-semibold"><i class="fas fa-id-card text-blue-600"></i> Carte scolaire</p>
+      <p class="text-xs text-slate-500 mt-1 mb-3">Badge CR80 avec QR de pointage.</p>
+      <a href="{% url 'students:card_pdf' student.pk %}" target="_blank" class="inline-block bg-blue-600 text-white px-4 py-3 min-h-[44px] rounded-xl text-xs font-semibold"><i class="fas fa-file-pdf"></i> PDF</a>
+    </div>
+    <div class="bg-white rounded-xl border p-4">
+      <p class="text-sm font-semibold"><i class="fas fa-file-alt text-blue-600"></i> Fiche de renseignements</p>
+      <p class="text-xs text-slate-500 mt-1 mb-3">Identité, contacts, tuteurs et scolarité.</p>
+      <a href="{% url 'secretariat:fiche' student.pk %}" target="_blank" class="inline-block bg-blue-600 text-white px-4 py-3 min-h-[44px] rounded-xl text-xs font-semibold"><i class="fas fa-file-pdf"></i> PDF</a>
+    </div>
+    <div class="bg-white rounded-xl border p-4">
+      <p class="text-sm font-semibold"><i class="fas fa-file-invoice text-rose-600"></i> Certificat de scolarité</p>
+      <p class="text-xs text-slate-500 mt-1 mb-3">Document administratif à présenter.</p>
+      <a href="{% url 'secretariat:certificat' student.pk %}" target="_blank" class="inline-block bg-rose-600 text-white px-4 py-3 min-h-[44px] rounded-xl text-xs font-semibold"><i class="fas fa-file-pdf"></i> PDF</a>
     </div>
   </div>
 </div>
@@ -216,20 +321,22 @@
 (function(){
   var btns = document.querySelectorAll('.tab-btn');
   var panels = document.querySelectorAll('.tab-panel');
-  btns.forEach(function(b){
-    b.addEventListener('click', function(){
-      var id = b.getAttribute('data-tab');
-      btns.forEach(function(x){
-        x.classList.remove('border-blue-600','text-blue-700','font-semibold');
-        x.classList.add('border-transparent','text-slate-500');
-      });
-      b.classList.add('border-blue-600','text-blue-700','font-semibold');
-      b.classList.remove('border-transparent','text-slate-500');
-      panels.forEach(function(p){ p.classList.add('hidden'); });
-      var el = document.getElementById('tab-' + id);
-      if (el) el.classList.remove('hidden');
+  function activate(id) {
+    btns.forEach(function(x){
+      var on = x.getAttribute('data-tab') === id;
+      x.classList.toggle('border-blue-600', on);
+      x.classList.toggle('text-blue-700', on);
+      x.classList.toggle('font-semibold', on);
+      x.classList.toggle('border-transparent', !on);
+      x.classList.toggle('text-slate-500', !on);
+      x.setAttribute('aria-selected', on ? 'true' : 'false');
     });
-  });
+    panels.forEach(function(p){ p.classList.toggle('hidden', p.id !== 'tab-' + id); });
+    try { history.replaceState(null, '', '#tab-' + id); } catch(e) {}
+  }
+  btns.forEach(function(b){ b.addEventListener('click', function(){ activate(b.getAttribute('data-tab')); }); });
+  var h = (location.hash || '').replace('#tab-', '');
+  if (h && document.getElementById('tab-' + h)) activate(h);
 })();
 </script>
 {% endblock %}

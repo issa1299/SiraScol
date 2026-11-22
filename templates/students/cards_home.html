@@ -17,11 +17,14 @@
     </p>
   </div>
   <div class="flex flex-wrap gap-2">
-    <a href="{% url 'attendance:scan' %}" class="px-3 py-2 rounded-xl bg-blue-600 text-white text-xs font-semibold">
+    <a href="{% url 'attendance:scan' %}" class="px-3 py-3 min-h-[44px] rounded-xl bg-blue-600 text-white text-xs font-semibold">
       <i class="fas fa-qrcode"></i> Scanner les présences
     </a>
-    <a href="{% url 'teachers:qr_codes' %}" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold">
+    <a href="{% url 'teachers:qr_codes' %}" class="px-3 py-3 min-h-[44px] rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold">
       <i class="fas fa-qrcode"></i> QR personnel
+    </a>
+    <a href="{% url 'students:list_pdf' %}?year={{ selected_year.id }}" class="px-3 py-3 min-h-[44px] rounded-xl bg-rose-600 text-white text-xs font-semibold">
+      <i class="fas fa-file-pdf"></i> Liste des élèves
     </a>
   </div>
 </div>
@@ -42,7 +45,7 @@
     <h2 class="text-sm font-bold text-slate-900"><i class="fas fa-palette text-blue-600"></i> Choisir le modèle de badge</h2>
     <span class="text-[11px] text-slate-400">Modèle actuel : <b class="text-blue-700">{{ current_template }}</b></span>
   </div>
-  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
     {% for item in design_cards %}
     <form method="post" class="m-0">
       {% csrf_token %}
@@ -87,12 +90,15 @@
           <td class="px-4 py-3 text-xs text-slate-500">{{ r.classroom.level.name|default:'—' }}</td>
           <td class="px-4 py-3 text-center font-bold text-blue-700">{{ r.count }}</td>
           <td class="px-5 py-3 text-right">
-            <div class="flex justify-end gap-2">
-              <a href="{% url 'students:cards_class' r.classroom.pk %}" class="px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">
+            <div class="flex flex-wrap justify-end gap-2">
+              <a href="{% url 'students:cards_class' r.classroom.pk %}" class="px-3 py-2.5 min-h-[44px] rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold">
                 <i class="fas fa-eye"></i> Voir
               </a>
-              <a href="{% url 'students:cards_class_pdf' r.classroom.pk %}?template={{ current_template }}" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold">
-                <i class="fas fa-file-pdf"></i> PDF
+              <a href="{% url 'students:cards_class_pdf' r.classroom.pk %}?template={{ current_template }}" class="px-3 py-2.5 min-h-[44px] rounded-lg bg-blue-600 text-white text-xs font-semibold">
+                <i class="fas fa-id-card"></i> Badges
+              </a>
+              <a href="{% url 'students:list_pdf' %}?classroom={{ r.classroom.pk }}&year={{ selected_year.id }}" class="px-3 py-2.5 min-h-[44px] rounded-lg bg-rose-600 text-white text-xs font-semibold" target="_blank">
+                <i class="fas fa-list"></i> Liste PDF
               </a>
             </div>
           </td>

@@ -22,11 +22,14 @@
     </p>
   </div>
   <div class="flex flex-wrap gap-2">
-    <a href="{% url 'students:cards_class_pdf' classroom.pk %}?template={{ current_template }}" class="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold">
-      <i class="fas fa-file-pdf"></i> Tous les badges en PDF
+    <a href="{% url 'students:cards_class_pdf' classroom.pk %}?template={{ current_template }}" class="px-4 py-3 min-h-[44px] rounded-xl bg-blue-600 text-white text-xs font-semibold">
+      <i class="fas fa-id-card"></i> Badges en PDF
     </a>
-    <button type="button" onclick="window.print()" class="px-4 py-2.5 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold print:hidden">
-      <i class="fas fa-print"></i> Imprimer cette page
+    <a href="{% url 'students:list_pdf' %}?classroom={{ classroom.pk }}&year={{ classroom.academic_year_id }}" target="_blank" class="px-4 py-3 min-h-[44px] rounded-xl bg-rose-600 text-white text-xs font-semibold">
+      <i class="fas fa-list"></i> Liste des élèves PDF
+    </a>
+    <button type="button" onclick="window.print()" class="px-4 py-3 min-h-[44px] rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold print:hidden">
+      <i class="fas fa-print"></i> Imprimer
     </button>
   </div>
 </div>

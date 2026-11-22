@@ -21,6 +21,7 @@ urlpatterns = [
     path('importer/', views.student_import, name='import'),
     path('<int:pk>/', views.student_detail, name='detail'),
     path('<int:pk>/qr/', views.student_qr, name='qr'),
+    path('<int:pk>/paiement/tranche/', views.student_payment_installment, name='payment_installment'),
     path('<int:pk>/carte/', views.student_card, name='card'),
     path('<int:pk>/carte/apercu/', views.student_card_preview, name='card_preview'),
     path('<int:pk>/carte/pdf/', views.student_card_pdf, name='card_pdf'),
