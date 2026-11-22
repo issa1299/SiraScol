@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """Badges scolaires unifiés : élèves ET personnel, même modèle, même QR.
 
-Toutes les vues (HTML, PDF, PNG, aperçu) consomment le même contexte construit
+Toutes les vues (HTML, PNG, PDF, aperçu) consomment le même contexte construit
 ici. Les couleurs sont celles proposées dans les paramètres de l'école.
 """
 from datetime import date
@@ -15,39 +15,47 @@ from .qr import badge_payload
 CARD_W_MM = 85.6
 CARD_H_MM = 54.0
 
+LABEL_COLOR = '#4f5f54'
+
 # Les clés correspondent exactement à SchoolSettings.CARD_TEMPLATE_CHOICES
+# `label` = nom affiché du modèle ; `label_color` = couleur des étiquettes.
 BADGE_DESIGNS = {
     'official': {
         'label': 'Officiel — vert & or',
         'primary': '#0c4a37', 'secondary': '#0c4a37', 'accent': '#e8b94a',
         'band': '#0c4a37', 'bg': '#fcfbf7', 'ink': '#111827', 'muted': '#6b7280',
         'photo_bg': '#e7eee9', 'footer': '#0c4a37', 'caption': '#4f5f54',
-        'label': '#4f5f54',
+        'label_color': '#4f5f54',
     },
     'modern': {
         'label': 'Moderne — bleu nuit & or',
         'primary': '#0f172a', 'secondary': '#1e293b', 'accent': '#fbbf24',
         'band': '#fbbf24', 'bg': '#f8fafc', 'ink': '#0f172a', 'muted': '#475569',
+        'photo_bg': '#e8edf2', 'caption': LABEL_COLOR, 'label_color': LABEL_COLOR,
     },
     'classic': {
         'label': 'Classique — bleu roi',
         'primary': '#1d4ed8', 'secondary': '#2563eb', 'accent': '#60a5fa',
         'band': '#1e3a8a', 'bg': '#ffffff', 'ink': '#0f172a', 'muted': '#475569',
+        'photo_bg': '#e6ecf7', 'caption': LABEL_COLOR, 'label_color': LABEL_COLOR,
     },
     'gold': {
         'label': 'Prestige — or & noir',
         'primary': '#111827', 'secondary': '#1f2937', 'accent': '#d4af37',
         'band': '#d4af37', 'bg': '#fffdf7', 'ink': '#111827', 'muted': '#4b5563',
+        'photo_bg': '#f0ece0', 'caption': LABEL_COLOR, 'label_color': LABEL_COLOR,
     },
     'green': {
         'label': 'Émeraude',
         'primary': '#065f46', 'secondary': '#047857', 'accent': '#34d399',
         'band': '#059669', 'bg': '#f6fefb', 'ink': '#064e3b', 'muted': '#3f6b5b',
+        'photo_bg': '#e3efe8', 'caption': LABEL_COLOR, 'label_color': LABEL_COLOR,
     },
     'burgundy': {
         'label': 'Bordeaux',
         'primary': '#7f1d1d', 'secondary': '#991b1b', 'accent': '#fca5a5',
         'band': '#7f1d1d', 'bg': '#fffafa', 'ink': '#450a0a', 'muted': '#7f4b4b',
+        'photo_bg': '#f1e4e4', 'caption': LABEL_COLOR, 'label_color': LABEL_COLOR,
     },
 }
 

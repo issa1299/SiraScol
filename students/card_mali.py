@@ -138,7 +138,7 @@ def render_badge_png(badge):
     primary = _hex_rgb(d['primary'])
     accent = _hex_rgb(d['accent'])
     ink = _hex_rgb(d['ink'])
-    label_color = _hex_rgb(d.get('label', LABEL_COLOR))
+    label_color = _hex_rgb(d.get('label_color', LABEL_COLOR))
     caption_color = _hex_rgb(d.get('caption', LABEL_COLOR))
     photo_bg = _hex_rgb(d.get('photo_bg', '#e7eee9'))
 
@@ -264,7 +264,7 @@ def draw_badge_pdf(c, badge, y0=0):
     primary = HexColor(d['primary'])
     accent = HexColor(d['accent'])
     ink = HexColor(d['ink'])
-    label_color = HexColor(d.get('label', LABEL_COLOR))
+    label_color = HexColor(d.get('label_color', LABEL_COLOR))
     caption_color = HexColor(d.get('caption', LABEL_COLOR))
 
     # Fond + en-tête
