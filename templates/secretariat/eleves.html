@@ -1,4 +1,4 @@
-{% extends "secretariat/base_secretaire.html" %}
+{% extends space_base|default:"secretariat/base_secretaire.html" %}
 {% block title %}Élèves — Secrétariat{% endblock %}
 {% block header_title %}Gestion des élèves{% endblock %}
 {% block header_sub %}Rechercher, modifier, archiver ou transférer un dossier{% endblock %}

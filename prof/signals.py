@@ -86,7 +86,7 @@ def appointment_saved(sender, instance, created, **kwargs):
     if instance.teacher_id and instance.teacher.user_id:
         notify(instance.teacher.user, title, message, 'info', '/mon-espace-prof/rendezvous/')
     else:
-        notify_role('directeur', title, message, 'info', '/mon-espace-prof/rendezvous/')
+        notify_role('directeur', title, message, 'info', '/')
 
 
 @receiver(post_save, sender='timetable.TimetableEntry')

@@ -112,6 +112,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'core.year_context.academic_year_context',
                 'core.year_context.permissions_context',
+                'core.year_context.space_context',
             ],
         },
     },

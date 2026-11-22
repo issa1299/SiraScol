@@ -45,6 +45,46 @@ def academic_year_context(request):
         return {}
 
 
+SPACE_BASES = {
+    'directeur': 'base.html',
+    'admin': 'base.html',
+    'secretaire': 'secretariat/base_secretaire.html',
+    'comptable': 'comptabilite/base_comptable.html',
+    'enseignant': 'prof/base_prof.html',
+    'surveillant': 'surveillant/base_surveillant.html',
+    'parent': 'parent/base_parent.html',
+    'eleve': 'eleve/base_eleve.html',
+}
+
+SPACE_DASHBOARDS = {
+    'directeur': 'core:dashboard',
+    'admin': 'core:dashboard',
+    'secretaire': 'secretariat:dashboard',
+    'comptable': 'comptabilite:dashboard',
+    'enseignant': 'prof:dashboard',
+    'surveillant': 'surveillant:dashboard',
+    'parent': 'parent:dashboard',
+    'eleve': 'eleve:dashboard',
+}
+
+
+def space_context(request):
+    """Fournit le gabarit et le tableau de bord du propre espace de l'utilisateur.
+
+    Permet aux vues communes (ex. inscriptions) de rester dans l'espace du
+    rôle authentifié, sans jamais changer son rôle ni son identité.
+    """
+    if not getattr(request, 'user', None) or not request.user.is_authenticated:
+        return {}
+    from core.permissions import get_role
+    role = get_role(request.user) or 'directeur'
+    return {
+        'space_base': SPACE_BASES.get(role, 'base.html'),
+        'space_dashboard': SPACE_DASHBOARDS.get(role, 'core:dashboard'),
+        'user_space': role,
+    }
+
+
 def permissions_context(request):
     """Expose can_* dans les templates pour le menu."""
     if not getattr(request, 'user', None) or not request.user.is_authenticated:

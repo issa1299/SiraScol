@@ -297,7 +297,7 @@
     <div class="bg-white rounded-xl border p-4">
       <p class="text-sm font-semibold"><i class="fas fa-file-signature text-emerald-600"></i> Attestation d'inscription</p>
       <p class="text-xs text-slate-500 mt-1 mb-3">Atteste l'inscription de l'élève pour l'année en cours.</p>
-      <a href="{% url 'secretariat:attestation' student.pk %}" target="_blank" class="inline-block bg-emerald-700 text-white px-4 py-3 min-h-[44px] rounded-xl text-xs font-semibold"><i class="fas fa-file-pdf"></i> PDF</a>
+      <a href="{% url 'students:doc_attestation' student.pk %}" target="_blank" class="inline-block bg-emerald-700 text-white px-4 py-3 min-h-[44px] rounded-xl text-xs font-semibold"><i class="fas fa-file-pdf"></i> PDF</a>
     </div>
     <div class="bg-white rounded-xl border p-4">
       <p class="text-sm font-semibold"><i class="fas fa-id-card text-blue-600"></i> Carte scolaire</p>
@@ -307,12 +307,12 @@
     <div class="bg-white rounded-xl border p-4">
       <p class="text-sm font-semibold"><i class="fas fa-file-alt text-blue-600"></i> Fiche de renseignements</p>
       <p class="text-xs text-slate-500 mt-1 mb-3">Identité, contacts, tuteurs et scolarité.</p>
-      <a href="{% url 'secretariat:fiche' student.pk %}" target="_blank" class="inline-block bg-blue-600 text-white px-4 py-3 min-h-[44px] rounded-xl text-xs font-semibold"><i class="fas fa-file-pdf"></i> PDF</a>
+      <a href="{% url 'students:doc_fiche' student.pk %}" target="_blank" class="inline-block bg-blue-600 text-white px-4 py-3 min-h-[44px] rounded-xl text-xs font-semibold"><i class="fas fa-file-pdf"></i> PDF</a>
     </div>
     <div class="bg-white rounded-xl border p-4">
       <p class="text-sm font-semibold"><i class="fas fa-file-invoice text-rose-600"></i> Certificat de scolarité</p>
       <p class="text-xs text-slate-500 mt-1 mb-3">Document administratif à présenter.</p>
-      <a href="{% url 'secretariat:certificat' student.pk %}" target="_blank" class="inline-block bg-rose-600 text-white px-4 py-3 min-h-[44px] rounded-xl text-xs font-semibold"><i class="fas fa-file-pdf"></i> PDF</a>
+      <a href="{% url 'students:doc_certificat' student.pk %}" target="_blank" class="inline-block bg-rose-600 text-white px-4 py-3 min-h-[44px] rounded-xl text-xs font-semibold"><i class="fas fa-file-pdf"></i> PDF</a>
     </div>
   </div>
 </div>

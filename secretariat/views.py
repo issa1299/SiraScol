@@ -16,8 +16,23 @@ from academics.models import AcademicYear, ClassRoom
 from communication.models import Announcement, Message
 from core.messaging import allowed_recipients
 from core.models import Notification
-from core.permissions import get_linked_teacher, role_required
-from core.year_context import get_selected_year
+from core.permissions import get_linked_teacher, role_required, get_role
+from core.year_context import get_selected_year, SPACE_DASHBOARDS
+
+from django.urls import reverse
+
+
+def space_redirect(request, secretaire_route, *args, **kwargs):
+    """Redirige vers le tableau de bord du rôle réel de l'utilisateur.
+
+    Un directeur qui utilise une fonctionnalité commune (ex. inscriptions)
+    retourne dans son espace Directeur ; un secrétaire retourne au sien.
+    Le rôle n'est jamais modifié.
+    """
+    role = get_role(request.user) or 'directeur'
+    if role == 'secretaire':
+        return redirect(secretaire_route, *args, **kwargs)
+    return redirect(SPACE_DASHBOARDS.get(role, 'core:dashboard'))
 from students.models import Enrollment, Parent, ParentStudent, Student
 from teachers.models import Teacher
 
@@ -89,7 +104,7 @@ def eleve_archive(request, pk):
         student.user.is_active = student.status == 'actif'
         student.user.save(update_fields=['is_active'])
     messages.success(request, 'Statut du dossier mis à jour.')
-    return redirect('secretariat:eleves')
+    return space_redirect(request, 'secretariat:eleves')
 
 
 @role_required('secretaire')
@@ -126,7 +141,7 @@ def transfert(request, pk):
                         enrollment_date=date.today(), is_active=True,
                     )
             messages.success(request, f'{student.full_name} affecté(e) à {classroom.name}.')
-            return redirect('secretariat:eleves')
+            return space_redirect(request, 'secretariat:eleves')
     return render(request, 'secretariat/transfert.html', {
         'student': student, 'classrooms': classrooms,
         'years': AcademicYear.objects.order_by('-is_current', '-start_date'),
@@ -163,7 +178,7 @@ def inscriptions(request):
                     defaults={'relation': request.POST.get('relation', 'pere'), 'is_primary': True},
                 )
             messages.success(request, 'Inscription enregistrée.')
-            return redirect('secretariat:inscriptions')
+            return space_redirect(request, 'secretariat:inscriptions')
     return render(request, 'secretariat/inscriptions.html', {
         'enrollments': qs[:150], 'students': Student.objects.order_by('last_name', 'first_name'),
         'classrooms': ClassRoom.objects.filter(academic_year=year).order_by('name') if year else ClassRoom.objects.none(),
@@ -311,7 +326,7 @@ def annonces(request):
             messages.success(request, 'Message envoyé.')
         else:
             messages.error(request, 'Destinataire, objet et message sont obligatoires.')
-        return redirect('secretariat:annonces')
+        return space_redirect(request, 'secretariat:annonces')
 
     if request.method == 'POST':
         title = request.POST.get('title', '').strip()
@@ -324,7 +339,7 @@ def annonces(request):
                 expires_at=timezone.now() + timedelta(days=30),
             )
             messages.success(request, 'Annonce publiée.')
-            return redirect('secretariat:annonces')
+            return space_redirect(request, 'secretariat:annonces')
         messages.error(request, 'Titre et contenu obligatoires.')
 
     qs = Announcement.objects.order_by('-published_at')[:30]
@@ -349,7 +364,7 @@ def transmettre_direction(request, pk):
             body=f'Message de {msg.sender.get_full_name() or msg.sender.username} :\n\n{msg.body}',
         )
         messages.success(request, 'Message transmis à la direction.')
-    return redirect('secretariat:annonces')
+    return space_redirect(request, 'secretariat:annonces')
 
 
 @role_required('secretaire')
@@ -358,7 +373,7 @@ def notifications(request):
     if request.method == 'POST':
         Notification.objects.filter(user=request.user, id__in=request.POST.getlist('ids')).update(is_read=True)
         messages.success(request, 'Notifications marquées comme lues.')
-        return redirect('secretariat:notifications')
+        return space_redirect(request, 'secretariat:notifications')
     return render(request, 'secretariat/notifications.html', {
         'notifications': qs, 'section': 'notifications',
     })

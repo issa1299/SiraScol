@@ -1,4 +1,4 @@
-{% extends "secretariat/base_secretaire.html" %}
+{% extends space_base|default:"secretariat/base_secretaire.html" %}
 {% block title %}{{ classroom.name }} — Élèves{% endblock %}
 {% block header_title %}{{ classroom.name }}{% endblock %}
 {% block header_sub %}Liste des élèves affectés{% endblock %}

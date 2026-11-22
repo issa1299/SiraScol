@@ -1,4 +1,4 @@
-{% extends "secretariat/base_secretaire.html" %}
+{% extends space_base|default:"secretariat/base_secretaire.html" %}
 {% block title %}Classes — Secrétariat{% endblock %}
 {% block header_title %}Gestion des classes{% endblock %}
 {% block header_sub %}Effectifs et listes des élèves{% endblock %}

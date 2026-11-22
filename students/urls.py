@@ -2,6 +2,7 @@ from django.urls import path
 from . import views
 from . import parent_views
 from . import promotion_views
+from secretariat import views as secretariat_views
 
 app_name = 'students'
 
@@ -19,6 +20,14 @@ urlpatterns = [
     path('pdf/', views.student_list_pdf, name='list_pdf'),
     path('ajouter/', views.student_create, name='create'),
     path('importer/', views.student_import, name='import'),
+    # Fonctions administratives partagées : URL commune, interface adaptée au rôle.
+    path('inscriptions/inscrire/', secretariat_views.inscriptions, name='enroll_existing'),
+    path('documents/certificat/<int:student_id>/', secretariat_views.doc_certificat,
+         name='doc_certificat'),
+    path('documents/attestation/<int:student_id>/', secretariat_views.doc_attestation,
+         name='doc_attestation'),
+    path('documents/fiche/<int:student_id>/', secretariat_views.doc_fiche,
+         name='doc_fiche'),
     path('<int:pk>/', views.student_detail, name='detail'),
     path('<int:pk>/qr/', views.student_qr, name='qr'),
     path('<int:pk>/paiement/tranche/', views.student_payment_installment, name='payment_installment'),

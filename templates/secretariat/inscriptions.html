@@ -1,4 +1,4 @@
-{% extends "secretariat/base_secretaire.html" %}
+{% extends space_base|default:"secretariat/base_secretaire.html" %}
 {% block title %}Inscriptions — Secrétariat{% endblock %}
 {% block header_title %}Inscriptions et réinscriptions{% endblock %}
 {% block header_sub %}Affecter un élève à une classe et enregistrer le parent{% endblock %}
