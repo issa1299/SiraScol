@@ -1,0 +1,64 @@
+{% extends "examens/base_examens.html" %}
+{% block exam_title %}Importer depuis les classes{% endblock %}
+{% block exam_content %}
+<div class="bg-white rounded-xl border p-5 mb-4">
+  <p class="text-sm font-bold text-slate-800 mb-1"><i class="fas fa-file-import text-blue-600"></i>
+    {% if exam_type == 'def' %}Importer les élèves de 9ᵉ année{% else %}Importer les élèves de Terminale{% endif %}
+  </p>
+  <p class="text-xs text-slate-500 mb-3">
+    Classe de travail : <strong>{{ year.name }}</strong> — sélectionnez la session, puis les élèves à inscrire.
+    Les dossiers créés sont en statut « À vérifier ».
+  </p>
+  {% if not sessions %}
+    <div class="rounded-xl bg-amber-50 border border-amber-200 p-3 text-xs text-amber-800 mb-3">
+      Aucune session {{ exam_type|upper }} pour cette année.
+      <a href="{% url 'examens:session_create' %}" class="font-bold underline">Créer une session</a>.
+    </div>
+  {% endif %}
+  <form method="post" action="{% url 'examens:import_confirm' %}">
+    {% csrf_token %}
+    <input type="hidden" name="section" value="{{ section }}">
+    <div class="flex flex-wrap gap-2 items-center">
+      <select name="session" class="form-input sm:w-80" required>
+        <option value="">— Choisir la session —</option>
+        {% for s in sessions %}<option value="{{ s.pk }}">{{ s.get_type_display }} · {{ s.get_session_display }} · {{ s.date|date:"d/m/Y" }}{% if s.center %} · {{ s.center }}{% endif %}</option>{% endfor %}
+      </select>
+      <button type="submit" class="px-5 py-3 min-h-[44px] rounded-xl bg-emerald-600 text-white text-xs font-semibold">Confirmer les inscriptions</button>
+    </div>
+
+    <div class="mt-4 border rounded-xl overflow-hidden">
+      <table class="w-full text-sm">
+        <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500">
+          <th class="px-3 py-2 w-12 text-center">Choisir</th><th class="px-3 py-2 text-left">Élève</th>
+          <th class="px-3 py-2 text-left">Matricule</th><th class="px-3 py-2 text-left">Classe</th>
+          <th class="px-3 py-2 text-left">État</th>
+        </tr></thead>
+        <tbody class="divide-y">
+          {% for s in students %}
+          <tr class="{% if s.exam_candidate %}opacity-60{% endif %}">
+            <td class="px-3 py-2 text-center">
+              {% if s.exam_candidate %}
+                <input type="checkbox" disabled>
+              {% else %}
+                <input type="checkbox" name="students" value="{{ s.pk }}" class="w-4 h-4">
+              {% endif %}
+            </td>
+            <td class="px-3 py-2 font-semibold text-slate-800">{{ s.last_name|title }} {{ s.first_name|title }}</td>
+            <td class="px-3 py-2 text-xs text-slate-500">{{ s.matricule }}</td>
+            <td class="px-3 py-2 text-xs">{% if s.current_enrollment %}{{ s.current_enrollment.classroom.name }}{% else %}—{% endif %}</td>
+            <td class="px-3 py-2 text-xs">
+              {% if s.exam_candidate %}<span class="text-emerald-700">Déjà candidat · {{ s.exam_candidate.registration_number }}</span>{% else %}<span class="text-slate-400">À inscrire</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}<tr><td colspan="5" class="py-10 text-center text-slate-400">Aucun élève concerné pour cette année scolaire.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </form>
+</div>
+
+<p class="text-xs text-slate-500">
+  <a href="{% url 'examens:candidate_create' %}" class="text-blue-600 underline font-semibold">Ajouter manuellement un candidat externe</a>
+  · <a href="{% url 'examens:excel_import' %}" class="text-blue-600 underline font-semibold">Importer une liste Excel</a>
+</p>
+{% endblock %}

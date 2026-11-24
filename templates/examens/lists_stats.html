@@ -1,0 +1,38 @@
+{% extends "examens/base_examens.html" %}
+{% block exam_title %}Listes et statistiques{% endblock %}
+{% block exam_content %}
+<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+  <div class="bg-white rounded-xl border p-4"><p class="text-[10px] uppercase font-bold text-slate-400">Total candidats</p><p class="text-2xl font-bold text-slate-900 mt-1">{{ total }}</p></div>
+  <div class="bg-white rounded-xl border p-4"><p class="text-[10px] uppercase font-bold text-slate-400">DEF</p><p class="text-2xl font-bold text-blue-600 mt-1">{{ by_type.DEF }}</p></div>
+  <div class="bg-white rounded-xl border p-4"><p class="text-[10px] uppercase font-bold text-slate-400">BAC</p><p class="text-2xl font-bold text-indigo-600 mt-1">{{ by_type.BAC }}</p></div>
+  <div class="bg-white rounded-xl border p-4"><p class="text-[10px] uppercase font-bold text-slate-400">Validés</p><p class="text-2xl font-bold text-emerald-600 mt-1">{% for label, n, pct in by_status %}{% if label == 'Validé' %}{{ n }}{% endif %}{% endfor %}</p></div>
+</div>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div class="bg-white rounded-xl border p-5">
+    <p class="text-sm font-bold text-slate-800 mb-3"><i class="fas fa-clipboard-check text-blue-600"></i> Statuts d’inscription</p>
+    {% for label, n, pct in by_status %}
+    <div class="flex items-center justify-between py-2 border-b last:border-0">
+      <span class="text-xs text-slate-600">{{ label }}</span>
+      <div class="flex items-center gap-2"><div class="w-32 h-2 rounded-full bg-slate-100"><div class="h-2 rounded-full bg-blue-500" style="width:{{ pct }}%"></div></div><span class="text-xs font-bold text-slate-800 w-8 text-right">{{ n }}</span></div>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="bg-white rounded-xl border p-5">
+    <p class="text-sm font-bold text-slate-800 mb-3"><i class="fas fa-school text-blue-600"></i> Candidats par classe</p>
+    {% for name, n in by_class %}
+    <div class="flex items-center justify-between py-2 border-b last:border-0"><span class="text-xs text-slate-600">{{ name }}</span><span class="text-xs font-bold text-slate-800">{{ n }}</span></div>
+    {% empty %}<p class="text-xs text-slate-400">Aucune donnée.</p>{% endfor %}
+  </div>
+</div>
+
+<div class="mt-5 bg-white rounded-xl border p-5">
+  <p class="text-sm font-bold text-slate-800 mb-3"><i class="fas fa-print text-rose-600"></i> Imprimer / exporter les listes</p>
+  <div class="flex flex-wrap gap-2">
+    <a href="{% url 'examens:candidats_def' %}" class="px-4 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-semibold">Liste DEF</a>
+    <a href="{% url 'examens:candidats_bac' %}" class="px-4 py-2.5 rounded-xl bg-indigo-600 text-white text-xs font-semibold">Liste BAC</a>
+    <a href="{% url 'examens:export' %}?format=pdf" class="px-4 py-2.5 rounded-xl bg-rose-600 text-white text-xs font-semibold"><i class="fas fa-file-pdf"></i> PDF</a>
+    <a href="{% url 'examens:export' %}?format=excel" class="px-4 py-2.5 rounded-xl bg-emerald-600 text-white text-xs font-semibold"><i class="fas fa-file-excel"></i> Excel</a>
+  </div>
+</div>
+{% endblock %}

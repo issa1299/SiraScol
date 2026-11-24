@@ -1,0 +1,31 @@
+{% extends "examens/base_examens.html" %}
+{% block exam_title %}Résultats des examens{% endblock %}
+{% block exam_content %}
+<p class="text-xs text-slate-500 mb-4">Saisie des résultats et du statut de présence. Les dossiers sont affichés pour l’année de travail sélectionnée.</p>
+<div class="bg-white rounded-xl border overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm min-w-[800px]">
+      <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500">
+        <th class="px-4 py-2 text-left">N° candidat</th><th class="px-4 py-2 text-left">Candidat</th>
+        <th class="px-4 py-2">Examen</th><th class="px-4 py-2">Résultat actuel</th>
+        <th class="px-4 py-2 text-left">Nouveau résultat</th><th class="px-4 py-2 text-left">Observations</th><th class="px-4 py-2"></th>
+      </tr></thead>
+      <tbody class="divide-y">
+        {% for c in rows %}<tr>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="candidate" value="{{ c.pk }}">
+            <td class="px-4 py-2 font-mono text-xs text-blue-700">{{ c.registration_number }}</td>
+            <td class="px-4 py-2 font-semibold text-slate-800">{{ c.candidate_name }}</td>
+            <td class="px-4 py-2 text-center text-xs">{{ c.session.get_type_display }}</td>
+            <td class="px-4 py-2 text-center text-xs">{{ c.get_status_display }}</td>
+            <td class="px-4 py-2"><select name="status" class="form-input text-xs">{% for v, l in statuses %}<option value="{{ v }}" {% if c.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></td>
+            <td class="px-4 py-2"><input type="text" name="notes" value="{{ c.notes }}" class="form-input text-xs"></td>
+            <td class="px-4 py-2"><button class="bg-blue-600 text-white px-3 py-2 rounded-lg text-[11px] font-semibold">Enregistrer</button></td>
+          </form>
+        </tr>{% empty %}<tr><td colspan="7" class="py-12 text-center text-slate-400">Aucun candidat pour cette année scolaire.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

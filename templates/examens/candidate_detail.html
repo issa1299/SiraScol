@@ -1,28 +1,48 @@
 <div class="space-y-4">
   <div class="rounded-xl bg-blue-50 border border-blue-200 p-4">
-    <p class="text-xs text-blue-700">N° candidat</p>
+    <p class="text-xs text-blue-700">Numéro de candidat</p>
     <p class="text-xl font-bold text-blue-900 font-mono">{{ candidate.registration_number }}</p>
+    <p class="text-[11px] text-blue-700 mt-1">{{ candidate.session.get_type_display }} · {{ candidate.session.academic_year.name }} · {{ candidate.get_registration_status_display }}</p>
   </div>
+
   <div class="flex items-center gap-3">
-    <div class="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center text-xl text-slate-400">
-      {% if candidate.student.photo %}<img src="{{ candidate.student.photo.url }}" class="w-full h-full rounded-xl object-cover">{% else %}<i class="fas fa-user"></i>{% endif %}
+    <div class="w-14 h-14 rounded-xl bg-slate-100 flex items-center justify-center text-xl text-slate-400 overflow-hidden">
+      {% if candidate.photo %}<img src="{{ candidate.photo.url }}" class="w-full h-full object-cover">{% elif candidate.student and candidate.student.photo %}<img src="{{ candidate.student.photo.url }}" class="w-full h-full object-cover">{% else %}<i class="fas fa-user"></i>{% endif %}
     </div>
     <div>
-      <p class="font-bold text-slate-900">{{ candidate.student.first_name|title }} {{ candidate.student.last_name|title }}</p>
-      <p class="text-xs text-slate-500">Matricule {{ candidate.student.matricule }}</p>
+      <p class="font-bold text-slate-900">{{ candidate.candidate_name }}</p>
+      <p class="text-xs text-slate-500">Matricule {{ candidate.candidate_matricule|default:"—" }}{% if candidate.is_external %} · Candidat externe{% endif %}</p>
     </div>
   </div>
+
   <dl class="grid grid-cols-2 gap-3 text-xs">
-    <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Examen</dt><dd class="font-semibold mt-1">{{ candidate.session.get_type_display }}</dd></div>
-    <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Année</dt><dd class="font-semibold mt-1">{{ candidate.session.academic_year.name }}</dd></div>
+    <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Sexe</dt><dd class="font-semibold mt-1">{{ candidate.candidate_gender_display }}</dd></div>
+    <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Naissance</dt><dd class="font-semibold mt-1">{{ candidate.candidate_birth_date|date:"d/m/Y"|default:"—" }} · {{ candidate.birth_place|default:"—" }}</dd></div>
     <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Classe</dt><dd class="font-semibold mt-1">{{ candidate.classroom.name|default:"—" }}</dd></div>
-    <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Série</dt><dd class="font-semibold mt-1">{{ candidate.get_series_display|default:"—" }}</dd></div>
-    <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Statut</dt><dd class="font-semibold mt-1">{{ candidate.get_status_display }}</dd></div>
+    <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Établissement</dt><dd class="font-semibold mt-1">{{ candidate.school_name|default:"—" }}</dd></div>
+    <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Parent / tuteur</dt><dd class="font-semibold mt-1">{{ candidate.parent_name|default:"—" }}<br>{{ candidate.parent_phone|default:"" }}</dd></div>
+    <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Centre d’examen</dt><dd class="font-semibold mt-1">{{ candidate.exam_center|default:candidate.session.center|default:"—" }}</dd></div>
+    <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Série / spécialité</dt><dd class="font-semibold mt-1">{{ candidate.get_series_display }} {{ candidate.speciality }}</dd></div>
+    <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Terminale / langue</dt><dd class="font-semibold mt-1">{{ candidate.terminale_class|default:"—" }} · {{ candidate.get_living_language_display|default:"—" }}</dd></div>
+    <div class="bg-slate-50 rounded-xl p-3 col-span-2"><dt class="text-slate-400 uppercase font-bold text-[10px]">Matières et options</dt><dd class="font-semibold mt-1">{{ candidate.subjects_options|default:"—" }}</dd></div>
     <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Frais</dt><dd class="font-semibold mt-1">{{ candidate.exam_fee }} FCFA · {% if candidate.fee_paid %}payés{% else %}non payés{% endif %}</dd></div>
+    <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Résultat</dt><dd class="font-semibold mt-1">{{ candidate.get_status_display }}</dd></div>
   </dl>
+
+  <div class="rounded-xl border border-slate-200 p-3">
+    <p class="text-[11px] font-bold uppercase text-slate-400 mb-2">Pièces du dossier</p>
+    <div class="flex flex-wrap gap-3 text-xs">
+      <span class="px-2 py-1 rounded-lg {% if candidate.photo or candidate.student.photo %}bg-emerald-50 text-emerald-700{% else %}bg-slate-100 text-slate-500{% endif %}">Photo {% if candidate.photo or candidate.student.photo %}✓{% else %}—{% endif %}</span>
+      <span class="px-2 py-1 rounded-lg {% if candidate.birth_certificate %}bg-emerald-50 text-emerald-700{% else %}bg-slate-100 text-slate-500{% endif %}">Extrait de naissance {% if candidate.birth_certificate %}✓{% else %}—{% endif %}</span>
+      <span class="px-2 py-1 rounded-lg {% if candidate.other_document %}bg-emerald-50 text-emerald-700{% else %}bg-slate-100 text-slate-500{% endif %}">Autre pièce {% if candidate.other_document %}✓{% else %}—{% endif %}</span>
+    </div>
+  </div>
+
   {% if candidate.notes %}<p class="text-xs text-slate-600 bg-slate-50 rounded-xl p-3">{{ candidate.notes }}</p>{% endif %}
+
   <div class="flex gap-2 pt-2">
-    <a href="{% url 'examens:candidate_edit' candidate.pk %}" class="flex-1 bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold text-center">Modifier</a>
+    <a href="{% url 'examens:candidate_edit' candidate.pk %}" class="flex-1 bg-blue-600 text-white py-3 rounded-xl text-sm font-semibold text-center">Modifier le dossier</a>
+    <a href="{% url 'examens:candidate_fiche_pdf' candidate.pk %}" class="px-4 py-3 rounded-xl bg-rose-600 text-white text-xs font-semibold"><i class="fas fa-file-pdf"></i> Fiche PDF</a>
     <button type="button" onclick="closeModal('modal-dynamic')" class="px-4 border rounded-xl text-sm">Fermer</button>
   </div>
 </div>

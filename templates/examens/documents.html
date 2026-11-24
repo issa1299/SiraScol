@@ -1,0 +1,33 @@
+{% extends "examens/base_examens.html" %}
+{% block exam_title %}Documents des candidats{% endblock %}
+{% block exam_content %}
+<form method="get" class="bg-white rounded-xl border p-3 mb-4 flex flex-wrap gap-2">
+  <input type="text" name="q" value="{{ q }}" placeholder="Nom, matricule ou n° candidat…" class="form-input flex-1 min-w-[12rem]">
+  <button class="bg-slate-800 text-white px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-semibold">Rechercher</button>
+</form>
+<div class="bg-white rounded-xl border overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm min-w-[720px]">
+      <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500">
+        <th class="px-4 py-2 text-left">N° candidat</th><th class="px-4 py-2 text-left">Candidat</th>
+        <th class="px-4 py-2">Photo</th><th class="px-4 py-2">Extrait</th><th class="px-4 py-2">Autre pièce</th>
+        <th class="px-4 py-2 text-right">Dossier</th>
+      </tr></thead>
+      <tbody class="divide-y">
+        {% for c in rows %}<tr>
+          <td class="px-4 py-3 font-mono text-xs text-blue-700">{{ c.registration_number }}</td>
+          <td class="px-4 py-3 font-semibold text-slate-800">{{ c.candidate_name }}
+            <span class="block text-[10px] font-normal text-slate-400">{{ c.session.get_type_display }} · {{ c.session.academic_year.name }}</span></td>
+          <td class="px-4 py-3 text-center text-xs">{% if c.photo or c.student.photo %}<span class="text-emerald-600"><i class="fas fa-check-circle"></i> oui</span>{% else %}<span class="text-slate-300">—</span>{% endif %}</td>
+          <td class="px-4 py-3 text-center text-xs">{% if c.birth_certificate %}<a href="{{ c.birth_certificate.url }}" target="_blank" class="text-emerald-600"><i class="fas fa-check-circle"></i> voir</a>{% else %}<span class="text-slate-300">—</span>{% endif %}</td>
+          <td class="px-4 py-3 text-center text-xs">{% if c.other_document %}<a href="{{ c.other_document.url }}" target="_blank" class="text-emerald-600"><i class="fas fa-check-circle"></i> voir</a>{% else %}<span class="text-slate-300">—</span>{% endif %}</td>
+          <td class="px-4 py-3 text-right">
+            <button type="button" onclick="openModalUrl('{% url 'examens:candidate_detail' c.pk %}','Dossier {{ c.registration_number }}')" class="text-xs text-blue-600 hover:underline">Ouvrir</button>
+            <a href="{% url 'examens:candidate_edit' c.pk %}" class="text-xs text-indigo-600 hover:underline ml-2">Compléter</a>
+          </td>
+        </tr>{% empty %}<tr><td colspan="6" class="py-12 text-center text-slate-400">Aucun dossier trouvé.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

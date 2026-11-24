@@ -1,0 +1,17 @@
+{% extends "examens/base_examens.html" %}
+{% block exam_title %}Importer une liste Excel{% endblock %}
+{% block exam_content %}
+<div class="max-w-2xl bg-white rounded-xl border p-5">
+  <p class="text-sm font-bold text-slate-800 mb-1"><i class="fas fa-file-excel text-emerald-600"></i> Import groupé depuis Excel</p>
+  <p class="text-xs text-slate-500 mb-4">Colonnes attendues (dans cet ordre) : matricule, nom, prénom, sexe, date de naissance, lieu de naissance, établissement, parent, téléphone. Les lignes sans élève correspondant sont créées comme candidats externes.</p>
+  <form method="post" enctype="multipart/form-data" class="space-y-3">
+    {% csrf_token %}
+    <div><label class="block text-xs text-slate-500 mb-1">Session d’examen *</label>
+      <select name="session" class="form-input" required><option value="">— Choisir la session —</option>
+        {% for s in sessions %}<option value="{{ s.pk }}">{{ s.get_type_display }} · {{ s.academic_year.name }} · {{ s.get_session_display }}</option>{% endfor %}</select></div>
+    <div><label class="block text-xs text-slate-500 mb-1">Fichier .xlsx *</label>
+      <input type="file" name="file" accept=".xlsx,.xls" class="form-input" required></div>
+    <button class="bg-emerald-600 text-white px-5 py-3 min-h-[44px] rounded-xl text-xs font-semibold">Importer les candidats</button>
+  </form>
+</div>
+{% endblock %}

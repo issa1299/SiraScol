@@ -1,5 +1,5 @@
 {% extends "examens/base_examens.html" %}
-{% block exam_title %}Tableau de bord examens{% endblock %}
+{% block exam_title %}Sessions d’examens{% endblock %}
 {% block exam_content %}
 <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
   <div class="bg-white rounded-xl border p-4"><p class="text-[10px] uppercase font-bold text-slate-400">Total candidats</p><p class="text-2xl font-bold text-slate-900 mt-1">{{ stats.total }}</p></div>
@@ -10,16 +10,12 @@
 </div>
 
 <div class="flex flex-wrap gap-2 mb-5">
-  <button type="button" onclick="openModalUrl('{% url 'examens:candidate_create' %}','Nouveau candidat')" class="px-4 py-3 min-h-[44px] rounded-xl bg-blue-600 text-white text-xs font-semibold">
-    <i class="fas fa-user-plus"></i> Inscrire un candidat
-  </button>
-  <button type="button" onclick="openModalUrl('{% url 'examens:session_create' %}','Nouvelle session')" class="px-4 py-3 min-h-[44px] rounded-xl bg-slate-700 text-white text-xs font-semibold">
-    <i class="fas fa-calendar-plus"></i> Nouvelle session
-  </button>
+  <a href="{% url 'examens:candidate_create' %}" class="px-4 py-3 min-h-[44px] rounded-xl bg-blue-600 text-white text-xs font-semibold"><i class="fas fa-user-plus"></i> Inscrire un candidat</a>
+  <button type="button" onclick="openModalUrl('{% url 'examens:session_create' %}','Nouvelle session')" class="px-4 py-3 min-h-[44px] rounded-xl bg-slate-700 text-white text-xs font-semibold"><i class="fas fa-calendar-plus"></i> Nouvelle session</button>
 </div>
 
 <div class="bg-white rounded-xl border overflow-hidden">
-  <div class="px-4 py-3 border-b"><p class="text-sm font-bold text-slate-800"><i class="fas fa-calendar text-blue-600"></i> Sessions d'examen</p></div>
+  <div class="px-4 py-3 border-b"><p class="text-sm font-bold text-slate-800"><i class="fas fa-calendar text-blue-600"></i> Sessions d’examen</p></div>
   <div class="overflow-x-auto">
     <table class="w-full text-sm min-w-[620px]">
       <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500"><th class="px-4 py-2 text-left">Examen</th><th class="px-4 py-2 text-left">Année</th><th class="px-4 py-2 text-left">Session</th><th class="px-4 py-2">Date</th><th class="px-4 py-2 text-left">Centre</th><th class="px-4 py-2">Candidats</th></tr></thead>

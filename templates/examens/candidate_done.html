@@ -2,5 +2,6 @@
   <div class="w-14 h-14 mx-auto rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl"><i class="fas fa-check"></i></div>
   <p class="font-bold text-slate-900">Candidat inscrit</p>
   <p class="text-sm text-slate-600">Numéro de candidat : <strong class="font-mono text-blue-700">{{ candidate.registration_number }}</strong></p>
+  <p class="text-xs text-slate-500">Statut d’inscription : {{ candidate.get_registration_status_display }}</p>
   <button type="button" onclick="closeModal('modal-dynamic')" class="bg-slate-800 text-white px-5 py-3 rounded-xl text-sm font-semibold">Fermer</button>
 </div>

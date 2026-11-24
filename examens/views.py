@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
-"""Espace Examens — candidats DEF et BAC."""
+"""Examens nationaux — DEF (9ᵉ) et BAC (Terminale).
+
+Espace distinct des inscriptions scolaires : candidats internes (élèves) ou
+externes, dossiers et pièces, import depuis les classes de 9ᵉ / Terminale,
+listes, statistiques, résultats et impressions.
+"""
 from datetime import date
-from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.db.models import Q
 from django.http import HttpResponse
@@ -16,15 +19,66 @@ from django.views.decorators.http import require_POST
 from academics.models import AcademicYear, ClassRoom
 from core.permissions import role_required
 from core.year_context import get_selected_year
-from students.models import Student
+from students.models import Enrollment, Student
 
+from .forms import CandidateForm
 from .models import Candidate, ExamSession
 
 
+def _list_url(exam_type):
+    return reverse('examens:candidats_bac' if exam_type == 'bac' else 'examens:candidats_def')
+
+
 def _base(request, section, **extra):
-    ctx = {'section': section, 'today': date.today(), 'year': get_selected_year(request)}
+    ctx = {
+        'section': section,
+        'today': date.today(),
+        'year': get_selected_year(request),
+        'menu': [
+            {'key': 'candidats_def', 'label': 'Candidats DEF (9ᵉ année)',
+             'icon': 'fa-user-graduate', 'url': reverse('examens:candidats_def')},
+            {'key': 'candidats_bac', 'label': 'Candidats BAC (12ᵉ année)',
+             'icon': 'fa-user-tie', 'url': reverse('examens:candidats_bac')},
+            {'key': 'inscriptions', 'label': 'Inscriptions aux examens',
+             'icon': 'fa-file-signature', 'url': reverse('examens:inscriptions')},
+            {'key': 'documents', 'label': 'Documents des candidats',
+             'icon': 'fa-folder-open', 'url': reverse('examens:documents')},
+            {'key': 'listes', 'label': 'Listes et statistiques',
+             'icon': 'fa-chart-bar', 'url': reverse('examens:lists_stats')},
+            {'key': 'resultats', 'label': 'Résultats des examens',
+             'icon': 'fa-trophy', 'url': reverse('examens:results')},
+            {'key': 'dashboard', 'label': 'Sessions',
+             'icon': 'fa-calendar', 'url': reverse('examens:dashboard')},
+        ],
+    }
     ctx.update(extra)
     return ctx
+
+
+def _exam_type(section):
+    return 'bac' if section == 'candidats_bac' else 'def'
+
+
+def _candidates_for(request, exam_type):
+    year = get_selected_year(request)
+    qs = Candidate.objects.filter(session__type=exam_type).select_related(
+        'student', 'session', 'classroom'
+    )
+    if year:
+        qs = qs.filter(session__academic_year=year)
+    return qs, year
+
+
+def _search(qs, q):
+    if q:
+        qs = qs.filter(
+            Q(student__last_name__icontains=q) | Q(student__first_name__icontains=q)
+            | Q(student__matricule__icontains=q)
+            | Q(external_last_name__icontains=q) | Q(external_first_name__icontains=q)
+            | Q(external_matricule__icontains=q)
+            | Q(registration_number__icontains=q)
+        )
+    return qs
 
 
 @role_required('directeur', 'secretaire', 'admin')
@@ -37,7 +91,7 @@ def exam_dashboard(request):
         'total': candidates.count(),
         'def': candidates.filter(session__type='def').count(),
         'bac': candidates.filter(session__type='bac').count(),
-        'validated': candidates.filter(status='valide').count(),
+        'validated': candidates.filter(registration_status='valide').count(),
         'admitted': candidates.filter(status='admis').count(),
     }
     classrooms = ClassRoom.objects.filter(academic_year=year) if year else ClassRoom.objects.all()
@@ -47,33 +101,101 @@ def exam_dashboard(request):
 
 
 @role_required('directeur', 'secretaire', 'admin')
-def candidate_list(request):
-    year = get_selected_year(request)
-    qs = Candidate.objects.select_related(
-        'student', 'session', 'classroom'
-    ).order_by('registration_number')
-    exam_type = request.GET.get('type', '')
+def candidate_list(request, exam_type=None):
+    """Liste des candidats DEF ou BAC (URL dédiée ou paramètre ``?type=``)."""
+    url_name = request.resolver_match.url_name if request.resolver_match else ''
+    if url_name == 'candidats_bac':
+        section, exam_type = 'candidats_bac', 'bac'
+    elif url_name == 'candidats_def':
+        section, exam_type = 'candidats_def', 'def'
+    else:
+        section = request.GET.get('section', 'candidats_def')
+        exam_type = request.GET.get('type') or _exam_type(section)
+    qs, year = _candidates_for(request, exam_type)
     status = request.GET.get('status', '')
+    reg_status = request.GET.get('registration_status', '')
     q = (request.GET.get('q') or '').strip()
-    session_id = request.GET.get('session', '')
-    if year:
-        qs = qs.filter(session__academic_year=year)
-    if exam_type:
-        qs = qs.filter(session__type=exam_type)
     if status:
         qs = qs.filter(status=status)
-    if session_id:
-        qs = qs.filter(session_id=session_id)
-    if q:
-        qs = qs.filter(
-            Q(student__last_name__icontains=q) | Q(student__first_name__icontains=q)
-            | Q(student__matricule__icontains=q) | Q(registration_number__icontains=q)
-        )
-    sessions = ExamSession.objects.filter(academic_year=year) if year else ExamSession.objects.all()
+    if reg_status:
+        qs = qs.filter(registration_status=reg_status)
+    qs = _search(qs, q)
     return render(request, 'examens/candidate_list.html', _base(
-        request, 'candidates', rows=qs[:300], exam_type=exam_type, status=status,
-        q=q, session_id=session_id, sessions=sessions,
+        request, section, rows=qs[:300], exam_type=exam_type, status=status,
+        reg_status=reg_status, q=q,
         statuses=Candidate.STATUS_CHOICES,
+        reg_statuses=Candidate.REGISTRATION_STATUS_CHOICES,
+    ))
+
+
+@role_required('directeur', 'secretaire', 'admin')
+def import_from_class(request):
+    """Étape 1 : élèves de 9ᵉ (DEF) ou de Terminale (BAC) de l'année choisie."""
+    section = request.GET.get('section', 'candidats_def')
+    exam_type = _exam_type(section)
+    year = get_selected_year(request)
+    sessions = ExamSession.objects.filter(type=exam_type)
+    if year:
+        sessions = sessions.filter(academic_year=year)
+    levels = (Q(level__name__icontains='9') if exam_type == 'def'
+              else Q(level__name__icontains='12') | Q(level__name__icontains='Terminale'))
+    classrooms = ClassRoom.objects.filter(levels, academic_year=year) if year else ClassRoom.objects.none()
+    students = []
+    if year:
+        ids = Enrollment.objects.filter(
+            classroom__in=classrooms, is_active=True
+        ).values_list('student_id', flat=True)
+        students = list(Student.objects.filter(pk__in=ids).order_by('last_name', 'first_name'))
+    else:
+        students = []
+    existing = {
+        c.student_id: c for c in Candidate.objects.filter(
+            session__type=exam_type, session__academic_year=year
+        ) if c.student_id
+    } if year else {}
+    for student in students:
+        student.exam_candidate = existing.get(student.pk)
+    return render(request, 'examens/import_from_class.html', _base(
+        request, section, students=students, sessions=sessions,
+        existing=existing, exam_type=exam_type, classrooms=classrooms,
+    ))
+
+
+@role_required('directeur', 'secretaire', 'admin')
+@require_POST
+def import_confirm(request):
+    """Étape 2 : inscrire les élèves cochés (transaction atomique)."""
+    session = get_object_or_404(ExamSession, pk=request.POST.get('session'))
+    student_ids = request.POST.getlist('students')
+    created = 0
+    with transaction.atomic():
+        for student in Student.objects.filter(pk__in=student_ids):
+            enrollment = student.current_enrollment()
+            _, was_created = Candidate.objects.get_or_create(
+                student=student, session=session,
+                defaults={
+                    'classroom': enrollment.classroom if enrollment else None,
+                    'birth_place': student.place_of_birth or '',
+                    'school_name': '',
+                    'registration_status': 'a_verifier',
+                    'exam_center': session.center,
+                    'recorded_by': request.user,
+                },
+            )
+            created += int(was_created)
+    messages.success(request, f'{created} candidat(s) inscrit(s). Statut : À vérifier.')
+    return redirect(_list_url(session.type))
+
+
+@role_required('directeur', 'secretaire', 'admin')
+def inscriptions_home(request):
+    """Page d'entrée des inscriptions : individuelle, groupée ou Excel."""
+    year = get_selected_year(request)
+    sessions = ExamSession.objects.filter(is_open=True)
+    if year:
+        sessions = sessions.filter(academic_year=year)
+    return render(request, 'examens/inscriptions.html', _base(
+        request, 'inscriptions', sessions=sessions,
     ))
 
 
@@ -81,43 +203,41 @@ def candidate_list(request):
 def candidate_create(request):
     is_modal = request.GET.get('modal') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
-        student_id = request.POST.get('student')
-        session_id = request.POST.get('session')
-        if not student_id or not session_id:
-            messages.error(request, 'Élève et session sont obligatoires.')
-            return redirect('examens:candidate_list')
-        classroom_id = request.POST.get('classroom') or None
-        try:
-            fee = Decimal((request.POST.get('exam_fee') or '0').replace(',', '.'))
-        except InvalidOperation:
-            fee = Decimal('0')
-        candidate, created = Candidate.objects.get_or_create(
-            student_id=student_id, session_id=session_id,
-            defaults={
-                'classroom_id': classroom_id,
-                'series': request.POST.get('series', ''),
-                'exam_fee': fee,
-                'notes': request.POST.get('notes', ''),
-                'recorded_by': request.user,
-            },
-        )
-        if created:
-            messages.success(request, f'Candidat {candidate.registration_number} enregistré.')
+        form = CandidateForm(request.POST, request.FILES)
+        if form.is_valid():
+            candidate = form.save(commit=False)
+            candidate.recorded_by = request.user
+            if candidate.student_id and Candidate.objects.filter(
+                student_id=candidate.student_id, session=candidate.session
+            ).exists():
+                messages.info(request, 'Cet élève est déjà candidat pour cette session.')
+            else:
+                candidate.save()
+                messages.success(request, f'Candidat {candidate.registration_number} enregistré.')
+                if is_modal:
+                    return render(request, 'examens/candidate_done.html', {'candidate': candidate})
+                return redirect(_list_url(candidate.session.type))
         else:
-            messages.info(request, 'Cet élève est déjà candidat pour cette session.')
+            messages.error(request, 'Vérifiez les champs du formulaire.')
         if is_modal:
-            return render(request, 'examens/candidate_done.html', {'candidate': candidate})
-        return redirect('examens:candidate_list')
-    year = get_selected_year(request)
-    sessions = ExamSession.objects.filter(is_open=True)
-    if year:
-        sessions = sessions.filter(academic_year=year)
-    students = Student.objects.filter(status='actif').order_by('last_name', 'first_name')
-    classrooms = ClassRoom.objects.filter(academic_year=year) if year else ClassRoom.objects.all()
+            return render(request, 'examens/candidate_form_modal.html', _base(
+                request, 'inscriptions', form=form,
+                form_action=reverse('examens:candidate_create'),
+            ))
+    else:
+        year = get_selected_year(request)
+        initial = {'registration_status': 'brouillon'}
+        sessions = ExamSession.objects.filter(is_open=True)
+        if year:
+            sessions = sessions.filter(academic_year=year)
+        if sessions.exists():
+            initial['session'] = sessions.first().pk
+        form = CandidateForm(initial=initial)
+        if year:
+            form.fields['session'].queryset = sessions
     template = 'examens/candidate_form_modal.html' if is_modal else 'examens/candidate_form.html'
     return render(request, template, _base(
-        request, 'candidates', sessions=sessions, students=students,
-        classrooms=classrooms, series=Candidate.SERIES_CHOICES,
+        request, 'inscriptions', form=form,
         form_action=reverse('examens:candidate_create'),
     ))
 
@@ -126,20 +246,16 @@ def candidate_create(request):
 def candidate_edit(request, pk):
     candidate = get_object_or_404(Candidate, pk=pk)
     if request.method == 'POST':
-        candidate.status = request.POST.get('status', candidate.status)
-        candidate.series = request.POST.get('series', '')
-        candidate.fee_paid = request.POST.get('fee_paid') == 'on'
-        candidate.notes = request.POST.get('notes', '')
-        try:
-            candidate.exam_fee = Decimal((request.POST.get('exam_fee') or '0').replace(',', '.'))
-        except InvalidOperation:
-            pass
-        candidate.save()
-        messages.success(request, 'Candidat mis à jour.')
-        return redirect('examens:candidate_list')
+        form = CandidateForm(request.POST, request.FILES, instance=candidate)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Dossier du candidat mis à jour.')
+            return redirect(_list_url(candidate.session.type))
+        messages.error(request, 'Vérifiez les champs du formulaire.')
+    else:
+        form = CandidateForm(instance=candidate)
     return render(request, 'examens/candidate_edit.html', _base(
-        request, 'candidates', candidate=candidate,
-        statuses=Candidate.STATUS_CHOICES, series=Candidate.SERIES_CHOICES,
+        request, 'inscriptions', candidate=candidate, form=form,
     ))
 
 
@@ -147,16 +263,66 @@ def candidate_edit(request, pk):
 @require_POST
 def candidate_delete(request, pk):
     candidate = get_object_or_404(Candidate, pk=pk)
+    exam_type = candidate.session.type
     candidate.delete()
     messages.success(request, 'Candidat retiré.')
-    return redirect('examens:candidate_list')
+    return redirect(_list_url(exam_type))
 
 
 @role_required('directeur', 'secretaire', 'admin')
 def candidate_detail(request, pk):
     candidate = get_object_or_404(Candidate, pk=pk)
     return render(request, 'examens/candidate_detail.html', _base(
-        request, 'candidates', candidate=candidate,
+        request, 'documents', candidate=candidate,
+    ))
+
+
+@role_required('directeur', 'secretaire', 'admin')
+def documents(request):
+    q = (request.GET.get('q') or '').strip()
+    qs = _search(Candidate.objects.select_related('student', 'session'), q)
+    qs = qs.order_by('registration_number')
+    return render(request, 'examens/documents.html', _base(
+        request, 'documents', rows=qs[:300], q=q,
+    ))
+
+
+@role_required('directeur', 'secretaire', 'admin')
+def lists_stats(request):
+    year = get_selected_year(request)
+    qs = Candidate.objects.filter(session__academic_year=year) if year else Candidate.objects.all()
+    by_type = {'DEF': qs.filter(session__type='def').count(), 'BAC': qs.filter(session__type='bac').count()}
+    total = qs.count()
+    by_status = []
+    for value, label in Candidate.REGISTRATION_STATUS_CHOICES:
+        n = qs.filter(registration_status=value).count()
+        by_status.append((label, n, round(n * 100 / total) if total else 0))
+    by_class = []
+    classrooms = ClassRoom.objects.filter(academic_year=year) if year else ClassRoom.objects.none()
+    for classroom in classrooms:
+        n = qs.filter(classroom=classroom).count()
+        if n:
+            by_class.append((classroom.name, n))
+    return render(request, 'examens/lists_stats.html', _base(
+        request, 'listes', by_type=by_type, by_status=by_status, by_class=by_class,
+        total=total,
+    ))
+
+
+@role_required('directeur', 'secretaire', 'admin')
+def results(request):
+    year = get_selected_year(request)
+    qs = Candidate.objects.filter(session__academic_year=year) if year else Candidate.objects.all()
+    qs = qs.select_related('student', 'session')
+    if request.method == 'POST':
+        candidate = get_object_or_404(Candidate, pk=request.POST.get('candidate'))
+        candidate.status = request.POST.get('status', candidate.status)
+        candidate.notes = request.POST.get('notes', candidate.notes)
+        candidate.save()
+        messages.success(request, 'Résultat enregistré.')
+        return redirect('examens:results')
+    return render(request, 'examens/results.html', _base(
+        request, 'resultats', rows=qs[:300], statuses=Candidate.STATUS_CHOICES,
     ))
 
 
@@ -165,23 +331,18 @@ def session_create(request):
     is_modal = request.GET.get('modal') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
         ExamSession.objects.update_or_create(
-            type=request.POST.get('type'),
-            academic_year_id=request.POST.get('academic_year'),
+            type=request.POST.get('type'), academic_year_id=request.POST.get('academic_year'),
             session=request.POST.get('session', 'normal'),
-            defaults={
-                'date': request.POST.get('date') or date.today(),
-                'center': request.POST.get('center', ''),
-            },
+            defaults={'date': request.POST.get('date') or date.today(),
+                      'center': request.POST.get('center', '')},
         )
         messages.success(request, 'Session d’examen enregistrée.')
         return redirect('examens:dashboard')
     years = AcademicYear.objects.order_by('-is_current', '-start_date')
-    types = ExamSession.TYPE_CHOICES
-    sessions_choices = ExamSession.SESSION_CHOICES
     template = 'examens/session_form_modal.html' if is_modal else 'examens/session_form.html'
     return render(request, template, _base(
-        request, 'sessions', years=years, types=types, sessions=sessions_choices,
-        form_action=reverse('examens:session_create'),
+        request, 'dashboard', years=years, types=ExamSession.TYPE_CHOICES,
+        sessions=ExamSession.SESSION_CHOICES, form_action=reverse('examens:session_create'),
     ))
 
 
@@ -189,9 +350,9 @@ def session_create(request):
 @require_POST
 def bulk_enroll(request):
     classroom_id = request.POST.get('classroom')
-    session_id = request.POST.get('session')
-    if not classroom_id or not session_id:
-        messages.error(request, 'Classe et session obligatoires.')
+    session = get_object_or_404(ExamSession, pk=request.POST.get('session'))
+    if not classroom_id:
+        messages.error(request, 'Classe obligatoire.')
         return redirect('examens:dashboard')
     students = Student.objects.filter(
         enrollments__classroom_id=classroom_id, enrollments__is_active=True
@@ -200,32 +361,93 @@ def bulk_enroll(request):
     with transaction.atomic():
         for student in students:
             _, was_created = Candidate.objects.get_or_create(
-                student=student, session_id=session_id,
-                defaults={
-                    'classroom_id': classroom_id,
-                    'recorded_by': request.user,
-                },
+                student=student, session=session,
+                defaults={'classroom_id': int(classroom_id), 'recorded_by': request.user,
+                          'registration_status': 'a_verifier', 'exam_center': session.center},
             )
             created += int(was_created)
     messages.success(request, f'{created} candidat(s) inscrit(s) depuis la classe.')
-    return redirect('examens:candidate_list')
+    return redirect(_list_url(session.type))
+
+
+@role_required('directeur', 'secretaire', 'admin')
+def excel_import(request):
+    """Import groupé depuis un fichier Excel (matricule, nom, prénom, …)."""
+    if request.method == 'POST':
+        uploaded = request.FILES.get('file')
+        session = get_object_or_404(ExamSession, pk=request.POST.get('session'))
+        if not uploaded:
+            messages.error(request, 'Fichier obligatoire.')
+            return redirect('examens:excel_import')
+        from openpyxl import load_workbook
+        try:
+            wb = load_workbook(uploaded, read_only=True, data_only=True)
+            rows = list(wb.active.iter_rows(values_only=True))
+        except Exception as exc:
+            messages.error(request, f'Lecture impossible : {exc}')
+            return redirect('examens:excel_import')
+        created = errors = 0
+        with transaction.atomic():
+            for row in rows[1:]:
+                if not row or not any(v for v in row):
+                    continue
+                values = ['' if v is None else str(v).strip() for v in row]
+                values += [''] * (8 - len(values))
+                matricule, last, first = values[0], values[1], values[2]
+                student = Student.objects.filter(matricule=matricule).first() if matricule else None
+                defaults = {
+                    'registration_status': 'a_verifier',
+                    'recorded_by': request.user,
+                    'exam_center': session.center,
+                    'external_matricule': '' if student else matricule,
+                    'external_last_name': '' if student else last,
+                    'external_first_name': '' if student else first,
+                    'is_external': not student,
+                    'parent_name': values[6], 'parent_phone': values[7],
+                    'birth_place': values[4], 'school_name': values[5],
+                }
+                if not student and not (last and first):
+                    errors += 1
+                    continue
+                if student:
+                    lookup = {'student': student, 'session': session}
+                elif matricule:
+                    lookup = {'student': None, 'session': session, 'external_matricule': matricule}
+                else:
+                    lookup = {'student': None, 'session': session,
+                              'external_last_name': last, 'external_first_name': first}
+                _, was_created = Candidate.objects.get_or_create(defaults=defaults, **lookup)
+                created += int(was_created)
+        messages.success(request, f'{created} candidat(s) importé(s), {errors} ligne(s) ignorée(s).')
+        return redirect(_list_url(session.type))
+    sessions = ExamSession.objects.filter(is_open=True)
+    return render(request, 'examens/excel_import.html', _base(
+        request, 'inscriptions', sessions=sessions,
+    ))
 
 
 @role_required('directeur', 'secretaire', 'admin')
 def export_report(request):
     kind = request.GET.get('format', 'excel')
-    qs = Candidate.objects.select_related('student', 'session', 'classroom').order_by('registration_number')
+    exam_type = request.GET.get('type', '')
     year = get_selected_year(request)
+    qs = Candidate.objects.select_related('student', 'session', 'classroom').order_by('registration_number')
     if year:
         qs = qs.filter(session__academic_year=year)
-    if request.GET.get('type'):
-        qs = qs.filter(session__type=request.GET['type'])
-    headers = ['N° candidat', 'Nom et prénom', 'Matricule', 'Examen', 'Classe', 'Statut', 'Frais payés']
-    rows = [[
-        c.registration_number, c.student.full_name, c.student.matricule,
-        c.session.get_type_display(), c.classroom.name if c.classroom else '—',
-        c.get_status_display(), 'Oui' if c.fee_paid else 'Non',
-    ] for c in qs]
+    if exam_type:
+        qs = qs.filter(session__type=exam_type)
+    headers = ['N° candidat', 'Nom et prénom', 'Sexe', 'Naissance', 'Matricule', 'Classe',
+               'Examen', 'Statut inscription', 'Frais payés']
+    rows = []
+    for c in qs:
+        birth = c.candidate_birth_date
+        rows.append([
+            c.registration_number, c.candidate_name, c.candidate_gender_display,
+            birth.strftime('%d/%m/%Y') if birth else '—',
+            c.candidate_matricule or '—', c.classroom.name if c.classroom else '—',
+            c.session.get_type_display(), c.get_registration_status_display(),
+            'Oui' if c.fee_paid else 'Non',
+        ])
     if kind == 'pdf':
         from core.list_pdf import build_list_pdf
         return build_list_pdf('Liste des candidats DEF / BAC', '', headers, rows,
@@ -245,4 +467,52 @@ def export_report(request):
     wb.save(buf)
     resp = HttpResponse(buf.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     resp['Content-Disposition'] = 'attachment; filename="candidats_examens.xlsx"'
+    return resp
+
+
+@role_required('directeur', 'secretaire', 'admin')
+def candidate_fiche_pdf(request, pk):
+    """Fiche individuelle de candidature (PDF A4, reportlab)."""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.pdfgen import canvas
+
+    candidate = get_object_or_404(Candidate, pk=pk)
+    birth = candidate.candidate_birth_date
+    lines = [
+        f'Numero de candidat : {candidate.registration_number}',
+        f'Nom et prenom : {candidate.candidate_name}',
+        f'Sexe : {candidate.candidate_gender_display}',
+        f'Ne(e) le : {birth.strftime("%d/%m/%Y") if birth else "—"}',
+        f'Lieu de naissance : {candidate.birth_place or "—"}',
+        f'Matricule : {candidate.candidate_matricule or "—"}',
+        f'Classe : {candidate.classroom.name if candidate.classroom else "—"}',
+        f'Etablissement : {candidate.school_name or "—"}',
+        f'Parent / tuteur : {candidate.parent_name or "—"}',
+        f'Telephone parent : {candidate.parent_phone or "—"}',
+        f'Centre d examen : {candidate.exam_center or candidate.session.center or "—"}',
+        f'Serie / specialite : {(candidate.get_series_display() + " " + candidate.speciality).strip()}',
+        f'Classe de Terminale : {candidate.terminale_class or "—"}',
+        f'Langue vivante : {candidate.get_living_language_display() or "—"}',
+        f'Matieres et options : {candidate.subjects_options or "—"}',
+        f'Statut d inscription : {candidate.get_registration_status_display()}',
+    ]
+    buf = BytesIO()
+    pdf = canvas.Canvas(buf, pagesize=A4)
+    width, height = A4
+    pdf.setFont('Helvetica-Bold', 16)
+    pdf.drawCentredString(width / 2, height - 60, 'FICHE DE CANDIDATURE')
+    pdf.setFont('Helvetica-Bold', 12)
+    pdf.drawCentredString(
+        width / 2, height - 82,
+        f'{candidate.session.get_type_display()} — {candidate.session.academic_year.name}',
+    )
+    y = height - 120
+    pdf.setFont('Helvetica', 11)
+    for line in lines:
+        pdf.drawString(70, y, line[:95])
+        y -= 22
+    pdf.showPage()
+    pdf.save()
+    resp = HttpResponse(buf.getvalue(), content_type='application/pdf')
+    resp['Content-Disposition'] = f'attachment; filename="fiche_{candidate.registration_number}.pdf"'
     return resp

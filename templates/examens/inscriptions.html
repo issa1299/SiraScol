@@ -1,0 +1,47 @@
+{% extends "examens/base_examens.html" %}
+{% block exam_title %}Inscriptions aux examens{% endblock %}
+{% block exam_content %}
+<div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+  <a href="{% url 'examens:candidate_create' %}" class="bg-white rounded-xl border p-5 hover:border-blue-400 hover:shadow-sm transition">
+    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center mb-3"><i class="fas fa-user-plus"></i></div>
+    <p class="text-sm font-bold text-slate-800">Inscription individuelle</p>
+    <p class="text-xs text-slate-500 mt-1">Élève de l’établissement ou candidat externe, avec dossier complet et pièces jointes.</p>
+  </a>
+  <a href="{% url 'examens:import_from_class' %}?section=candidats_def" class="bg-white rounded-xl border p-5 hover:border-blue-400 hover:shadow-sm transition">
+    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3"><i class="fas fa-file-import"></i></div>
+    <p class="text-sm font-bold text-slate-800">Importer les élèves de 9ᵉ</p>
+    <p class="text-xs text-slate-500 mt-1">Sélectionner les élèves concernés de l’année de travail, puis confirmer pour le DEF.</p>
+  </a>
+  <a href="{% url 'examens:import_from_class' %}?section=candidats_bac" class="bg-white rounded-xl border p-5 hover:border-blue-400 hover:shadow-sm transition">
+    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3"><i class="fas fa-file-import"></i></div>
+    <p class="text-sm font-bold text-slate-800">Importer les Terminales</p>
+    <p class="text-xs text-slate-500 mt-1">Sélectionner les élèves de 12ᵉ / Terminale, puis confirmer pour le BAC.</p>
+  </a>
+  <a href="{% url 'examens:excel_import' %}" class="bg-white rounded-xl border p-5 hover:border-blue-400 hover:shadow-sm transition">
+    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center mb-3"><i class="fas fa-file-excel"></i></div>
+    <p class="text-sm font-bold text-slate-800">Importer une liste Excel</p>
+    <p class="text-xs text-slate-500 mt-1">Colonnes : matricule, nom, prénom, sexe, date de naissance, lieu, établissement, parent, téléphone.</p>
+  </a>
+  <a href="{% url 'examens:dashboard' %}" class="bg-white rounded-xl border p-5 hover:border-blue-400 hover:shadow-sm transition">
+    <div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center mb-3"><i class="fas fa-users"></i></div>
+    <p class="text-sm font-bold text-slate-800">Inscription groupée par classe</p>
+    <p class="text-xs text-slate-500 mt-1">Inscrire tous les élèves d’une classe à une session depuis le tableau de bord.</p>
+  </a>
+  <a href="{% url 'examens:session_create' %}" class="bg-white rounded-xl border p-5 hover:border-blue-400 hover:shadow-sm transition">
+    <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center mb-3"><i class="fas fa-calendar-plus"></i></div>
+    <p class="text-sm font-bold text-slate-800">Créer une session</p>
+    <p class="text-xs text-slate-500 mt-1">Ouvrir une session DEF ou BAC pour l’année de travail.</p>
+  </a>
+</div>
+
+<div class="bg-white rounded-xl border p-5">
+  <p class="text-sm font-bold text-slate-800 mb-3">Sessions ouvertes</p>
+  {% if sessions %}
+  <div class="flex flex-wrap gap-2">
+    {% for s in sessions %}
+    <span class="px-3 py-2 rounded-lg bg-slate-50 border text-xs text-slate-700">{{ s.get_type_display }} · {{ s.get_session_display }} · {{ s.date|date:"d/m/Y" }} · {{ s.candidates.count }} candidat(s)</span>
+    {% endfor %}
+  </div>
+  {% else %}<p class="text-xs text-slate-400">Aucune session ouverte pour cette année scolaire.</p>{% endif %}
+</div>
+{% endblock %}
