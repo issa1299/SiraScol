@@ -10,6 +10,60 @@ from .models import ClassRoom, Level, Cycle, AcademicYear
 from .forms import ClassRoomForm
 from students.models import Enrollment
 
+# Matières du système éducatif malien (programme type MEN / DEF / réforme lycée 2010-2011).
+# Source de référence : Ministère de l'Éducation Nationale du Mali ; structure confirmée par
+# « Système éducatif au Mali » (Wikipedia, consulté Nov. 2026) pour le DEF et les séries.
+MALI_SUBJECTS_BY_LEVEL = {
+    # 1er cycle de l'enseignement fondamental (1ère – 6ème année)
+    '1ère année': ['Langue maternelle', 'Français', 'Mathématiques', 'Sciences', 'Histoire',
+                   'Géographie', 'Éducation civique et morale', 'Éducation physique et sportive',
+                   'Arts et expression'],
+    '2ème année': ['Langue maternelle', 'Français', 'Mathématiques', 'Sciences', 'Histoire',
+                   'Géographie', 'Éducation civique et morale', 'Éducation physique et sportive',
+                   'Arts et expression'],
+    '3ème année': ['Langue maternelle', 'Français', 'Mathématiques', 'Sciences', 'Histoire',
+                   'Géographie', 'Éducation civique et morale', 'Éducation physique et sportive',
+                   'Arts et expression'],
+    '4ème année': ['Français', 'Mathématiques', 'Sciences', 'Histoire', 'Géographie',
+                   'Éducation civique et morale', 'Éducation physique et sportive',
+                   'Arts et expression', 'Travaux manuels'],
+    '5ème année': ['Français', 'Mathématiques', 'Sciences', 'Histoire', 'Géographie',
+                   'Éducation civique et morale', 'Éducation physique et sportive',
+                   'Arts et expression', 'Anglais'],
+    '6ème année': ['Français', 'Mathématiques', 'Sciences', 'Histoire', 'Géographie',
+                   'Éducation civique et morale', 'Éducation physique et sportive',
+                   'Anglais', 'Technologie'],
+    # 2ème cycle de l'enseignement fondamental (7ème – 9ème année, pré-DEF)
+    '7ème année': ['Français', 'Mathématiques', 'Physique-Chimie', 'Sciences de la vie et de la terre',
+                   'Histoire', 'Géographie', 'Éducation civique et morale',
+                   'Éducation physique et sportive', 'Anglais', 'Technologie'],
+    '8ème année': ['Français', 'Mathématiques', 'Physique-Chimie', 'Sciences de la vie et de la terre',
+                   'Histoire', 'Géographie', 'Éducation civique et morale',
+                   'Éducation physique et sportive', 'Anglais', 'Technologie'],
+    '9ème année': ['Français', 'Mathématiques', 'Physique-Chimie', 'Sciences de la vie et de la terre',
+                   'Histoire', 'Géographie', 'Éducation civique et morale',
+                   'Éducation physique et sportive', 'Anglais'],
+    # Lycée — 10ème année : tronc commun (réforme 2010-2011)
+    '10ème année': ['Mathématiques', 'Physique-Chimie', 'Sciences de la vie et de la terre',
+                    'Histoire-Géographie', 'Français', 'Anglais', 'Arabe / langue vivante 2',
+                    'Éducation civique et morale', 'Éducation physique et sportive',
+                    'Informatique', 'Dessin technique', 'Statistique', 'Économie'],
+    # Lycée — 11ème et 12ème : tronc commun des séries générales
+    '11ème année': ['Mathématiques', 'Physique-Chimie', 'Sciences de la vie et de la terre',
+                    'Histoire-Géographie', 'Français', 'Anglais', 'Philosophie',
+                    'Éducation physique et sportive'],
+    '12ème année': ['Mathématiques', 'Physique-Chimie', 'Sciences de la vie et de la terre',
+                    'Histoire-Géographie', 'Français', 'Anglais', 'Philosophie',
+                    'Éducation physique et sportive'],
+}
+
+
+def subjects_for_level(level_name):
+    """Matières associées à un niveau (nom de Level) du programme malien."""
+    key = (level_name or '').strip()
+    return list(MALI_SUBJECTS_BY_LEVEL.get(key, MALI_SUBJECTS_BY_LEVEL.get('6ème année', [])))
+
+
 # Programme type Mali — cases à cocher pour création rapide
 MALI_CLASS_PROGRAM = [
     {
