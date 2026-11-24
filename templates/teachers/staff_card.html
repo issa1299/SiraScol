@@ -4,45 +4,139 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ title }}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     * { box-sizing: border-box; }
-    body { margin:0; min-height:100vh; background:#e2e8f0; color:#0f172a;
-           font-family:'Segoe UI',system-ui,Arial,sans-serif;
-           padding:1.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom,0px)); }
-    .toolbar { max-width:85.6mm; margin:0 auto 1rem; display:flex; flex-wrap:wrap; gap:.5rem; }
-    .toolbar a, .toolbar button { flex:1 1 auto; text-align:center; text-decoration:none;
-      font-size:.8rem; font-weight:700; padding:.7rem .9rem; border-radius:.75rem;
-      border:0; cursor:pointer; }
-    .btn-print { background:#1d4ed8; color:#fff; }
-    .btn-pdf { background:#0f766e; color:#fff; }
-    .btn-img { background:#fff; color:#334155; border:1px solid #cbd5e1 !important; }
-    .badge-wrap { width:85.6mm; max-width:100%; margin:0 auto; }
-    .hint { max-width:85.6mm; margin:1rem auto 0; text-align:center;
-            font-size:.72rem; color:#64748b; line-height:1.5; }
-    .hint strong { color:#1d4ed8; }
-    @page { size: 85.6mm 54mm; margin: 0; }
-    @media print {
-      body { background:#fff; padding:0; margin:0; }
-      .toolbar, .hint { display:none !important; }
-      .badge-wrap { width:85.6mm; margin:0; }
-      .badge-card { box-shadow:none !important; border-radius:0 !important; }
+    body {
+      margin: 0; min-height: 100vh; background: #e2e8f0; color: #0f172a;
+      font-family: 'Segoe UI', system-ui, Arial, sans-serif;
+      padding: 1.5rem 1rem calc(2rem + env(safe-area-inset-bottom, 0px));
     }
-    @media (max-width:420px) { body { padding:.75rem .5rem; } }
+    .container { max-width: 900px; margin: 0 auto; }
+    .toolbar {
+      display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1.5rem; justify-content: center;
+    }
+    .toolbar a, .toolbar button {
+      display: inline-flex; align-items: center; justify-content: center; gap: .4rem;
+      text-decoration: none; font-size: .82rem; font-weight: 700; padding: .65rem 1.1rem;
+      border-radius: .75rem; border: 0; cursor: pointer; transition: .15s ease-in-out;
+    }
+    .btn-print { background: #1d4ed8; color: #fff; }
+    .btn-print:hover { background: #1e40af; }
+    .btn-pdf { background: #0c4a37; color: #fff; }
+    .btn-pdf:hover { background: #063527; }
+    .btn-img { background: #fff; color: #334155; border: 1px solid #cbd5e1 !important; }
+    .btn-img:hover { background: #f8fafc; }
+    .btn-back { background: #f1f5f9; color: #475569; }
+    .btn-back:hover { background: #e2e8f0; }
+
+    .view-selector {
+      display: flex; justify-content: center; gap: .5rem; margin-bottom: 1.25rem;
+    }
+    .view-btn {
+      background: #ffffff; border: 1px solid #cbd5e1; color: #475569; font-size: .78rem;
+      font-weight: 700; padding: .4rem .9rem; border-radius: .5rem; cursor: pointer;
+    }
+    .view-btn.active {
+      background: #0c4a37; border-color: #0c4a37; color: #ffffff;
+    }
+
+    .cards-grid {
+      display: flex; flex-wrap: wrap; gap: 2rem; justify-content: center; align-items: flex-start;
+    }
+    .card-col {
+      flex: 0 0 85.6mm; width: 85.6mm; max-width: 100%;
+    }
+    .card-label {
+      font-size: .78rem; font-weight: 800; color: #475569; text-transform: uppercase;
+      letter-spacing: .08em; text-align: center; margin-bottom: .6rem;
+    }
+
+    .hint {
+      max-width: 600px; margin: 2rem auto 0; text-align: center;
+      font-size: .78rem; color: #64748b; line-height: 1.5; background: #ffffff;
+      padding: .85rem 1.25rem; border-radius: 1rem; border: 1px solid #cbd5e1;
+    }
+    .hint strong { color: #0c4a37; }
+
+    @page {
+      size: 85.6mm 54mm;
+      margin: 0;
+    }
+    @media print {
+      body { background: #ffffff; padding: 0; margin: 0; }
+      .toolbar, .view-selector, .card-label, .hint, .btn-back { display: none !important; }
+      .container { max-width: 100%; margin: 0; }
+      .cards-grid { display: block; margin: 0; padding: 0; gap: 0; }
+      .card-col {
+        width: 85.6mm !important; height: 54mm !important; margin: 0 !important;
+        page-break-inside: avoid; break-inside: avoid;
+      }
+      .card-col.verso-col {
+        page-break-before: always; break-before: page;
+      }
+      .badge-card, .badge-back-card {
+        box-shadow: none !important; border-radius: 0 !important;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="toolbar">
-    <button type="button" class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Imprimer</button>
-    <a class="btn-pdf" href="{{ pdf_url }}"><i class="fas fa-file-pdf"></i> PDF</a>
-    <a class="btn-img" href="{{ image_url }}"><i class="fas fa-image"></i> Image</a>
-    <a class="btn-back" href="{% url 'teachers:card_preview' teacher.pk %}" style="background:#f1f5f9;color:#475569"><i class="fas fa-arrow-left"></i> Aperçu</a>
+  <div class="container">
+    <div class="toolbar">
+      <button type="button" class="btn-print" onclick="window.print()"><i class="fas fa-print"></i> Imprimer</button>
+      <a class="btn-pdf" href="{{ pdf_url }}"><i class="fas fa-file-pdf"></i> Télécharger PDF (Recto-Verso)</a>
+      <a class="btn-img" href="{{ image_url }}?side=both"><i class="fas fa-image"></i> Image Complète</a>
+      <a class="btn-img" href="{{ image_url }}?side=recto"><i class="fas fa-id-card"></i> Image Recto</a>
+      <a class="btn-img" href="{{ image_url }}?side=verso"><i class="fas fa-id-card-clip"></i> Image Verso</a>
+      <a class="btn-back" href="{% url 'teachers:card_preview' teacher.pk %}"><i class="fas fa-arrow-left"></i> Aperçu</a>
+    </div>
+
+    <div class="view-selector">
+      <button type="button" class="view-btn active" onclick="setView('both')">Recto & Verso</button>
+      <button type="button" class="view-btn" onclick="setView('recto')">Recto seul</button>
+      <button type="button" class="view-btn" onclick="setView('verso')">Verso seul</button>
+    </div>
+
+    <div class="cards-grid">
+      <div class="card-col recto-col" id="col-recto">
+        <div class="card-label"><i class="fas fa-address-card mr-1"></i> Face Avant (Recto)</div>
+        {% include "core/badge.html" %}
+      </div>
+
+      <div class="card-col verso-col" id="col-verso">
+        <div class="card-label"><i class="fas fa-id-card-clip mr-1"></i> Face Arrière (Verso)</div>
+        {% include "core/badge_back.html" %}
+      </div>
+    </div>
+
+    <div class="hint">
+      Ce badge professionnel est au format officiel <strong>CR80 (85,6 × 54 mm)</strong> pour impression PVC recto-verso.<br>
+      Le QR code <strong>{{ badge.qr_payload }}</strong> permet le pointage sécurisé automatique par caméra ou douchette.
+    </div>
   </div>
 
-  <div class="badge-wrap">{% include "core/badge.html" %}</div>
+  <script>
+    function setView(view) {
+      var r = document.getElementById('col-recto');
+      var v = document.getElementById('col-verso');
+      var btns = document.querySelectorAll('.view-btn');
+      btns.forEach(function(b){ b.classList.remove('active'); });
 
-  <p class="hint">
-    Ce badge personnel est valable pour le pointage : le QR <strong>{{ badge.qr_payload }}</strong>
-    est reconnu automatiquement par le scanner des présences, sans choisir d'onglet.
-  </p>
+      if (view === 'recto') {
+        r.style.display = 'block';
+        v.style.display = 'none';
+        btns[1].classList.add('active');
+      } else if (view === 'verso') {
+        r.style.display = 'none';
+        v.style.display = 'block';
+        btns[2].classList.add('active');
+      } else {
+        r.style.display = 'block';
+        v.style.display = 'block';
+        btns[0].classList.add('active');
+      }
+    }
+  </script>
 </body>
 </html>

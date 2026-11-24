@@ -533,7 +533,7 @@ def student_card(request, pk):
 
 @login_required
 def student_card_pdf(request, pk):
-    """PDF CR80 d'un élève, avec QR de pointage."""
+    """PDF CR80 officiel d'un élève (Page 1 Recto, Page 2 Verso)."""
     from core.badge import build_badge_context, title_words
     from core.badge_pdf import render_badge_pdf
 
@@ -543,7 +543,8 @@ def student_card_pdf(request, pk):
         student, 'eleve', school, student.current_enrollment(),
         _badge_design_key(request, school),
     )
-    resp = HttpResponse(render_badge_pdf(badge), content_type='application/pdf')
+    duplex = request.GET.get('duplex', '1') != '0' and request.GET.get('side') != 'recto'
+    resp = HttpResponse(render_badge_pdf(badge, duplex=duplex), content_type='application/pdf')
     name = title_words(f"{badge['first_name']} {badge['last_name']}")
     filename = f"carte_{name}.pdf".replace(' ', '_')
     resp['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -552,9 +553,9 @@ def student_card_pdf(request, pk):
 
 @login_required
 def student_card_image(request, pk):
-    """PNG haute définition de la carte élève (aperçu ou téléchargement)."""
+    """PNG haute définition de la carte élève (recto, verso ou les deux)."""
     from core.badge import build_badge_context
-    from students.card_mali import render_badge_png
+    from students.card_mali import render_badge_png, render_badge_verso_png, render_badge_both_png
 
     student = get_student_for_user(request.user, pk)
     school = _get_school()
@@ -562,8 +563,14 @@ def student_card_image(request, pk):
         student, 'eleve', school, student.current_enrollment(),
         _badge_design_key(request, school),
     )
-    buf = render_badge_png(badge)
-    filename = f"carte_{student.matricule}.png".replace(' ', '_')
+    side = request.GET.get('side', 'front').lower()
+    if side == 'both':
+        buf = render_badge_both_png(badge)
+    elif side in ('back', 'verso'):
+        buf = render_badge_verso_png(badge)
+    else:
+        buf = render_badge_png(badge)
+    filename = f"carte_{student.matricule}_{side}.png".replace(' ', '_')
     disp = 'inline' if request.GET.get('preview') == '1' else 'attachment'
     resp = HttpResponse(buf.read(), content_type='image/png')
     resp['Content-Disposition'] = f'{disp}; filename="{filename}"'
@@ -717,7 +724,8 @@ def cards_class_pdf(request, classroom_id):
         build_badge_context(enr.student, 'eleve', school, enr, key)
         for enr in enrollments
     ]
-    resp = HttpResponse(render_badges_pdf(badges), content_type='application/pdf')
+    duplex = request.GET.get('duplex', '1') != '0'
+    resp = HttpResponse(render_badges_pdf(badges, duplex=duplex), content_type='application/pdf')
     filename = f"cartes_{classroom.name}.pdf".replace(' ', '_')
     resp['Content-Disposition'] = f'attachment; filename="{filename}"'
     return resp

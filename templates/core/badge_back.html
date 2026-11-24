@@ -1,0 +1,180 @@
+{% comment %}Verso officiel du Badge CR80 (85,6 × 54 mm). Grille 1012×638 px partagée avec PNG et PDF.{% endcomment %}
+<style>
+  .badge-back-card {
+    --primary: {{ badge.design.primary }};
+    --accent: {{ badge.design.accent }};
+    --bg: {{ badge.design.bg }};
+    --ink: {{ badge.design.ink }};
+    --label: {{ badge.design.label_color|default:'#4f5f54' }};
+    position: relative; width: 100%; aspect-ratio: 1012 / 638;
+    container-type: size; background: var(--bg); color: var(--ink);
+    border-radius: 1cqw; overflow: hidden;
+    font-family: 'Segoe UI', system-ui, Arial, sans-serif;
+    box-shadow: 0 10px 30px -8px rgba(15,23,42,.35), 0 0 0 1px rgba(15,23,42,.10);
+    print-color-adjust: exact; -webkit-print-color-adjust: exact;
+  }
+  .badge-back-card * { box-sizing: border-box; }
+
+  {# ── En-tête vert avec liseré or (105 px = 16.45cqh) ── #}
+  .badge-back-top {
+    position: absolute; left: 0; right: 0; top: 0; height: 16.45cqh;
+    background: var(--primary); display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    border-bottom: .47cqh solid var(--accent);
+  }
+  .badge-back-title {
+    font-size: 2.17cqw; font-weight: 800; color: var(--accent);
+    letter-spacing: .12em; line-height: 1.1; text-transform: uppercase;
+  }
+  .badge-back-motto {
+    font-size: 1.38cqw; color: #ffffff; letter-spacing: .06em;
+    margin-top: .4cqh; line-height: 1.1;
+  }
+
+  {# ── Corps central crème (Conditions, Infos spécifiques, Signature/Cachet) ── #}
+  .badge-back-body {
+    position: absolute; left: 3.56cqw; right: 3.56cqw; top: 18.5cqh; bottom: 13.5cqh;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+
+  {# Section Règlements #}
+  .badge-rules-title {
+    font-size: 1.38cqw; font-weight: 800; color: var(--primary);
+    text-transform: uppercase; letter-spacing: .05em; display: inline-block;
+    border-bottom: 2px solid var(--accent); padding-bottom: 2px;
+  }
+  .badge-rules-list {
+    margin-top: 1.2cqh; font-size: 1.25cqw; color: #334155; line-height: 1.45;
+    display: flex; flex-direction: column; gap: .3cqh;
+  }
+  .badge-rules-item { display: flex; gap: .8cqw; }
+  .badge-rules-item::before { content: "•"; color: var(--accent); font-weight: bold; }
+
+  {# Cadre spécifique #}
+  .badge-role-box {
+    background: #ffffff; border: 1.5px solid var(--accent); border-radius: .8cqw;
+    padding: 1.2cqh 1.6cqw; margin: 1.2cqh 0;
+  }
+  .badge-role-box-title {
+    font-size: 1.18cqw; font-weight: 800; color: var(--primary);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: .4cqh;
+  }
+  .badge-role-box-content {
+    font-size: 1.38cqw; font-weight: 700; color: var(--ink);
+    display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1cqw;
+  }
+
+  {# Zone basse : Validation & Cachet #}
+  .badge-validation-row {
+    display: flex; justify-content: space-between; align-items: stretch; gap: 2cqw;
+  }
+  .badge-valid-col {
+    flex: 1 1 auto; display: flex; flex-direction: column; justify-content: center;
+    font-size: 1.25cqw; line-height: 1.4; color: #475569;
+  }
+  .badge-valid-header {
+    font-size: 1.18cqw; font-weight: 800; color: var(--label);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: .5cqh;
+  }
+  .badge-valid-highlight { color: var(--ink); font-weight: 700; }
+  .badge-valid-code { color: var(--primary); font-weight: 800; font-family: monospace; }
+
+  .badge-stamp-box {
+    flex: 0 0 35cqw; background: #ffffff; border: 1.5px solid var(--accent);
+    border-radius: .8cqw; padding: 1cqh 1.2cqw; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; position: relative;
+    min-height: 24cqh;
+  }
+  .badge-stamp-box-title {
+    font-size: 1.18cqw; font-weight: 800; color: var(--primary);
+    text-transform: uppercase; letter-spacing: .06em; margin-bottom: .3cqh;
+  }
+  .badge-stamp-box-sub { font-size: 1.25cqw; color: #64748b; }
+  .badge-stamp-img {
+    max-height: 14cqh; max-width: 90%; object-fit: contain; margin-top: .4cqh;
+  }
+
+  {# ── Pied vert du verso avec coordonnées (80 px = 12.54cqh) ── #}
+  .badge-back-footer {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 12.54cqh;
+    background: var(--primary); color: #ffffff; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; border-top: .47cqh solid var(--accent);
+    padding: 0 2cqw; text-align: center;
+  }
+  .badge-back-footer-line1 { font-size: 1.38cqw; font-weight: 700; color: #ffffff; }
+  .badge-back-footer-line2 { font-size: 1.25cqw; color: var(--accent); margin-top: .2cqh; }
+
+  @media print {
+    .badge-back-card {
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      break-before: page;
+      page-break-before: always;
+    }
+    .badge-back-card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+
+<div class="badge-back-card">
+  <div class="badge-back-top">
+    <div class="badge-back-title">RÉPUBLIQUE DU MALI</div>
+    <div class="badge-back-motto">Un Peuple - Un But - Une Foi</div>
+  </div>
+
+  <div class="badge-back-body">
+    <div>
+      <div class="badge-rules-title">Conditions Générales d'Utilisation</div>
+      <div class="badge-rules-list">
+        <div class="badge-rules-item">Cette carte d'identité est strictement personnelle et demeure la propriété de l'établissement.</div>
+        <div class="badge-rules-item">Le titulaire est tenu de la présenter lors de tout contrôle ou accès aux services scolaires.</div>
+        <div class="badge-rules-item">En cas de perte, vol ou dégradation, aviser sans délai l'administration de l'établissement.</div>
+        <div class="badge-rules-item">Toute personne trouvant cette carte est priée de la retourner à l'adresse ci-dessous.</div>
+      </div>
+    </div>
+
+    <div class="badge-role-box">
+      {% if badge.kind == 'eleve' %}
+      <div class="badge-role-box-title">Contact en cas d'urgence / Parents</div>
+      <div class="badge-role-box-content">
+        <span>Responsable : <strong>{{ badge.emergency_contact|default:badge.father|default:"Direction" }}</strong></span>
+        {% if badge.parent_phone %}<span>Tél. urgence : <strong>{{ badge.parent_phone }}</strong></span>{% endif %}
+      </div>
+      {% else %}
+      <div class="badge-role-box-title">Mention Officielle du Personnel</div>
+      <div class="badge-role-box-content">
+        <span>Statut : <strong>Membre officiel en fonction</strong></span>
+        <span>Service : <strong>{{ badge.service|default:"Administration" }}</strong></span>
+        <span>Réf : <strong>{{ badge.matricule }}</strong></span>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="badge-validation-row">
+      <div class="badge-valid-col">
+        <div class="badge-valid-header">Délivrance et Contrôle Officiel</div>
+        <div>Année scolaire : <span class="badge-valid-highlight">{{ badge.year_label }}</span></div>
+        <div>Date de validité : <span class="badge-valid-highlight">{{ badge.valid_until_str }}</span></div>
+        <div>N° de contrôle : <span class="badge-valid-code">{{ badge.matricule }}</span></div>
+      </div>
+
+      <div class="badge-stamp-box">
+        <div class="badge-stamp-box-title">Signature & Cachet Officiel</div>
+        <div class="badge-stamp-box-sub">La Direction</div>
+        {% if badge.school.stamp_url %}
+        <img src="{{ badge.school.stamp_url }}" alt="Cachet" class="badge-stamp-img">
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="badge-back-footer">
+    <div class="badge-back-footer-line1">
+      {{ badge.school.name|default:"Établissement scolaire" }}{% if badge.school.city %} · {{ badge.school.city }}{% endif %}
+    </div>
+    <div class="badge-back-footer-line2">
+      {% if badge.school.phone %}Tél : {{ badge.school.phone }}{% endif %}
+      {% if badge.school.email %}{% if badge.school.phone %}  |  {% endif %}Email : {{ badge.school.email }}{% endif %}
+      {% if not badge.school.phone and not badge.school.email %}Carte d'identification scolaire officielle{% endif %}
+    </div>
+  </div>
+</div>

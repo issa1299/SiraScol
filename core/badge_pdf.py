@@ -47,8 +47,8 @@ def Y(top_px):
     return h - P(top_px)
 
 
-def render_badges_pdf(badges):
-    """Une carte par page, au format 85,6 × 54 mm."""
+def render_badges_pdf(badges, duplex=True):
+    """Génération PDF CR80 (85,6 × 54 mm) optimisée PVC : Recto puis Verso."""
     from io import BytesIO
     from reportlab.pdfgen import canvas
     from students.card_mali import draw_badge_pdf
@@ -58,12 +58,17 @@ def render_badges_pdf(badges):
     buf = BytesIO()
     c = canvas.Canvas(buf, pagesize=(w, h))
     for badge in badges:
-        draw_badge_pdf(c, badge, y0=0)
+        # Page Recto
+        draw_badge_pdf(c, badge, y0=0, side='front')
         c.showPage()
+        # Page Verso
+        if duplex:
+            draw_badge_pdf(c, badge, y0=0, side='back')
+            c.showPage()
     c.save()
     buf.seek(0)
     return buf.getvalue()
 
 
-def render_badge_pdf(badge):
-    return render_badges_pdf([badge])
+def render_badge_pdf(badge, duplex=True):
+    return render_badges_pdf([badge], duplex=duplex)

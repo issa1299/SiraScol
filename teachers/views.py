@@ -980,10 +980,11 @@ def staff_card(request, pk):
 
 @login_required
 def staff_card_pdf(request, pk):
-    """PDF CR80 d'un membre du personnel, avec QR de pointage."""
+    """PDF CR80 officiel d'un membre du personnel (Page 1 Recto, Page 2 Verso)."""
     from core.badge_pdf import render_badge_pdf
     teacher = get_object_or_404(Teacher, pk=pk)
-    resp = HttpResponse(render_badge_pdf(_staff_badge(teacher, request)),
+    duplex = request.GET.get('duplex', '1') != '0' and request.GET.get('side') != 'recto'
+    resp = HttpResponse(render_badge_pdf(_staff_badge(teacher, request), duplex=duplex),
                         content_type='application/pdf')
     filename = f"badge_{teacher.matricule}.pdf".replace(' ', '_')
     resp['Content-Disposition'] = f'attachment; filename="{filename}"'
@@ -992,11 +993,18 @@ def staff_card_pdf(request, pk):
 
 @login_required
 def staff_card_image(request, pk):
-    """PNG haute définition du badge personnel."""
-    from students.card_mali import render_badge_png
+    """PNG haute définition du badge personnel (recto, verso ou les deux)."""
+    from students.card_mali import render_badge_png, render_badge_verso_png, render_badge_both_png
     teacher = get_object_or_404(Teacher, pk=pk)
-    buf = render_badge_png(_staff_badge(teacher, request))
-    filename = f"badge_{teacher.matricule}.png".replace(' ', '_')
+    badge = _staff_badge(teacher, request)
+    side = request.GET.get('side', 'front').lower()
+    if side == 'both':
+        buf = render_badge_both_png(badge)
+    elif side in ('back', 'verso'):
+        buf = render_badge_verso_png(badge)
+    else:
+        buf = render_badge_png(badge)
+    filename = f"badge_{teacher.matricule}_{side}.png".replace(' ', '_')
     disp = 'inline' if request.GET.get('preview') == '1' else 'attachment'
     resp = HttpResponse(buf.read(), content_type='image/png')
     resp['Content-Disposition'] = f'{disp}; filename="{filename}"'
@@ -1025,6 +1033,7 @@ def staff_cards_all_pdf(request):
     school = _school_settings()
     qs = Teacher.objects.filter(status='actif').order_by('last_name', 'first_name')
     badges = [_staff_badge(teacher, request, school) for teacher in qs]
-    resp = HttpResponse(render_badges_pdf(badges), content_type='application/pdf')
+    duplex = request.GET.get('duplex', '1') != '0'
+    resp = HttpResponse(render_badges_pdf(badges, duplex=duplex), content_type='application/pdf')
     resp['Content-Disposition'] = 'attachment; filename="badges_personnel.pdf"'
     return resp

@@ -176,6 +176,11 @@ def school_context(school):
     director = (getattr(school, 'director_name', None) if school else None) or '—'
     city = (getattr(school, 'city', None) if school else None) or ''
     place = city  # Ville seule, sans crochets ni pays ajouté.
+    address = (getattr(school, 'address', None) if school else None) or ''
+    phone = (getattr(school, 'phone', None) if school else None) or ''
+    phone2 = (getattr(school, 'phone2', None) if school else None) or ''
+    email = (getattr(school, 'email', None) if school else None) or ''
+    website = (getattr(school, 'website', None) if school else None) or ''
 
     logo_url = stamp_url = None
     if school:
@@ -207,6 +212,11 @@ def school_context(school):
         'stamp_url': stamp_url,
         'city': city,
         'place': place,
+        'address': address,
+        'phone': phone,
+        'phone2': phone2,
+        'email': email,
+        'website': website,
         'year_label': year_label,
     }
 
@@ -275,31 +285,47 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
             ('TÉL.', parent_phone or (person.phone or '—')),
         ]
         dob_str = _fmt_date(person.date_of_birth) if person.date_of_birth else ''
-        main_fields = [('CLASSE', classe), ('MATRICULE', person.matricule or '—'),
-                       (born_word.upper(), dob_str)]
+        main_fields = [
+            ('CLASSE', classe),
+            ('MATRICULE', person.matricule or '—'),
+        ]
+        emergency_name = father if father != '—' else (mother if mother != '—' else '')
+        emergency_contact = f"{emergency_name} ({parent_phone})" if (parent_phone and emergency_name) else (parent_phone or emergency_name or '—')
         title = "CARTE SCOLAIRE"
         role_label = 'ÉLÈVE'
+        service = ''
+        function = 'Élève'
     else:
         category = dict(getattr(person, 'CATEGORY_CHOICES', []) or []).get(
             getattr(person, 'category', ''), getattr(person, 'category', '') or '—'
         )
         function = getattr(person, 'function', None) or getattr(person, 'speciality', None) or category
+        department = (getattr(person, 'department', None) or '').strip()
+        service = department or getattr(person, 'speciality', None)
+        if not service:
+            if str(category).lower() in ('admin', 'administratif', 'direction'):
+                service = 'Administration'
+            elif str(category).lower() in ('service', 'technique'):
+                service = 'Services Généraux'
+            else:
+                service = 'Pédagogique'
         lines = [
             ('NOM', (person.last_name or '').upper()),
             ('PRÉNOM', person.first_name or ''),
             ('MATRICULE', person.matricule or '—'),
             ('FONCTION', function or '—'),
+            ('SERVICE', service or '—'),
             ('CATÉGORIE', category or '—'),
-            ('SERVICE', getattr(person, 'department', None) or '—'),
             ('TÉL.', getattr(person, 'phone', None) or '—'),
         ]
         main_fields = [
-            ('FONCTION', function or '—'),
+            ('FONCTION', function or 'Enseignant'),
+            ('SERVICE', service),
             ('MATRICULE', staff_display_code(person)),
         ]
-        department = (getattr(person, 'department', None) or '').strip()
-        if department:
-            main_fields.append(('SERVICE', department))
+        classe = ''
+        emergency_contact = ''
+        father = mother = parent_phone = ''
         year_label = school_ctx['year_label']
         title = 'CARTE DU PERSONNEL'
         role_label = 'PERSONNEL'
@@ -345,4 +371,13 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
         'design': design,
         'design_key': design_key,
         'issued_str': _fmt_date(today),
+        'function': function,
+        'service': service,
+        'classe': classe,
+        'emergency_contact': emergency_contact,
+        'father': father,
+        'mother': mother,
+        'parent_phone': parent_phone,
+        'phone': getattr(person, 'phone', None) or '—',
+        'matricule_raw': getattr(person, 'matricule', '') or str(person.pk),
     }

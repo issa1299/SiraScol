@@ -486,10 +486,10 @@ def scan_qr_api(request):
         student = None
         teacher = None
         raw = code
-        if code.upper().startswith('STU:') or code.upper().startswith('ELEVE:'):
+        if code.upper().startswith(('STU:', 'ELEVE:', 'STUDENT:')):
             code = code.split(':', 1)[1].strip()
             kind = 'eleve'
-        elif code.upper().startswith('TCH:') or code.upper().startswith('ENS:'):
+        elif code.upper().startswith(('TCH:', 'ENS:', 'PER:', 'ADM:', 'STAFF:', 'TEACHER:')):
             code = code.split(':', 1)[1].strip()
             kind = 'personnel'
 

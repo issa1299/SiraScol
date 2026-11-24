@@ -1,29 +1,69 @@
 <style>
-  .badge-preview-wrap { width:100%; max-width:420px; margin:0 auto; }
-  .badge-tips { font-size:.72rem; color:#64748b; background:#f8fafc; border:1px solid #e2e8f0;
-                border-radius:.75rem; padding:.6rem .75rem; margin-top:1rem; line-height:1.5; }
-  .badge-tips strong { color:#1d4ed8; }
+  .badge-preview-wrap { width: 100%; max-width: 440px; margin: 0 auto; }
+  .badge-tips { font-size: .75rem; color: #64748b; background: #f8fafc; border: 1px solid #e2e8f0;
+                border-radius: .75rem; padding: .65rem .85rem; margin-top: 1rem; line-height: 1.5; }
+  .badge-tips strong { color: #0c4a37; }
+  .badge-tab-btn {
+    flex: 1; text-align: center; font-size: .75rem; font-weight: 700; padding: .5rem .75rem;
+    border-radius: .6rem; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; cursor: pointer;
+  }
+  .badge-tab-btn.active {
+    background: #0c4a37; color: #ffffff; border-color: #0c4a37;
+  }
 </style>
 
-<p class="text-xs text-slate-500 mb-3">
-  <i class="fas fa-id-badge text-blue-600"></i> Badge du personnel — format CR80 (85,6 × 54 mm).
-</p>
+<div class="flex items-center justify-between mb-3">
+  <p class="text-xs text-slate-500">
+    <i class="fas fa-id-badge text-emerald-700"></i> Badge CR80 officiel (85,6 × 54 mm)
+  </p>
+  <div class="flex gap-1.5" id="modal-side-tabs">
+    <button type="button" class="badge-tab-btn active" onclick="toggleModalSide('recto')">Recto</button>
+    <button type="button" class="badge-tab-btn" onclick="toggleModalSide('verso')">Verso</button>
+  </div>
+</div>
 
-<div class="badge-preview-wrap">{% include "core/badge.html" %}</div>
+<div class="badge-preview-wrap">
+  <div id="modal-view-recto">
+    {% include "core/badge.html" %}
+  </div>
+  <div id="modal-view-verso" class="hidden">
+    {% include "core/badge_back.html" %}
+  </div>
+</div>
 
 <p class="badge-tips">
-  Le QR <strong>{{ badge.qr_payload }}</strong> est lu automatiquement par le scanner des présences.
-  Aucun changement d'onglet n'est nécessaire.
+  QR Code sécurisé : <strong>{{ badge.qr_payload }}</strong> (pointage automatique sans choix d'onglet).
+  Rendu vectoriel haute fidélité pour impression PVC recto-verso.
 </p>
 
 <div class="form-actions flex flex-wrap gap-2 mt-4">
-  <a href="{{ pdf_url }}" class="flex-1 text-center bg-blue-600 text-white py-3 rounded-xl text-xs font-semibold">
-    <i class="fas fa-download"></i> PDF
+  <a href="{{ pdf_url }}" class="flex-1 text-center bg-emerald-700 hover:bg-emerald-800 text-white py-3 rounded-xl text-xs font-semibold">
+    <i class="fas fa-download"></i> PDF Recto-Verso
   </a>
-  <a href="{{ image_url }}" class="flex-1 text-center bg-teal-600 text-white py-3 rounded-xl text-xs font-semibold">
-    <i class="fas fa-image"></i> Image
+  <a href="{{ image_url }}?side=both" class="flex-1 text-center bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-xl text-xs font-semibold">
+    <i class="fas fa-image"></i> Images HD
   </a>
-  <a href="{{ card_url }}" target="_blank" class="flex-1 text-center bg-slate-100 text-slate-700 py-3 rounded-xl text-xs font-semibold">
-    <i class="fas fa-print"></i> Imprimer
+  <a href="{{ card_url }}" target="_blank" class="flex-1 text-center bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 rounded-xl text-xs font-semibold">
+    <i class="fas fa-print"></i> Page d'impression
   </a>
 </div>
+
+<script>
+  function toggleModalSide(side) {
+    var mr = document.getElementById('modal-view-recto');
+    var mv = document.getElementById('modal-view-verso');
+    var btns = document.querySelectorAll('#modal-side-tabs .badge-tab-btn');
+    if (!mr || !mv || btns.length < 2) return;
+    btns.forEach(function(b){ b.classList.remove('active'); });
+
+    if (side === 'verso') {
+      mr.classList.add('hidden');
+      mv.classList.remove('hidden');
+      btns[1].classList.add('active');
+    } else {
+      mr.classList.remove('hidden');
+      mv.classList.add('hidden');
+      btns[0].classList.add('active');
+    }
+  }
+</script>
