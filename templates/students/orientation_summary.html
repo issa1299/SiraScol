@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Récapitulatif d'orientation{% endblock %}
+{% block content %}
+<div class="mb-4">
+  <a href="{% url 'students:orientation_class' operation.source_classroom_id %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Retour à la classe</a>
+  <h1 class="text-xl font-bold text-slate-800 mt-1">Récapitulatif avant validation</h1>
+  <p class="text-xs text-slate-500">{{ operation.source_classroom.name }} · {{ operation.source_year.name }} → {{ operation.target_year.name }}</p>
+</div>
+
+<div class="flex flex-wrap gap-3 mb-5">
+  <div class="bg-white rounded-xl border px-4 py-3"><p class="text-[10px] uppercase text-slate-400">Décisions</p><p class="text-xl font-bold text-slate-800">{{ total }}</p></div>
+  <div class="bg-white rounded-xl border px-4 py-3"><p class="text-[10px] uppercase text-slate-400">Statut</p><p class="text-sm font-bold text-slate-800 mt-1">{{ operation.get_status_display }}</p></div>
+  <div class="bg-white rounded-xl border px-4 py-3"><p class="text-[10px] uppercase text-slate-400">Validation</p><p class="text-xs text-slate-600 mt-1">{% if operation.validated_by %}{{ operation.validated_by.username }} · {{ operation.validated_at|date:"d/m/Y H:i" }}{% else %}en attente{% endif %}</p></div>
+</div>
+
+{% for name, items in groups %}
+<div class="bg-white rounded-2xl border overflow-hidden mb-3">
+  <div class="bg-slate-50 px-4 py-2 border-b flex items-center justify-between">
+    <p class="text-sm font-bold text-slate-800"><i class="fas fa-door-open text-blue-600"></i> {{ name }}</p>
+    <span class="text-xs text-slate-500">{{ items|length }} élève(s)</span>
+  </div>
+  <table class="w-full text-sm">
+    <thead><tr class="text-[10px] uppercase text-slate-400">
+      <th class="px-4 py-2 text-left">Élève</th><th class="px-4 py-2">Moyenne</th>
+      <th class="px-4 py-2">Décision</th><th class="px-4 py-2 text-left">Observation</th><th class="px-4 py-2">Rév.</th>
+    </tr></thead>
+    <tbody class="divide-y">
+      {% for d in items %}<tr>
+        <td class="px-4 py-2 font-semibold">{{ d.enrollment.student.last_name }} {{ d.enrollment.student.first_name }}</td>
+        <td class="px-4 py-2 text-center">{{ d.average|default:"—" }}</td>
+        <td class="px-4 py-2 text-center text-xs">{{ d.get_decision_display }}</td>
+        <td class="px-4 py-2 text-xs text-slate-500">{{ d.note|default:"—" }}</td>
+        <td class="px-4 py-2 text-center text-xs text-slate-400">{{ d.revision }}</td>
+      </tr>{% endfor %}
+    </tbody>
+  </table>
+</div>
+{% empty %}
+<div class="bg-slate-50 border border-dashed rounded-2xl p-8 text-center text-sm text-slate-500">
+  Aucune décision enregistrée. <a href="{% url 'students:orientation_class' operation.source_classroom_id %}" class="text-blue-600 underline">Saisir les orientations</a>
+</div>
+{% endfor %}
+
+{% if operation.is_locked %}
+<div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 text-sm text-emerald-900">
+  <i class="fas fa-lock"></i> Opération validée et verrouillée. Les inscriptions de
+  <strong>{{ operation.target_year.name }}</strong> ont été créées pour les élèves admis/redoublants.
+</div>
+{% elif user_role == 'directeur' %}
+<form method="post" action="{% url 'students:orientation_validate' operation.pk %}"
+      onsubmit="return confirm('Valider définitivement cette orientation ? Les inscriptions {{ operation.target_year.name }} seront créées et le dossier sera verrouillé.');"
+      class="mt-4">
+  {% csrf_token %}
+  <button class="w-full sm:w-auto bg-emerald-600 text-white px-6 py-3 rounded-xl text-sm font-semibold">
+    <i class="fas fa-check-double"></i> Valider définitivement l'orientation
+  </button>
+  <p class="text-[11px] text-slate-400 mt-2">Les orientations sont modifiables jusqu'à cette validation. Après validation, aucune correction n'est possible.</p>
+</form>
+{% else %}
+<div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-sm text-amber-900">
+  <i class="fas fa-user-check"></i> Le directeur doit valider définitivement cette orientation.
+</div>
+{% endif %}
+{% endblock %}

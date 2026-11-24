@@ -140,7 +140,9 @@ class Enrollment(models.Model):
         ('en_cours', 'En cours'),
         ('promoted', 'Admis (passe)'),
         ('repeated', 'Redouble'),
+        ('ajourne', 'Ajourné'),
         ('transferred', 'Transféré'),
+        ('autre', 'Autre décision'),
         ('abandoned', 'Abandon / Sortie'),
     ]
     end_status = models.CharField(
@@ -170,4 +172,98 @@ class Enrollment(models.Model):
     @property
     def is_repeated(self):
         return self.end_status == 'repeated'
+
+
+class PromotionOperation(models.Model):
+    """Opération de passage/orientation d'une classe source vers l'année suivante.
+
+    Le dossier reste modifiable tant qu'il n'est pas validé. La validation
+    définitive (directeur) verrouille l'opération.
+    """
+    STATUS_CHOICES = [
+        ('brouillon', 'Brouillon'),
+        ('a_valider', 'À valider'),
+        ('valide', 'Validé'),
+    ]
+
+    source_classroom = models.ForeignKey(
+        ClassRoom, on_delete=models.PROTECT, related_name='promotion_operations'
+    )
+    source_year = models.ForeignKey(
+        AcademicYear, on_delete=models.PROTECT, related_name='promotion_operations'
+    )
+    target_year = models.ForeignKey(
+        AcademicYear, on_delete=models.PROTECT, related_name='promotion_operations_target'
+    )
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='brouillon')
+    note = models.TextField(blank=True, verbose_name='Observation de la direction')
+    created_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='promotions_created',
+    )
+    validated_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='promotions_validated',
+    )
+    validated_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Opération de passage / orientation'
+        verbose_name_plural = 'Opérations de passage / orientation'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['source_classroom', 'source_year', 'target_year'],
+                name='promo_unique_operation',
+            )
+        ]
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.source_classroom.name} → {self.target_year.name} ({self.get_status_display()})'
+
+    @property
+    def is_locked(self):
+        return self.status == 'valide'
+
+
+class PromotionDecision(models.Model):
+    """Décision individuelle, avec révisions conservées pour traçabilité.
+
+    Une correction ne modifie jamais une révision existante : elle crée une
+    nouvelle ligne ``is_current`` avec ``revision`` incrémenté.
+    """
+    operation = models.ForeignKey(
+        PromotionOperation, on_delete=models.CASCADE, related_name='decisions'
+    )
+    enrollment = models.ForeignKey(
+        Enrollment, on_delete=models.PROTECT, related_name='orientation_decisions'
+    )
+    decision = models.CharField(max_length=20, choices=Enrollment.END_STATUS_CHOICES,
+                                default='en_cours')
+    target_classroom = models.ForeignKey(
+        ClassRoom, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='orientation_decisions',
+    )
+    average = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    note = models.TextField(blank=True)
+    revision = models.PositiveIntegerField(default=1)
+    is_current = models.BooleanField(default=True)
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Décision d’orientation'
+        verbose_name_plural = 'Décisions d’orientation'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['operation', 'enrollment', 'revision'], name='promo_unique_revision'
+            )
+        ]
+        ordering = ['-revision']
+
+    def __str__(self):
+        return (f'{self.enrollment.student} — {self.get_decision_display()} '
+                f'(rév. {self.revision})')
 

@@ -13,6 +13,15 @@ urlpatterns = [
     path('fin-annee/classe/<int:classroom_id>/auto/', promotion_views.promotion_auto, name='promotion_auto'),
     path('fin-annee/listes/<int:year_id>/', promotion_views.promotion_lists, name='promotion_lists'),
 
+    # Passage en classe supérieure / orientation du lycée
+    path('orientation/', promotion_views.orientation_home, name='orientation_home'),
+    path('orientation/classe/<int:classroom_id>/', promotion_views.orientation_class,
+         name='orientation_class'),
+    path('orientation/<int:operation_id>/apercu/', promotion_views.orientation_summary,
+         name='orientation_summary'),
+    path('orientation/<int:operation_id>/valider/', promotion_views.orientation_validate,
+         name='orientation_validate'),
+
     path('cartes/', views.cards_home, name='cards_home'),
     path('cartes/classe/<int:classroom_id>/', views.cards_class, name='cards_class'),
     path('cartes/classe/<int:classroom_id>/pdf/', views.cards_class_pdf, name='cards_class_pdf'),

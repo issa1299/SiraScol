@@ -27,6 +27,9 @@
   <button type="button" data-tab="attente" class="tab-btn flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-600">
     En attente <span class="text-xs opacity-70">({{ pending|length }})</span>
   </button>
+  <button type="button" data-tab="autres" class="tab-btn flex-1 py-2.5 rounded-lg text-sm font-medium text-slate-600">
+    Autres <span class="text-xs opacity-70">({{ others|length }})</span>
+  </button>
 </div>
 
 <div id="panel-admis" class="tab-panel space-y-2">
@@ -74,6 +77,19 @@
   </div>
   {% empty %}
   <p class="text-center text-slate-400 text-sm py-8">Tous les élèves ont une décision.</p>
+  {% endfor %}
+</div>
+
+<div id="panel-autres" class="tab-panel space-y-2 hidden">
+  {% for e in others %}
+  <div class="bg-white border rounded-xl p-3 flex justify-between items-center gap-2">
+    <div>
+      <p class="font-semibold text-sm">{{ e.student.last_name }} {{ e.student.first_name }}</p>
+      <p class="text-xs text-slate-500">{{ e.classroom.name }} · {{ e.get_end_status_display }}</p>
+    </div>
+  </div>
+  {% empty %}
+  <p class="text-center text-slate-400 text-sm py-8">Aucune autre décision.</p>
   {% endfor %}
 </div>
 

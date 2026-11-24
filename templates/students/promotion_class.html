@@ -8,6 +8,15 @@
   <p class="text-xs text-slate-400 mt-1">Niveau suivant pour les admis : 1ère → 2ème, etc.</p>
 </div>
 
+{% if is_orientation_class %}
+<div class="bg-violet-50 border border-violet-100 rounded-2xl p-4 mb-4 text-sm text-slate-700 space-y-1">
+  <p class="font-semibold text-violet-800"><i class="fas fa-info-circle"></i> Orientation lycée</p>
+  <p class="text-xs">L'orientation n'est jamais automatique : elle est décidée en conseil des professeurs puis validée par la direction.</p>
+  <a href="{% url 'students:orientation_home' %}?year={{ source.pk }}" class="inline-block mt-1 bg-violet-600 text-white px-4 py-2.5 rounded-xl text-sm">
+    <i class="fas fa-route"></i> Ouvrir « Passage en classe supérieure »
+  </a>
+</div>
+{% else %}
 <div class="bg-blue-50 border border-blue-100 rounded-2xl p-4 mb-4 text-sm text-slate-700 space-y-2">
   <p class="font-semibold text-blue-800"><i class="fas fa-magic"></i> Calcul automatique</p>
   <p class="text-xs">Primaire : moyenne annuelle /10 → <strong>Admis si ≥ 5</strong> · Redouble si &lt; 5</p>
@@ -19,6 +28,7 @@
     </button>
   </form>
 </div>
+{% endif %}
 
 <form method="post" class="space-y-3">
   {% csrf_token %}

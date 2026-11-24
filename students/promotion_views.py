@@ -11,11 +11,13 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from core.permissions import role_required, is_staff_role
 from academics.models import AcademicYear, ClassRoom, Level
-from students.models import Enrollment, Student
+from students.models import Enrollment, PromotionDecision, PromotionOperation, Student
+from students import orientation_rules
 from grades.bulletin_views import _build_bulletin_context
 
 def _annual_average(student, year, is_primary_hint=None):
@@ -283,6 +285,7 @@ def promotion_class(request, classroom_id):
         'target': target,
         'rows': rows,
         'status_choices': Enrollment.END_STATUS_CHOICES,
+        'is_orientation_class': orientation_rules.is_orientation_classroom(classroom),
     })
 
 
@@ -380,28 +383,45 @@ def promotion_auto(request, classroom_id):
     is_pri = level_is_primary(classroom.level)
 
     enrollments = Enrollment.objects.filter(classroom=classroom, is_active=True).select_related('student')
+    is_orientation = orientation_rules.is_orientation_classroom(classroom)
     n_ok = n_fail = n_skip = 0
     for enr in enrollments:
         avg, _ = _annual_average(enr.student, year, is_primary_hint=is_pri)
-        decision = _auto_decision(avg, is_pri)
         enr.end_average = avg
-        enr.end_status = decision
-        if avg is not None:
-            seuil = '5/10' if is_pri else '10/20'
-            enr.end_note = f'Auto: moy. {avg} (seuil {seuil})'
-            if decision == 'promoted':
+        if is_orientation:
+            # Lycée : la moyenne est indicative ; l'orientation appartient au
+            # conseil des professeurs et à la direction (jamais automatique).
+            if avg is not None:
+                enr.end_note = (enr.end_note or '')
                 n_ok += 1
             else:
-                n_fail += 1
+                n_skip += 1
         else:
-            enr.end_note = 'Auto: pas assez de notes'
-            n_skip += 1
+            decision = _auto_decision(avg, is_pri)
+            enr.end_status = decision
+            if avg is not None:
+                seuil = '5/10' if is_pri else '10/20'
+                enr.end_note = f'Auto: moy. {avg} (seuil {seuil})'
+                if decision == 'promoted':
+                    n_ok += 1
+                else:
+                    n_fail += 1
+            else:
+                enr.end_note = 'Auto: pas assez de notes'
+                n_skip += 1
         enr.save()
 
-    messages.success(
-        request,
-        f'Calcul auto : {n_ok} admis, {n_fail} redoublants, {n_skip} sans notes (à décider à la main).'
-    )
+    if is_orientation:
+        messages.success(
+            request,
+            f'{n_ok} moyenne(s) annuelle(s) calculée(s). Orientation à décider manuellement '
+            'par le conseil des professeurs et la direction.'
+        )
+    else:
+        messages.success(
+            request,
+            f'Calcul auto : {n_ok} admis, {n_fail} redoublants, {n_skip} sans notes (à décider à la main).'
+        )
     return redirect('students:promotion_class', classroom_id=classroom.pk)
 
 
@@ -428,11 +448,247 @@ def promotion_lists(request, year_id):
     )
     classrooms = ClassRoom.objects.filter(academic_year=year).order_by('level__order', 'name')
 
+    others = enrs.filter(end_status__in=('ajourne', 'transferred', 'autre', 'abandoned')).order_by(
+        'classroom__level__order', 'student__last_name'
+    )
+
     return render(request, 'students/promotion_lists.html', {
         'year': year,
         'promoted': promoted,
         'repeated': repeated,
         'pending': pending,
+        'others': others,
         'classrooms': classrooms,
         'classroom_id': classroom_id,
     })
+
+
+# ── Orientation du lycée (décision du conseil, validation du directeur) ────────
+
+def _target_year_for(source):
+    if not source or not source.start_date:
+        return None
+    return AcademicYear.objects.filter(
+        start_date__gt=source.start_date
+    ).order_by('start_date').first()
+
+
+@role_required('admin', 'directeur', 'secretaire')
+def orientation_home(request):
+    """Point d'entrée « Passage en classe supérieure » (lycée malien)."""
+    years = AcademicYear.objects.all().order_by('-start_date')
+    source_id = request.GET.get('year')
+    source = get_object_or_404(AcademicYear, pk=source_id) if source_id else None
+    if not source:
+        source = AcademicYear.objects.filter(is_current=True).first() or years.first()
+    target = _target_year_for(source) if source else None
+    classrooms = []
+    operations = PromotionOperation.objects.none()
+    if source:
+        candidates = ClassRoom.objects.filter(academic_year=source).select_related(
+            'level'
+        ).order_by('level__order', 'name')
+        classrooms = [c for c in candidates if orientation_rules.is_orientation_classroom(c)]
+        operations = PromotionOperation.objects.filter(source_year=source).select_related(
+            'source_classroom', 'target_year', 'validated_by'
+        )
+    return render(request, 'students/orientation_home.html', {
+        'years': years, 'source': source, 'target': target,
+        'classrooms': classrooms, 'operations': operations,
+    })
+
+
+@role_required('admin', 'directeur', 'secretaire')
+def orientation_class(request, classroom_id):
+    """Saisie/correction des orientations d'une classe d'origine."""
+    classroom = get_object_or_404(
+        ClassRoom.objects.select_related('level', 'academic_year'), pk=classroom_id
+    )
+    if not orientation_rules.is_orientation_classroom(classroom):
+        messages.error(request, "Cette classe ne fait pas l'objet d'une orientation lycée.")
+        return redirect('students:orientation_home')
+    source = classroom.academic_year
+    target = _target_year_for(source)
+    if not target:
+        messages.error(request, "Créez d'abord l'année scolaire suivante dans Configuration.")
+        return redirect('students:orientation_home')
+
+    operation, _ = PromotionOperation.objects.get_or_create(
+        source_classroom=classroom, source_year=source, target_year=target,
+        defaults={'created_by': request.user},
+    )
+    destinations = orientation_rules.destination_classrooms(classroom, target)
+    repetitions = orientation_rules.repetition_classrooms(classroom, target)
+    seen = set()
+    all_targets = []
+    for room in destinations + repetitions:
+        if room.pk not in seen:
+            seen.add(room.pk)
+            all_targets.append(room)
+
+    if request.method == 'POST' and not operation.is_locked:
+        saved = 0
+        for enr in Enrollment.objects.filter(classroom=classroom, is_active=True):
+            if request.POST.get(f'select_{enr.pk}') != 'on':
+                continue
+            decision = request.POST.get(f'decision_{enr.pk}', 'en_cours')
+            if decision not in dict(Enrollment.END_STATUS_CHOICES):
+                continue
+            target_id = request.POST.get(f'target_{enr.pk}') or None
+            if target_id:
+                try:
+                    target_id = int(target_id)
+                except ValueError:
+                    target_id = None
+            allowed = orientation_rules.allowed_destination_ids(classroom, target, decision)
+            if target_id and target_id not in allowed:
+                messages.error(
+                    request, f'Destination non autorisée pour {enr.student.full_name}.'
+                )
+                continue
+            if decision in ('promoted', 'repeated') and not target_id:
+                messages.error(
+                    request, f'Choisissez une classe de destination pour {enr.student.full_name}.'
+                )
+                continue
+            average = None
+            avg_raw = (request.POST.get(f'avg_{enr.pk}') or '').strip()
+            if avg_raw:
+                try:
+                    average = Decimal(avg_raw.replace(',', '.'))
+                except Exception:
+                    pass
+            last = PromotionDecision.objects.filter(
+                operation=operation, enrollment=enr
+            ).order_by('-revision').first()
+            PromotionDecision.objects.filter(
+                operation=operation, enrollment=enr, is_current=True
+            ).update(is_current=False)
+            PromotionDecision.objects.create(
+                operation=operation,
+                enrollment=enr,
+                decision=decision,
+                target_classroom_id=target_id,
+                average=average,
+                note=(request.POST.get(f'note_{enr.pk}') or '').strip(),
+                revision=(last.revision + 1) if last else 1,
+                is_current=True,
+                updated_by=request.user,
+            )
+            saved += 1
+        if saved:
+            operation.status = ('a_valider' if request.POST.get('action') == 'a_valider'
+                                else 'brouillon')
+            operation.save(update_fields=['status', 'updated_at'])
+            messages.success(request, f'{saved} décision(s) enregistrée(s) (révision tracée).')
+        return redirect('students:orientation_class', classroom_id=classroom.pk)
+
+    current = {
+        d.enrollment_id: d for d in PromotionDecision.objects.filter(
+            operation=operation, is_current=True
+        ).select_related('target_classroom')
+    }
+    rows = []
+    for enr in Enrollment.objects.filter(classroom=classroom, is_active=True).select_related(
+        'student'
+    ).order_by('student__last_name', 'student__first_name'):
+        average = enr.end_average
+        if average is None:
+            try:
+                average, _ = _annual_average(enr.student, source)
+            except Exception:
+                average = None
+        rows.append({
+            'enrollment': enr,
+            'average': average,
+            'decision': current.get(enr.pk),
+        })
+    return render(request, 'students/orientation_class.html', {
+        'classroom': classroom, 'source': source, 'target': target,
+        'operation': operation, 'rows': rows, 'destinations': destinations,
+        'repetitions': repetitions, 'all_targets': all_targets,
+        'dest_ids': [room.pk for room in destinations],
+        'rep_ids': [room.pk for room in repetitions],
+        'status_choices': Enrollment.END_STATUS_CHOICES,
+    })
+
+
+@role_required('admin', 'directeur', 'secretaire')
+def orientation_summary(request, operation_id):
+    """Récapitulatif avant validation définitive."""
+    operation = get_object_or_404(
+        PromotionOperation.objects.select_related(
+            'source_classroom', 'source_year', 'target_year', 'validated_by'
+        ), pk=operation_id,
+    )
+    decisions = list(PromotionDecision.objects.filter(
+        operation=operation, is_current=True
+    ).select_related('enrollment__student', 'target_classroom').order_by(
+        'target_classroom__name', 'enrollment__student__last_name'
+    ))
+    groups = {}
+    for decision in decisions:
+        key = decision.target_classroom.name if decision.target_classroom else 'Sans classe'
+        groups.setdefault(key, []).append(decision)
+    return render(request, 'students/orientation_summary.html', {
+        'operation': operation, 'decisions': decisions,
+        'groups': sorted(groups.items()), 'total': len(decisions),
+    })
+
+
+@role_required('admin', 'directeur')
+@require_POST
+def orientation_validate(request, operation_id):
+    """Validation définitive : crée les inscriptions cibles, verrouille le dossier."""
+    operation = get_object_or_404(PromotionOperation, pk=operation_id)
+    if operation.is_locked:
+        messages.info(request, 'Cette opération est déjà validée et verrouillée.')
+        return redirect('students:orientation_summary', operation_id=operation.pk)
+
+    created = skipped = 0
+    with transaction.atomic():
+        for decision in PromotionDecision.objects.filter(
+            operation=operation, is_current=True
+        ).select_related('enrollment__student', 'target_classroom'):
+            enrollment = decision.enrollment
+            enrollment.end_status = decision.decision
+            note = decision.note or ''
+            if decision.target_classroom_id:
+                note = f'{note} → {decision.target_classroom.name}'.strip(' →')
+            enrollment.end_note = note
+
+            if decision.decision in ('promoted', 'repeated') and decision.target_classroom_id:
+                # Garde-fou : unicité (élève, année) déjà en base, vérifiée ici aussi.
+                if Enrollment.objects.filter(
+                    student=enrollment.student, academic_year=operation.target_year
+                ).exists():
+                    enrollment.end_note = (note + ' [Doublon : déjà inscrit année cible]').strip()
+                    enrollment.save(update_fields=['end_status', 'end_note'])
+                    skipped += 1
+                    continue
+                Enrollment.objects.create(
+                    student=enrollment.student,
+                    classroom=decision.target_classroom,
+                    academic_year=operation.target_year,
+                    enrollment_date=operation.target_year.start_date or date.today(),
+                    is_active=True,
+                    end_status='en_cours',
+                )
+                # L'ancienne inscription est conservée avec sa classe et son année.
+                enrollment.is_active = False
+                enrollment.save(update_fields=['end_status', 'end_note', 'is_active'])
+                created += 1
+            else:
+                enrollment.save(update_fields=['end_status', 'end_note'])
+
+        operation.status = 'valide'
+        operation.validated_by = request.user
+        operation.validated_at = timezone.now()
+        operation.save(update_fields=['status', 'validated_by', 'validated_at', 'updated_at'])
+
+    messages.success(
+        request,
+        f'Orientation validée : {created} inscription(s) créée(s) pour '
+        f'{operation.target_year.name}, {skipped} ignorée(s).'
+    )
+    return redirect('students:orientation_summary', operation_id=operation.pk)
