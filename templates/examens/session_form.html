@@ -1,0 +1,23 @@
+{% extends "examens/base_examens.html" %}
+{% block exam_title %}Nouvelle session{% endblock %}
+{% block exam_content %}
+<div class="max-w-lg bg-white rounded-xl border p-5">
+  <form method="post" action="{{ form_action }}" class="space-y-3">
+    {% csrf_token %}
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="block text-xs text-slate-500 mb-1">Examen *</label>
+        <select name="type" class="form-input">{% for v, l in types %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
+      <div><label class="block text-xs text-slate-500 mb-1">Session *</label>
+        <select name="session" class="form-input">{% for v, l in sessions %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="block text-xs text-slate-500 mb-1">Année scolaire *</label>
+        <select name="academic_year" class="form-input">{% for y in years %}<option value="{{ y.id }}" {% if y.is_current %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></div>
+      <div><label class="block text-xs text-slate-500 mb-1">Date de l'examen *</label>
+        <input type="date" name="date" value="{{ today|date:'Y-m-d' }}" class="form-input"></div>
+    </div>
+    <div><label class="block text-xs text-slate-500 mb-1">Centre d'examen</label><input type="text" name="center" class="form-input"></div>
+    <button class="bg-blue-600 text-white px-5 py-3 min-h-[44px] rounded-xl text-xs font-semibold">Enregistrer la session</button>
+  </form>
+</div>
+{% endblock %}

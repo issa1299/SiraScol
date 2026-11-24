@@ -1,0 +1,26 @@
+{% extends "examens/base_examens.html" %}
+{% block exam_title %}Modifier candidat{% endblock %}
+{% block exam_content %}
+<div class="max-w-xl bg-white rounded-xl border p-5">
+  <p class="text-sm font-bold text-slate-800 mb-1">{{ candidate.registration_number }} — {{ candidate.student.full_name }}</p>
+  <p class="text-xs text-slate-500 mb-4">{{ candidate.session.get_type_display }} · {{ candidate.session.academic_year.name }}</p>
+  <form method="post" class="space-y-3">
+    {% csrf_token %}
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="block text-xs text-slate-500 mb-1">Statut</label>
+        <select name="status" class="form-input">{% for v, l in statuses %}<option value="{{ v }}" {% if candidate.status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+      <div><label class="block text-xs text-slate-500 mb-1">Série</label>
+        <select name="series" class="form-input">{% for v, l in series %}<option value="{{ v }}" {% if candidate.series == v %}selected{% endif %}>{{ l }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="block text-xs text-slate-500 mb-1">Frais d'examen</label><input type="number" name="exam_fee" value="{{ candidate.exam_fee }}" min="0" step="1" class="form-input"></div>
+      <label class="flex items-center gap-2 text-xs text-slate-700 mt-6"><input type="checkbox" name="fee_paid" {% if candidate.fee_paid %}checked{% endif %}> Frais payés</label>
+    </div>
+    <div><label class="block text-xs text-slate-500 mb-1">Notes</label><textarea name="notes" rows="3" class="form-input">{{ candidate.notes }}</textarea></div>
+    <div class="flex gap-2">
+      <button class="bg-blue-600 text-white px-5 py-3 min-h-[44px] rounded-xl text-xs font-semibold">Enregistrer</button>
+      <a href="{% url 'examens:candidate_list' %}" class="px-4 py-3 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}

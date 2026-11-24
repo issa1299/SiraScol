@@ -1,0 +1,25 @@
+{% extends "examens/base_examens.html" %}
+{% block exam_title %}Nouveau candidat{% endblock %}
+{% block exam_content %}
+<div class="max-w-xl bg-white rounded-xl border p-5">
+  <form method="post" action="{{ form_action }}" class="space-y-3">
+    {% csrf_token %}
+    <div><label class="block text-xs text-slate-500 mb-1">Session d'examen *</label>
+      <select name="session" class="form-input" required>{% for s in sessions %}<option value="{{ s.pk }}">{{ s.get_type_display }} — {{ s.academic_year.name }} ({{ s.get_session_display }})</option>{% endfor %}</select></div>
+    <div><label class="block text-xs text-slate-500 mb-1">Élève *</label>
+      <select name="student" class="form-input" required><option value="">— Choisir un élève —</option>
+        {% for s in students %}<option value="{{ s.pk }}">{{ s.last_name|title }} {{ s.first_name|title }} — {{ s.matricule }}</option>{% endfor %}</select></div>
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="block text-xs text-slate-500 mb-1">Classe</label>
+        <select name="classroom" class="form-input"><option value="">—</option>{% for c in classrooms %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select></div>
+      <div><label class="block text-xs text-slate-500 mb-1">Série (BAC)</label>
+        <select name="series" class="form-input">{% for v, l in series %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3">
+      <div><label class="block text-xs text-slate-500 mb-1">Frais d'examen</label><input type="number" name="exam_fee" value="0" min="0" step="1" class="form-input"></div>
+      <div><label class="block text-xs text-slate-500 mb-1">Notes</label><input type="text" name="notes" class="form-input"></div>
+    </div>
+    <button class="bg-blue-600 text-white px-5 py-3 min-h-[44px] rounded-xl text-xs font-semibold">Inscrire le candidat</button>
+  </form>
+</div>
+{% endblock %}

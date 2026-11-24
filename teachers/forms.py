@@ -1,4 +1,5 @@
 from django import forms
+from core.widgets import SmartDateInput
 from .models import Teacher, StaffAttendance, StaffContract, StaffSalary, StaffDocument
 
 
@@ -29,7 +30,7 @@ class TeacherForm(forms.ModelForm):
             'first_name': forms.TextInput(attrs={'class': 'form-input'}),
             'last_name': forms.TextInput(attrs={'class': 'form-input'}),
             'gender': forms.Select(attrs={'class': 'form-input'}),
-            'date_of_birth': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'date_of_birth': SmartDateInput(),
             'phone': forms.TextInput(attrs={'class': 'form-input', 'inputmode': 'tel'}),
             'email': forms.EmailInput(attrs={'class': 'form-input'}),
             'address': forms.Textarea(attrs={'class': 'form-input', 'rows': 2}),
@@ -38,7 +39,7 @@ class TeacherForm(forms.ModelForm):
             'department': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Ex: Pédagogie, Administration…'}),
             'speciality': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Ex: Mathématiques'}),
             'diploma': forms.TextInput(attrs={'class': 'form-input'}),
-            'hire_date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'hire_date': SmartDateInput(),
             'contract_type': forms.Select(attrs={'class': 'form-input'}),
             'status': forms.Select(attrs={'class': 'form-input'}),
             'base_salary': forms.NumberInput(attrs={'class': 'form-input', 'min': 0, 'step': 1}),
@@ -52,7 +53,7 @@ class AttendanceForm(forms.ModelForm):
         fields = ['staff', 'date', 'time_in', 'time_out', 'status', 'notes']
         widgets = {
             'staff': forms.Select(attrs={'class': 'form-input'}),
-            'date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'date': SmartDateInput(),
             'time_in': forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}),
             'time_out': forms.TimeInput(attrs={'class': 'form-input', 'type': 'time'}),
             'status': forms.Select(attrs={'class': 'form-input'}),
@@ -68,8 +69,8 @@ class ContractForm(forms.ModelForm):
             'staff': forms.Select(attrs={'class': 'form-input'}),
             'contract_type': forms.Select(attrs={'class': 'form-input'}),
             'function': forms.TextInput(attrs={'class': 'form-input'}),
-            'start_date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
-            'end_date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'start_date': SmartDateInput(),
+            'end_date': SmartDateInput(),
             'salary': forms.NumberInput(attrs={'class': 'form-input', 'min': 0}),
             'status': forms.Select(attrs={'class': 'form-input'}),
             'document': forms.ClearableFileInput(attrs={'class': 'form-input'}),
@@ -90,7 +91,7 @@ class SalaryForm(forms.ModelForm):
             'retenues': forms.NumberInput(attrs={'class': 'form-input', 'min': 0}),
             'advances': forms.NumberInput(attrs={'class': 'form-input', 'min': 0}),
             'status': forms.Select(attrs={'class': 'form-input'}),
-            'paid_at': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'paid_at': SmartDateInput(),
             'notes': forms.Textarea(attrs={'class': 'form-input', 'rows': 2}),
         }
 

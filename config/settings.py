@@ -83,6 +83,7 @@ INSTALLED_APPS = [
     'comptabilite',
     'classe',
     'surveillant.apps.SurveillantConfig',
+    'examens.apps.ExamensConfig',
     'core.apps.CoreConfig',
 ]
 
@@ -135,6 +136,10 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 LANGUAGE_CODE = 'fr-fr'
+# Formats acceptés à la saisie manuelle des dates (widget SmartDateInput).
+DATE_INPUT_FORMATS = [
+    '%d/%m/%Y', '%d-%m-%Y', '%Y-%m-%d', '%d/%m/%y',
+]
 TIME_ZONE = os.environ.get('SIRASCOL_TIMEZONE', 'Africa/Bamako')
 USE_I18N = True
 USE_TZ = True

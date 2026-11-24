@@ -1,4 +1,5 @@
 from django import forms
+from core.widgets import SmartDateInput
 from .models import Student, Enrollment, Parent
 from .validators import check_birth_date
 from academics.models import ClassRoom, AcademicYear
@@ -17,13 +18,13 @@ class StudentForm(forms.ModelForm):
             'first_name': forms.TextInput(attrs={'class': 'form-input'}),
             'last_name': forms.TextInput(attrs={'class': 'form-input'}),
             'gender': forms.Select(attrs={'class': 'form-input'}),
-            'date_of_birth': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'date_of_birth': SmartDateInput(),
             'place_of_birth': forms.TextInput(attrs={'class': 'form-input'}),
             'address': forms.Textarea(attrs={'class': 'form-input', 'rows': 2}),
             'phone': forms.TextInput(attrs={'class': 'form-input'}),
             'email': forms.EmailInput(attrs={'class': 'form-input'}),
             'status': forms.Select(attrs={'class': 'form-input'}),
-            'enrollment_date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'enrollment_date': SmartDateInput(),
             'notes': forms.Textarea(attrs={'class': 'form-input', 'rows': 2}),
         }
 

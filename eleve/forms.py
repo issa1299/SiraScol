@@ -1,4 +1,5 @@
 from django import forms
+from core.widgets import SmartDateInput
 
 from .models import Homework
 
@@ -12,7 +13,7 @@ class HomeworkForm(forms.ModelForm):
             'subject': forms.Select(attrs={'class': 'form-input'}),
             'title': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Ex. Exercices 12 à 15'}),
             'instructions': forms.Textarea(attrs={'class': 'form-input', 'rows': 4, 'placeholder': 'Consignes données aux élèves…'}),
-            'due_date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'due_date': SmartDateInput(),
             'document': forms.FileInput(attrs={'class': 'form-input'}),
         }
         labels = {

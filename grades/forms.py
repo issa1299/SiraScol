@@ -1,4 +1,5 @@
 from django import forms
+from core.widgets import SmartDateInput
 from .models import Assessment, AssessmentType, Period
 from academics.models import Subject, ClassRoom, AcademicYear
 from teachers.models import Teacher
@@ -53,7 +54,7 @@ class AssessmentForm(forms.ModelForm):
             'classroom': forms.Select(attrs={'class': 'form-input'}),
             'teacher': forms.Select(attrs={'class': 'form-input search-person', 'data-search-person': '1', 'data-placeholder': 'Rechercher un enseignant…'}),
             'period': forms.Select(attrs={'class': 'form-input'}),
-            'date': forms.DateInput(attrs={'class': 'form-input', 'type': 'date'}),
+            'date': SmartDateInput(),
             'max_score': forms.NumberInput(attrs={'class': 'form-input'}),
             'coefficient': forms.NumberInput(attrs={'class': 'form-input', 'step': '0.5'}),
         }
