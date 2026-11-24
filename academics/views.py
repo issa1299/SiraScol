@@ -69,34 +69,88 @@ MALI_CLASS_PROGRAM = [
     {
         "cycle": "primaire",
         "label": "1er cycle",
-        "classes": [
-            ("1ère année", "1ère A"), ("1ère année", "1ère B"),
-            ("2ème année", "2ème A"), ("2ème année", "2ème B"),
-            ("3ème année", "3ème A"), ("3ème année", "3ème B"),
-            ("4ème année", "4ème A"), ("4ème année", "4ème B"),
-            ("5ème année", "5ème A"), ("5ème année", "5ème B"),
-            ("6ème année", "6ème A"), ("6ème année", "6ème B"),
+        "groups": [
+            {
+                "key": "primaire",
+                "label": "1ère – 6ème année",
+                "items": [
+                    ("1ère année", "1ère A", ""), ("1ère année", "1ère B", ""),
+                    ("2ème année", "2ème A", ""), ("2ème année", "2ème B", ""),
+                    ("3ème année", "3ème A", ""), ("3ème année", "3ème B", ""),
+                    ("4ème année", "4ème A", ""), ("4ème année", "4ème B", ""),
+                    ("5ème année", "5ème A", ""), ("5ème année", "5ème B", ""),
+                    ("6ème année", "6ème A", ""), ("6ème année", "6ème B", ""),
+                ],
+            },
         ],
     },
     {
         "cycle": "secondaire",
         "label": "2ème cycle",
-        "classes": [
-            ("7ème année", "7ème A"), ("7ème année", "7ème B"),
-            ("8ème année", "8ème A"), ("8ème année", "8ème B"),
-            ("9ème année", "9ème A"), ("9ème année", "9ème B"),
+        "groups": [
+            {
+                "key": "secondaire",
+                "label": "7ème – 9ème année",
+                "items": [
+                    ("7ème année", "7ème A", ""), ("7ème année", "7ème B", ""),
+                    ("8ème année", "8ème A", ""), ("8ème année", "8ème B", ""),
+                    ("9ème année", "9ème A", ""), ("9ème année", "9ème B", ""),
+                ],
+            },
         ],
     },
     {
         "cycle": "lycee",
         "label": "Lycée",
-        "classes": [
-            ("10ème année", "10ème Sci A", "Scientifique"),
-            ("10ème année", "10ème Litt A", "Littéraire"),
-            ("11ème année", "11ème Sci A", "Scientifique"),
-            ("11ème année", "11ème Litt A", "Littéraire"),
-            ("12ème année", "12ème Sci A", "Scientifique"),
-            ("12ème année", "12ème Litt A", "Littéraire"),
+        "groups": [
+            {
+                "key": "lycee-10",
+                "label": "10ᵉ ANNÉE",
+                "items": [
+                    ("10ème année", "10ème Commune", "Tronc commun"),
+                ],
+            },
+            {
+                "key": "lycee-11",
+                "label": "11ᵉ ANNÉE",
+                "items": [
+                    ("11ème année", "11ème L", "Littéraire"),
+                    ("11ème année", "11ème SES", "Sciences économiques et sociales"),
+                    ("11ème année", "11ème S", "Scientifique"),
+                ],
+            },
+            {
+                "key": "lycee-terminale",
+                "label": "TERMINALE (12ᵉ ANNÉE)",
+                "items": [
+                    ("12ème année", "TLL", "Littéraire · TLL"),
+                    ("12ème année", "TAL", "Littéraire · TAL"),
+                    ("12ème année", "TSS", "Scientifique · TSS"),
+                    ("12ème année", "TSEco", "Sciences économiques · TSEco"),
+                    ("12ème année", "TSExp", "Scientifique · TSExp"),
+                    ("12ème année", "TSE", "Scientifique · TSE"),
+                ],
+            },
+            {
+                "key": "lycee-sti",
+                "label": "FILIÈRES TECHNIQUES — STI",
+                "items": [
+                    ("12ème année", "TSTI GM", "STI · GM"),
+                    ("12ème année", "TSTI GC", "STI · GC"),
+                    ("12ème année", "TSTI GMI", "STI · GMI"),
+                    ("12ème année", "TSTI GELN", "STI · GELN"),
+                    ("12ème année", "TSTI GEN", "STI · GEN"),
+                    ("12ème année", "TSTI GEL", "STI · GEL"),
+                ],
+            },
+            {
+                "key": "lycee-stg",
+                "label": "FILIÈRES TECHNIQUES — STG",
+                "items": [
+                    ("12ème année", "TSTG CF", "STG · CF"),
+                    ("12ème année", "TSTG GCO", "STG · GCO"),
+                ],
+            },
         ],
     },
 ]
@@ -232,9 +286,54 @@ def classroom_detail(request, pk):
 
 
 
+PARALLEL_LETTERS = tuple('ABCDEFGH')
+
+
+def _resolve_level(level_name):
+    """Résout un niveau du catalogue vers un ``Level`` existant (ou le crée under Lycée).
+
+    Le nom « Terminale » n'existe pas toujours en base : il correspond au niveau
+    « 12ème année » utilisé par les inscriptions et le passage de classe.
+    """
+    name = (level_name or '').strip()
+    if not name:
+        return None
+    level = Level.objects.filter(name__icontains=name).order_by('order').first()
+    if level:
+        return level
+    token = 'Terminale' if 'erminale' in name else next(
+        (token for token in ('10', '11', '12') if token in name), None
+    )
+    if not token:
+        return None
+    level = Level.objects.filter(name__icontains='12' if token == 'Terminale' else token).order_by('order').first()
+    if level:
+        return level
+    canonical = {'10': '10ème année', '11': '11ème année', '12': '12ème année',
+                 'Terminale': '12ème année'}[token]
+    cycle = Cycle.objects.filter(code='lycee').first()
+    if not cycle:
+        return None
+    level, _ = Level.objects.get_or_create(
+        name=canonical,
+        defaults={'cycle': cycle, 'order': {'10': 1, '11': 2, '12': 3,
+                                           'Terminale': 3}[token]},
+    )
+    return level
+
+
+def _parallel_letters(raw):
+    """Lettres de division saisies (ex. « A,B,C ») ; ``['']`` = nom de base only."""
+    letters = []
+    for char in (raw or '').upper():
+        if 'A' <= char <= 'Z' and char not in letters and len(letters) < 10:
+            letters.append(char)
+    return letters or ['']
+
+
 @permission_required('academics.classes')
 def classroom_bulk_add(request):
-    """Sélection multiple de classes du programme Mali."""
+    """Sélection multiple de classes du programme Mali (fenêtre existante)."""
     year = get_selected_year(request)
     if not year:
         messages.error(request, "Sélectionnez une année scolaire.")
@@ -242,6 +341,7 @@ def classroom_bulk_add(request):
 
     if request.method == 'POST':
         selected = request.POST.getlist('classes')
+        letters = _parallel_letters(request.POST.get('parallel'))
         try:
             capacity = int(request.POST.get('capacity') or 40)
         except ValueError:
@@ -253,27 +353,27 @@ def classroom_bulk_add(request):
             parts = raw.split('|')
             if len(parts) < 2:
                 continue
-            level_name, class_name = parts[0], parts[1]
-            serie = parts[2] if len(parts) > 2 else ''
-            level = Level.objects.filter(name=level_name).first()
-            if not level:
-                short = level_name.replace(' année', '').strip()
-                level = Level.objects.filter(name__icontains=short).first()
-            if not level:
+            level_name, class_name = parts[0].strip(), parts[1].strip()
+            serie = (parts[2] if len(parts) > 2 else '')[:50]
+            level = _resolve_level(level_name)
+            if not level or not class_name:
                 continue
-            obj, was_created = ClassRoom.objects.get_or_create(
-                name=class_name,
-                academic_year=year,
-                defaults={
-                    'level': level,
-                    'capacity': capacity,
-                    'serie': serie,
-                    'inscription_fee': inscription,
-                    'tuition_fee': tuition,
-                },
-            )
-            if was_created:
-                created += 1
+            for letter in letters:
+                name = f'{class_name} {letter}'.strip()
+                # get_or_create : un doublon (nom + année) n'est jamais recréé,
+                # et les classes/frais existants ne sont pas écrasés.
+                _, was_created = ClassRoom.objects.get_or_create(
+                    name=name,
+                    academic_year=year,
+                    defaults={
+                        'level': level,
+                        'capacity': capacity,
+                        'serie': serie,
+                        'inscription_fee': inscription,
+                        'tuition_fee': tuition,
+                    },
+                )
+                created += int(was_created)
         if created:
             messages.success(request, f"{created} classe(s) ajoutée(s).")
         else:
@@ -285,23 +385,30 @@ def classroom_bulk_add(request):
     )
     program = []
     for block in MALI_CLASS_PROGRAM:
-        items = []
-        for entry in block['classes']:
-            if len(entry) == 3:
-                level_name, class_name, serie = entry
-            else:
-                level_name, class_name = entry[0], entry[1]
-                serie = ''
-            items.append({
-                'level_name': level_name,
-                'class_name': class_name,
-                'serie': serie,
-                'value': f'{level_name}|{class_name}|{serie}',
-                'exists': class_name in existing,
-            })
-        program.append({'label': block['label'], 'cycle': block['cycle'], 'items': items})
+        groups = []
+        for group in block['groups']:
+            items = []
+            for entry in group['items']:
+                level_name, class_name, serie = (
+                    entry if len(entry) == 3 else (entry[0], entry[1], '')
+                )
+                already = [
+                    letter for letter in PARALLEL_LETTERS
+                    if f'{class_name} {letter}' in existing
+                ]
+                items.append({
+                    'level_name': level_name,
+                    'class_name': class_name,
+                    'serie': serie,
+                    'value': f'{level_name}|{class_name}|{serie}',
+                    'exists': class_name in existing,
+                    'already': ', '.join(already),
+                })
+            groups.append({'key': group['key'], 'label': group['label'], 'items': items})
+        program.append({'label': block['label'], 'cycle': block['cycle'], 'groups': groups})
 
-    ctx = {'program': program, 'selected_year': year}
+    ctx = {'program': program, 'selected_year': year, 'parallel_default': 'A',
+           'parallel_letters': PARALLEL_LETTERS}
     return render(request, 'academics/classroom_bulk_modal.html', ctx)
 
 
