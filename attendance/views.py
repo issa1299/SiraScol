@@ -540,12 +540,15 @@ def scan_qr_api(request):
                 'action': action,
                 'action_label': 'Arrivée' if action == 'arrivee' else 'Départ',
                 'time': timezone.localtime(punch.punched_at).strftime('%H:%M:%S'),
-                'name': f'{teacher.last_name} {teacher.first_name}',
+                'name': f'{teacher.first_name} {teacher.last_name}',
                 'role': teacher.function or teacher.speciality or teacher.get_category_display(),
+                'detail': teacher.department or teacher.get_category_display(),
                 'code': teacher.matricule,
                 'phone': teacher.phone or '—',
                 'type': 'Personnel',
                 'photo': photo,
+                'person_id': teacher.pk,
+                'profile_url': f"/enseignants/{teacher.pk}/",
                 'message': f"{'Arrivée' if action == 'arrivee' else 'Départ'} enregistré",
             })
         else:
@@ -588,12 +591,18 @@ def scan_qr_api(request):
                 'action': action,
                 'action_label': 'Arrivée' if action == 'arrivee' else 'Départ',
                 'time': timezone.localtime(punch.punched_at).strftime('%H:%M:%S'),
-                'name': f'{student.last_name} {student.first_name}',
+                'name': f'{student.first_name} {student.last_name}',
                 'role': 'Élève',
+                'detail': (
+                    student.current_enrollment().classroom.name
+                    if student.current_enrollment() else '—'
+                ),
                 'code': student.matricule,
-                'phone': '—',
+                'phone': student.phone or '—',
                 'type': 'Élève',
                 'photo': photo,
+                'person_id': student.pk,
+                'profile_url': f"/eleves/{student.pk}/",
                 'message': f"{'Arrivée' if action == 'arrivee' else 'Départ'} enregistré",
             })
     except Exception as e:

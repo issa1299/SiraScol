@@ -1,0 +1,21 @@
+<form method="post" action="{{ form_action }}" enctype="multipart/form-data" id="teacher-form-modal" class="space-y-3 pb-4">
+  {% csrf_token %}
+  <input type="hidden" name="with_account" value="1">
+
+  <div class="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3">
+    <p class="text-sm font-bold text-indigo-900"><i class="fas fa-user-plus"></i> Ajout avec compte de connexion</p>
+    <p class="text-[11px] text-indigo-800 mt-1 leading-relaxed">
+      Un compte sera créé automatiquement : identifiant basé sur le matricule,
+      mot de passe initial égal au matricule. Le membre devra le changer à sa première connexion.
+    </p>
+  </div>
+
+  {% include "teachers/_teacher_fields.html" %}
+
+  <div class="sticky bottom-0 bg-white border-t pt-3 flex gap-2">
+    <button type="submit" id="teacher-submit-btn" class="flex-1 bg-indigo-600 text-white py-3.5 min-h-[44px] rounded-xl text-sm font-semibold">
+      Enregistrer et créer le compte
+    </button>
+    <button type="button" onclick="closeModal('modal-dynamic')" class="px-4 border rounded-xl text-sm min-h-[44px] text-slate-600">Annuler</button>
+  </div>
+</form>

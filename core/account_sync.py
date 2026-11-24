@@ -165,6 +165,10 @@ def connect_signals():
     def _teacher_user(sender, instance, **kwargs):
         if kwargs.get('raw'):
             return
+        # Un personnel ajouté « sans compte » ne doit jamais se voir créer
+        # automatiquement un identifiant, y compris lors d'une modification.
+        if hasattr(instance, 'has_account') and not instance.has_account:
+            return
         try:
             ensure_user_for_teacher(instance)
         except Exception:

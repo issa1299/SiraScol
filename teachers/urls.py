@@ -13,6 +13,7 @@ urlpatterns = [
     path('dashboard/', views.personnel_dashboard, name='dashboard'),
     path('liste/', views.teacher_list, name='staff_list'),
     path('enseignants/', views.teacher_list, name='enseignants'),
+    path('matricule-suivant/', views.next_matricule, name='next_matricule'),
     path('ajouter/', views.teacher_create, name='create'),
     path('<int:pk>/', views.teacher_detail, name='detail'),
     path('<int:pk>/modifier/', views.teacher_edit, name='edit'),

@@ -1,0 +1,163 @@
+{% comment %}Champs partagés des formulaires personnel (avec / sans compte).{% endcomment %}
+{% if form.errors %}
+<div class="bg-red-50 text-red-700 text-xs rounded-xl p-3 mb-3 space-y-1">
+  {% for field, errs in form.errors.items %}
+    <p><strong>{{ field }}</strong> : {{ errs|join:", " }}</p>
+  {% endfor %}
+</div>
+{% endif %}
+
+<p class="text-xs font-bold uppercase text-slate-500 mb-2">Catégorie du personnel</p>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-2" id="cat-picker">
+  {% with cat=form.initial.category|default:form.category.value|default:"enseignant" %}
+  <label class="cat-opt cursor-pointer border-2 rounded-xl p-3 text-center transition {% if cat == 'enseignant' %}border-indigo-500 bg-indigo-50{% else %}border-slate-200{% endif %}">
+    <input type="radio" name="category" value="enseignant" class="sr-only" {% if cat == 'enseignant' %}checked{% endif %}>
+    <span class="text-xl block mb-1">👨‍🏫</span>
+    <span class="text-xs font-bold block">Enseignant</span>
+    <span class="text-[10px] text-slate-500 block">Préfixe ENS</span>
+  </label>
+  <label class="cat-opt cursor-pointer border-2 rounded-xl p-3 text-center transition {% if cat == 'admin' %}border-amber-500 bg-amber-50{% else %}border-slate-200{% endif %}">
+    <input type="radio" name="category" value="admin" class="sr-only" {% if cat == 'admin' %}checked{% endif %}>
+    <span class="text-xl block mb-1">👨‍💼</span>
+    <span class="text-xs font-bold block">Administration</span>
+    <span class="text-[10px] text-slate-500 block">Préfixe ADM</span>
+  </label>
+  <label class="cat-opt cursor-pointer border-2 rounded-xl p-3 text-center transition {% if cat == 'service' %}border-slate-500 bg-slate-100{% else %}border-slate-200{% endif %}">
+    <input type="radio" name="category" value="service" class="sr-only" {% if cat == 'service' %}checked{% endif %}>
+    <span class="text-xl block mb-1">🧰</span>
+    <span class="text-xs font-bold block">Service</span>
+    <span class="text-[10px] text-slate-500 block">Préfixe SRV</span>
+  </label>
+  {% endwith %}
+</div>
+
+<p class="text-xs font-bold uppercase text-slate-600 mt-4 mb-2">Identité</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">Matricule * <span class="text-[10px] text-slate-400">(généré selon la catégorie)</span></label>
+    <div class="flex gap-2">
+      {{ form.matricule }}
+      <button type="button" id="btn-regen-matricule" title="Régénérer le matricule"
+              class="shrink-0 px-3 rounded-xl border border-slate-200 text-slate-600 text-xs">
+        <i class="fas fa-rotate"></i>
+      </button>
+    </div>
+  </div>
+  <div><label class="block text-xs text-slate-500 mb-1">Sexe *</label>{{ form.gender }}</div>
+  <div><label class="block text-xs text-slate-500 mb-1">Nom *</label>{{ form.last_name }}</div>
+  <div><label class="block text-xs text-slate-500 mb-1">Prénom *</label>{{ form.first_name }}</div>
+  <div class="sm:col-span-2"><label class="block text-xs text-slate-500 mb-1">Date de naissance</label>{{ form.date_of_birth }}</div>
+  <div class="sm:col-span-2"><label class="block text-xs text-slate-500 mb-1">Photo</label>{{ form.photo }}</div>
+</div>
+
+<p class="text-xs font-bold uppercase text-slate-600 mt-4 mb-2">Contact</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  <div><label class="block text-xs text-slate-500 mb-1">Téléphone</label>{{ form.phone }}</div>
+  <div><label class="block text-xs text-slate-500 mb-1">Email {% if with_account %}(utilisé pour le compte){% endif %}</label>{{ form.email }}</div>
+  <div class="sm:col-span-2"><label class="block text-xs text-slate-500 mb-1">Adresse</label>{{ form.address }}</div>
+</div>
+
+<p class="text-xs font-bold uppercase text-slate-600 mt-4 mb-2">Poste</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  <div>
+    <label class="block text-xs text-slate-500 mb-1">Fonction</label>
+    {{ form.function }}
+    <select id="function-presets" class="mt-2 w-full border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-600">
+      <option value="">— Raccourcis fonction —</option>
+    </select>
+  </div>
+  <div><label class="block text-xs text-slate-500 mb-1">Département / service</label>{{ form.department }}</div>
+  <div><label class="block text-xs text-slate-500 mb-1">Spécialité</label>{{ form.speciality }}</div>
+  <div><label class="block text-xs text-slate-500 mb-1">Diplôme</label>{{ form.diploma }}</div>
+</div>
+
+<p class="text-xs font-bold uppercase text-slate-600 mt-4 mb-2">Contrat & salaire</p>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+  <div><label class="block text-xs text-slate-500 mb-1">Date d'embauche</label>{{ form.hire_date }}</div>
+  <div><label class="block text-xs text-slate-500 mb-1">Type de contrat</label>{{ form.contract_type }}</div>
+  <div><label class="block text-xs text-slate-500 mb-1">Statut</label>{{ form.status }}</div>
+  <div><label class="block text-xs text-slate-500 mb-1">Salaire de base</label>{{ form.base_salary }}</div>
+</div>
+
+<script>
+(function(){
+  var form = document.getElementById('teacher-form-modal');
+  if (!form) return;
+  var presets = {
+    enseignant: ['Enseignant', 'Professeur principal', 'Formateur', 'Surveillant pédagogique'],
+    admin: ['Directeur', 'Directeur adjoint', 'Secrétaire', 'Comptable', 'Censeur', 'Économe', 'Informaticien', 'Bibliothécaire'],
+    service: ['Gardien', "Agent d'entretien", 'Cuisinier', 'Chauffeur', 'Planton', 'Agent de sécurité']
+  };
+  var sel = document.getElementById('function-presets');
+  var fnField = form.querySelector('[name="function"]');
+  var matField = form.querySelector('[name="matricule"]');
+  var radios = form.querySelectorAll('input[name="category"]');
+  var matUrl = '{% url "teachers:next_matricule" %}';
+
+  function currentCategory(){
+    var r = form.querySelector('input[name="category"]:checked');
+    return r ? r.value : 'enseignant';
+  }
+  function paint(){
+    form.querySelectorAll('.cat-opt').forEach(function(lab){
+      var r = lab.querySelector('input[type=radio]');
+      lab.className = 'cat-opt cursor-pointer border-2 rounded-xl p-3 text-center transition border-slate-200';
+      if (r && r.checked) {
+        if (r.value === 'enseignant') lab.className += ' border-indigo-500 bg-indigo-50';
+        else if (r.value === 'admin') lab.className += ' border-amber-500 bg-amber-50';
+        else lab.className += ' border-slate-500 bg-slate-100';
+      }
+    });
+  }
+  function refreshMatricule(){
+    if (!matField || !matUrl) return;
+    fetch(matUrl + '?category=' + encodeURIComponent(currentCategory()), {
+      headers: {'X-Requested-With':'XMLHttpRequest'}, credentials:'same-origin'
+    }).then(function(r){ return r.json(); })
+      .then(function(d){ if (d.matricule) matField.value = d.matricule; })
+      .catch(function(){});
+  }
+  function fill(cat){
+    if (sel) {
+      sel.innerHTML = '<option value="">— Raccourcis fonction —</option>';
+      (presets[cat] || []).forEach(function(p){
+        var o = document.createElement('option'); o.value = p; o.textContent = p; sel.appendChild(o);
+      });
+    }
+    var btn = document.getElementById('teacher-submit-btn');
+    if (btn) btn.textContent = (cat === 'enseignant') ? 'Suivant → Affectations' : 'Enregistrer le membre';
+  }
+  function sync(){ fill(currentCategory()); paint(); }
+  radios.forEach(function(r){ r.addEventListener('change', function(){ sync(); refreshMatricule(); }); });
+  if (sel) sel.addEventListener('change', function(){ if (sel.value && fnField) fnField.value = sel.value; });
+  var regen = document.getElementById('btn-regen-matricule');
+  if (regen) regen.addEventListener('click', refreshMatricule);
+  sync();
+
+  form.addEventListener('submit', function(e) {
+    var body = document.getElementById('modal-dynamic-body');
+    if (!body || !body.contains(form)) return; // page complète : soumission normale
+    e.preventDefault();
+    var title = document.getElementById('modal-dynamic-title');
+    body.innerHTML = '<p class="text-center py-8 text-slate-500"><i class="fas fa-spinner fa-spin"></i> Enregistrement…</p>';
+    var fd = new FormData(form);
+    var checked = form.querySelector('input[name="category"]:checked');
+    if (checked) fd.set('category', checked.value);
+    function getCookie(n){var m=document.cookie.match('(^|;)\\s*'+n+'\\s*=\\s*([^;]+)');return m?m.pop():'';}
+    var csrf = (fd.get('csrfmiddlewaretoken') || getCookie('csrftoken') || '');
+    fetch(form.action + (form.action.indexOf('?')>=0?'&':'?') + 'modal=1', {
+      method:'POST', body:fd,
+      headers:{ 'X-Requested-With':'XMLHttpRequest', 'X-CSRFToken':csrf },
+      credentials:'same-origin'
+    }).then(function(r){ return r.text(); }).then(function(html){
+      if (!html) { body.innerHTML = '<p class="text-amber-700 text-sm">Réponse vide. <a href="/enseignants/" class="underline">Liste</a></p>'; return; }
+      body.innerHTML = html;
+      if (title && html.indexOf('cycle enseigne') !== -1) title.textContent = 'Affectations';
+      body.querySelectorAll('script').forEach(function(old){
+        var s = document.createElement('script'); s.textContent = old.textContent;
+        old.parentNode.replaceChild(s, old);
+      });
+    }).catch(function(){ body.innerHTML = '<p class="text-red-600 text-sm">Erreur réseau. Réessayez.</p>'; });
+  });
+})();
+</script>

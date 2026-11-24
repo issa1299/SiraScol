@@ -33,6 +33,10 @@ class Teacher(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name='teacher', null=True, blank=True
     )
+    has_account = models.BooleanField(
+        default=True, verbose_name='Compte de connexion',
+        help_text='Désactivé pour un personnel ajouté sans compte.',
+    )
     matricule = models.CharField(max_length=30, unique=True, verbose_name='Matricule')
     first_name = models.CharField(max_length=100, verbose_name='Prénom')
     last_name = models.CharField(max_length=100, verbose_name='Nom')

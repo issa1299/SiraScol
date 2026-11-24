@@ -228,11 +228,18 @@
 
     function set(id, v){ var e = document.getElementById(id); if (e) e.textContent = v || '—'; }
     set('scan-result-name', data.name);
-    set('scan-result-role', data.role);
+    set('scan-result-role', data.role + ' · ' + (data.type || ''));
     set('scan-result-code', data.code);
     set('scan-result-phone', data.phone);
-    set('scan-result-type', data.type);
+    set('scan-result-detail', data.detail);
+    set('scan-result-role-detail', data.role);
     set('scan-result-time', data.time);
+    var fiche = document.getElementById('scan-result-fiche');
+    if (fiche) {
+      fiche.onclick = function(){
+        if (data.profile_url) openModalUrl(data.profile_url, 'Fiche — ' + data.name);
+      };
+    }
 
     var status = document.getElementById('scan-result-status');
     if (status) {

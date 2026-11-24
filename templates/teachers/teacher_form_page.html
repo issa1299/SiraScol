@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}{{ title|default:"Ajouter du personnel" }} — SiraScol{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 p-5 mb-20">
+  <a href="{% url 'teachers:list' %}" class="text-xs text-blue-600 hover:underline inline-block mb-4">
+    <i class="fas fa-arrow-left"></i> Liste du personnel
+  </a>
+  {% if with_account %}
+    {% include "teachers/teacher_form_with_account.html" %}
+  {% else %}
+    {% include "teachers/teacher_form_without_account.html" %}
+  {% endif %}
+</div>
+{% endblock %}

@@ -163,16 +163,45 @@ def teacher_detail(request, pk):
     return render(request, 'teachers/teacher_detail.html', ctx)
 
 
+MATRICULE_PREFIXES = {
+    'enseignant': 'ENS',
+    'admin': 'ADM',
+    'service': 'SRV',
+}
+DEFAULT_MATRICULE_PREFIX = 'PER'
+
+
+def prefix_for_category(category):
+    """Préfixe de matricule correspondant à la catégorie du personnel."""
+    return MATRICULE_PREFIXES.get((category or '').strip().lower(), DEFAULT_MATRICULE_PREFIX)
+
+
 def _next_matricule(prefix='ENS'):
+    """Prochain matricule libre, numéroté correctement même au-delà de 999."""
+    import re
     year = date.today().year
-    last = Teacher.objects.filter(matricule__startswith=f'{prefix}-{year}').order_by('-matricule').first()
-    next_n = 1
-    if last and last.matricule:
-        try:
-            next_n = int(last.matricule.split('-')[-1]) + 1
-        except Exception:
-            next_n = Teacher.objects.count() + 1
-    return f'{prefix}-{year}-{next_n:03d}'
+    base = f'{prefix}-{year}-'
+    max_n = 0
+    for value in Teacher.objects.filter(
+        matricule__startswith=base
+    ).values_list('matricule', flat=True):
+        match = re.search(r'-(\d+)$', value or '')
+        if match:
+            max_n = max(max_n, int(match.group(1)))
+    candidate = f'{base}{max_n + 1:04d}'
+    # Sécurité : éviter toute collision résiduelle (matricule libre saisi à la main).
+    while Teacher.objects.filter(matricule=candidate).exists():
+        max_n += 1
+        candidate = f'{base}{max_n + 1:04d}'
+    return candidate
+
+
+@login_required
+def next_matricule(request):
+    """Matricule proposé selon la catégorie (pour les formulaires)."""
+    from django.http import JsonResponse
+    category = request.GET.get('category', 'enseignant')
+    return JsonResponse({'matricule': _next_matricule(prefix_for_category(category))})
 
 
 @login_required
@@ -200,8 +229,17 @@ def teacher_create(request):
         form = TeacherForm(data, request.FILES)
         if form.is_valid():
             try:
-                teacher = form.save()
-                msg = f"Personnel {teacher} créé."
+                teacher = form.save(commit=False)
+                # Le matricule est propre au type de personnel et toujours unique.
+                expected = prefix_for_category(form.cleaned_data.get('category'))
+                mat = (teacher.matricule or '').strip()
+                wrong_prefix = not mat.upper().startswith(expected + '-')
+                duplicate = Teacher.objects.filter(matricule=mat).exists()
+                if not mat or wrong_prefix or duplicate:
+                    teacher.matricule = _next_matricule(expected)
+                teacher.has_account = bool(with_account)
+                teacher.save()
+                msg = f"Personnel {teacher} créé (matricule {teacher.matricule})."
                 if with_account:
                     user, created, pwd = ensure_user_for_teacher(teacher)
                     if created and pwd:
@@ -225,16 +263,21 @@ def teacher_create(request):
         elif is_modal:
             # renvoyer le formulaire avec erreurs
             from django.urls import reverse
+            form_template = (
+                'teachers/teacher_form_with_account.html' if with_account
+                else 'teachers/teacher_form_without_account.html'
+            )
             ctx = {
                 'form': form,
+                'form_template': form_template,
                 'form_action': reverse('teachers:create') + ('?with_account=0' if not with_account else '?with_account=1'),
                 'title': 'Nouveau membre',
                 'with_account': with_account,
             }
-            return render(request, 'teachers/teacher_form_modal.html', ctx)
+            return render(request, form_template, ctx)
     else:
         cat = request.GET.get('category', 'enseignant')
-        prefix = {'enseignant': 'ENS', 'admin': 'ADM', 'service': 'SRV'}.get(cat, 'ENS')
+        prefix = prefix_for_category(cat)
         form = TeacherForm(initial={
             'status': 'actif',
             'category': cat,
@@ -244,15 +287,20 @@ def teacher_create(request):
         })
     from django.urls import reverse
     action = reverse('teachers:create') + ('?with_account=0' if not with_account else '?with_account=1')
+    form_template = (
+        'teachers/teacher_form_with_account.html' if with_account
+        else 'teachers/teacher_form_without_account.html'
+    )
     ctx = {
         'form': form,
+        'form_template': form_template,
         'form_action': action,
         'title': 'Nouveau membre (avec compte)' if with_account else 'Ajouter personnel (sans compte)',
         'with_account': with_account,
     }
     if is_modal:
-        return render(request, 'teachers/teacher_form_modal.html', ctx)
-    return render(request, 'teachers/teacher_form.html', ctx)
+        return render(request, form_template, ctx)
+    return render(request, 'teachers/teacher_form_page.html', ctx)
 
 
 @login_required
@@ -302,8 +350,8 @@ def teacher_edit(request, pk):
         'with_account': False,
     }
     if is_modal:
-        return render(request, 'teachers/teacher_form_modal.html', ctx)
-    return render(request, 'teachers/teacher_form.html', ctx)
+        return render(request, form_template, ctx)
+    return render(request, 'teachers/teacher_form_page.html', ctx)
 
 
 @login_required
