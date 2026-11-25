@@ -49,7 +49,7 @@ class ClassroomBulkTests(TestCase):
             'FILIÈRES TECHNIQUES — STI',
             'GM', 'GC', 'GMI', 'GELN', 'GEN', 'GEL',
             'FILIÈRES TECHNIQUES — STG', 'CF', 'GCO',
-            'Classes parallèles',
+            'Classes parallèles', 'Tout désélectionner', 'clearAllClasses',
         ]
         for label in expected:
             self.assertContains(response, label, msg_prefix=label)

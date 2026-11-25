@@ -4,12 +4,15 @@ from datetime import date
 from decimal import Decimal
 
 from django.contrib.auth.models import User
+from django.core.management import call_command
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from academics.models import AcademicYear, ClassRoom, Cycle, Level
 
-from .models import Enrollment, PromotionDecision, PromotionOperation, Student
+from .models import (
+    Enrollment, Parent, ParentStudent, PromotionDecision, PromotionOperation, Student,
+)
 from . import orientation_rules
 
 
@@ -218,3 +221,67 @@ class OrientationTests(TestCase):
         ).count(), 1)
         operation.refresh_from_db()
         self.assertEqual(operation.status, 'valide')
+
+
+class SeedStudents1To9Tests(TestCase):
+    @classmethod
+    def setUpTestData(cls):
+        cls.year = AcademicYear.objects.create(
+            name='SEED-1-9', start_date=date(2026, 9, 1), is_current=True
+        )
+        cls.cycle = Cycle.objects.create(name='Cycle SEED', code='primaire', order=1)
+        cls.level1 = Level.objects.create(name='1ère année', cycle=cls.cycle, order=1)
+        cls.level9 = Level.objects.create(name='9ème année', cycle=cls.cycle, order=9)
+        cls.level10 = Level.objects.create(name='10ème année', cycle=cls.cycle, order=10)
+        cls.c1 = ClassRoom.objects.create(name='1ère A', level=cls.level1, academic_year=cls.year)
+        cls.c9 = ClassRoom.objects.create(name='9ème A', level=cls.level9, academic_year=cls.year)
+        cls.c10 = ClassRoom.objects.create(name='10ème A', level=cls.level10, academic_year=cls.year)
+
+    def test_seed_creates_twenty_students_per_class_with_parents(self):
+        call_command('seed_students_1_to_9', per_class=20)
+        for room in (self.c1, self.c9):
+            self.assertEqual(
+                Enrollment.objects.filter(classroom=room, academic_year=self.year).count(), 20
+            )
+        # Le lycée n'est jamais concerné.
+        self.assertFalse(Enrollment.objects.filter(classroom=self.c10).exists())
+        # Chaque élève créé est lié à un parent.
+        students = Student.objects.filter(enrollments__academic_year=self.year)
+        self.assertEqual(students.count(), 40)
+        for student in students:
+            self.assertTrue(ParentStudent.objects.filter(student=student).exists())
+        self.assertEqual(Parent.objects.filter(phone__startswith='76 ').count(), 40)
+
+    def test_seed_is_idempotent(self):
+        call_command('seed_students_1_to_9', per_class=20)
+        counts = (Student.objects.count(), Parent.objects.count(),
+                  ParentStudent.objects.count(), Enrollment.objects.count())
+        call_command('seed_students_1_to_9', per_class=20)
+        self.assertEqual(
+            (Student.objects.count(), Parent.objects.count(),
+             ParentStudent.objects.count(), Enrollment.objects.count()),
+            counts,
+        )
+
+    def test_auto_user_signals_restored_after_command(self):
+        call_command('seed_students_1_to_9', per_class=1)
+        before = User.objects.count()
+        Student.objects.create(
+            last_name='Signal', first_name='Test', gender='M',
+            date_of_birth=date(2015, 5, 5), enrollment_date=date.today(),
+        )
+        self.assertEqual(User.objects.count(), before + 1)
+
+
+class ParentLinkButtonTests(TestCase):
+    def test_visible_link_button_in_parent_list(self):
+        user = User.objects.create_user(username='parent_ui', password='x')
+        user.profile.role = 'directeur'
+        user.profile.save()
+        parent = Parent.objects.create(last_name='Bah', first_name='Rokia', phone='76 00 00 01')
+        client = Client()
+        client.force_login(user)
+        response = client.get(reverse('students:parent_list'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'title="Lier un élève à ce parent"')
+        self.assertContains(response, reverse('students:parent_link', args=[parent.pk]))
