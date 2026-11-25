@@ -274,23 +274,38 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
             year_label = str(enrollment.academic_year.name)
         else:
             year_label = school_ctx['year_label']
+        dob_str = _fmt_date(person.date_of_birth) if person.date_of_birth else ''
+        pob = (getattr(person, 'place_of_birth', '') or '').strip()
+        dob_display = f"{dob_str} à {pob}" if (dob_str and pob) else dob_str
+
         lines = [
             ('NOM', (person.last_name or '').upper()),
             ('PRÉNOM', person.first_name or ''),
             ('MATRICULE', person.matricule or '—'),
             ('CLASSE', classe),
-            (born_word.upper(), _fmt_date(person.date_of_birth)),
+            (born_word.upper(), dob_display or '—'),
             (child_word.upper(), father),
             ('ET DE', mother),
             ('TÉL.', parent_phone or (person.phone or '—')),
         ]
-        dob_str = _fmt_date(person.date_of_birth) if person.date_of_birth else ''
         main_fields = [
             ('CLASSE', classe),
             ('MATRICULE', person.matricule or '—'),
         ]
+        if dob_display:
+            main_fields.append((born_word.upper(), dob_display))
+        else:
+            main_fields.append(('STATUT', 'Élève régulier(e)'))
+
         emergency_name = father if father != '—' else (mother if mother != '—' else '')
-        emergency_contact = f"{emergency_name} ({parent_phone})" if (parent_phone and emergency_name) else (parent_phone or emergency_name or '—')
+        if parent_phone and emergency_name:
+            emergency_contact = f"{emergency_name} · Tél : {parent_phone}"
+        elif parent_phone:
+            emergency_contact = f"Tél. urgence : {parent_phone}"
+        elif emergency_name:
+            emergency_contact = emergency_name
+        else:
+            emergency_contact = ''
         title = "CARTE SCOLAIRE"
         role_label = 'ÉLÈVE'
         service = ''
@@ -326,6 +341,9 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
         classe = ''
         emergency_contact = ''
         father = mother = parent_phone = ''
+        dob_display = ''
+        born_word = 'Né le'
+        gender = (getattr(person, 'gender', '') or '').upper()
         year_label = school_ctx['year_label']
         title = 'CARTE DU PERSONNEL'
         role_label = 'PERSONNEL'
@@ -374,10 +392,14 @@ def build_badge_context(person, kind, school, enrollment=None, design_key='offic
         'function': function,
         'service': service,
         'classe': classe,
+        'dob_display': dob_display,
+        'born_word': born_word,
+        'gender': gender,
         'emergency_contact': emergency_contact,
         'father': father,
         'mother': mother,
         'parent_phone': parent_phone,
         'phone': getattr(person, 'phone', None) or '—',
+        'address': getattr(person, 'address', '') or '',
         'matricule_raw': getattr(person, 'matricule', '') or str(person.pk),
     }

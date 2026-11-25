@@ -203,6 +203,16 @@ def render_badge_png(badge, side='front'):
     card = Image.new('RGB', (W_PX, H_PX), _hex_rgb(d['bg']))
     dr = ImageDraw.Draw(card)
 
+    # ── Filigrane de sécurité discret (fond guilloché) ──
+    bg_line = (238, 243, 239)
+    for y in range(HEADER_H + 16, FOOTER_TOP, 18):
+        dr.line([0, y, W_PX, y], fill=bg_line, width=1)
+
+    # Filigrane circulaire de sécurité au centre
+    cx_wm, cy_wm = 540, ZONE_CY
+    dr.ellipse([cx_wm - 130, cy_wm - 130, cx_wm + 130, cy_wm + 130], outline=(232, 239, 234), width=2)
+    dr.ellipse([cx_wm - 95, cy_wm - 95, cx_wm + 95, cy_wm + 95], outline=(232, 239, 234), width=1)
+
     # ── En-tête vert avec liseré or ──
     dr.rectangle([0, 0, W_PX, HEADER_H], fill=primary)
     dr.rectangle([0, HEADER_H - 3, W_PX, HEADER_H], fill=accent)
@@ -262,35 +272,48 @@ def render_badge_png(badge, side='front'):
     if photo:
         card.paste(photo, (PHOTO_X + 3, PHOTO_Y + 3))
     else:
-        # Silhouette soignée
+        # Silhouette soignée et pleine sur fond doux
+        dr.rounded_rectangle([PHOTO_X + 2, PHOTO_Y + 2, PHOTO_X + PHOTO_W - 2, PHOTO_Y + PHOTO_H - 2],
+                             radius=7, fill=_hex_rgb('#e8ede9'))
         cx = PHOTO_X + PHOTO_W // 2
-        cy = PHOTO_Y + PHOTO_H // 2 - 16
-        stroke = _hex_rgb('#6b8a78')
-        dr.ellipse([cx - 28, cy - 28, cx + 28, cy + 28], outline=stroke, width=3)
-        dr.arc([cx - 44, cy + 12, cx + 44, cy + 64], 180, 360, fill=stroke, width=3)
-        f_ph = _font(14, True)
-        tw = dr.textlength('PHOTO', font=f_ph)
-        dr.text((cx - tw / 2, cy + 46), 'PHOTO', fill=stroke, font=f_ph)
+        cy = PHOTO_Y + PHOTO_H // 2 - 12
+        fill_avatar = _hex_rgb('#789987')
+        dr.ellipse([cx - 30, cy - 42, cx + 30, cy + 18], fill=fill_avatar)
+        dr.pieslice([cx - 52, cy - 2, cx + 52, cy + 102], 180, 360, fill=fill_avatar)
+        # Bandeau officiel au bas de la photo
+        dr.rectangle([PHOTO_X + 2, PHOTO_Y + PHOTO_H - 28, PHOTO_X + PHOTO_W - 2, PHOTO_Y + PHOTO_H - 2], fill=primary)
+        f_ph = _font(11, True)
+        tw = dr.textlength("PHOTO OFFICIELLE", font=f_ph)
+        dr.text((cx - tw / 2, PHOTO_Y + PHOTO_H - 22), "PHOTO OFFICIELLE", fill=accent, font=f_ph)
 
-    # ── QR Code élargi (200 px, 3 mm de la marge droite, centré verticalement) ──
-    dr.rounded_rectangle([QR_X, QR_Y, QR_X + QR_SIZE, QR_Y + QR_SIZE],
-                         radius=12, fill=(255, 255, 255),
-                         outline=_hex_rgb('#d1d5db'), width=2)
+    # ── QR Code de sécurité dans cartouche blanc (3 mm de la marge droite) ──
+    qr_card_w = QR_SIZE
+    qr_card_h = QR_SIZE + 32
+    qr_card_y = int(ZONE_CY - qr_card_h // 2)
+    dr.rounded_rectangle([QR_X, qr_card_y, QR_X + qr_card_w, qr_card_y + qr_card_h],
+                         radius=10, fill=(255, 255, 255), outline=_hex_rgb('#cbd5e1'), width=1)
+
+    # Mini-bandeau supérieur de contrôle
+    dr.rectangle([QR_X + 1, qr_card_y + 1, QR_X + qr_card_w - 1, qr_card_y + 22], fill=primary)
+    f_qc = _font(10, True)
+    tw_qc = dr.textlength("SÉCURITÉ • SCAN", font=f_qc)
+    dr.text((QR_X + (qr_card_w - tw_qc) / 2, qr_card_y + 5), "SÉCURITÉ • SCAN", fill=accent, font=f_qc)
+
     qr_buf = _qr_buf(badge['qr_payload'])
     if qr_buf:
         from PIL import Image as PILImage
         qr_img = PILImage.open(qr_buf).convert('RGB')
-        inner = QR_SIZE - 16
+        inner = QR_SIZE - 40
         qr_img = qr_img.resize((inner, inner), PILImage.Resampling.NEAREST)
-        card.paste(qr_img, (QR_X + 8, QR_Y + 8))
+        card.paste(qr_img, (QR_X + 20, qr_card_y + 30))
 
-    legend = 'Scanner pour vérifier la carte'
-    cap_font = _font(CAPTION_FS)
+    legend = 'Scanner pour vérifier'
+    cap_font = _font(11, True)
     cap_w = dr.textlength(legend, font=cap_font)
-    cap_x = QR_X + (QR_SIZE - cap_w) / 2
-    dr.text((cap_x, CAPTION_Y), legend, fill=caption_color, font=cap_font)
+    cap_x = QR_X + (qr_card_w - cap_w) / 2
+    dr.text((cap_x, qr_card_y + qr_card_h - 22), legend, fill=caption_color, font=cap_font)
 
-    # ── Informations (Nom agrandi + Champs spécifiques, centré verticalement) ──
+    # ── Informations (Nom agrandi + Badges structurés, centré verticalement) ──
     full_name = f"{badge['first_name']} {badge['last_name']}".strip()
     info_max_w = QR_X - 24 - NAME_X
     name_size = NAME_FS
@@ -299,38 +322,90 @@ def render_badge_png(badge, side='front'):
         name_size -= 1
         name_font = _font(name_size, True)
 
-    valid_fields = [(l, v) for l, v in badge.get('main_fields', []) if v]
-    name_h = name_size + 4
-    field_h = LABEL_FS + LABEL_GAP + VALUE_FS + 2
-    fields_total_h = (len(valid_fields) * field_h +
-                      max(0, len(valid_fields) - 1) * GROUP_GAP) if valid_fields else 0
-    total_info_h = name_h + (NAME_GAP + fields_total_h if valid_fields else 0)
-
+    total_info_h = 190
     info_y = int(ZONE_CY - total_info_h // 2)
 
     # Nom et prénom de la personne
     dr.text((NAME_X, info_y), full_name, fill=ink, font=name_font)
+    # Liseré or élégant sous le nom
+    name_tw = min(dr.textlength(full_name, font=name_font) + 40, info_max_w)
+    dr.line([NAME_X, info_y + name_size + 8, NAME_X + name_tw, info_y + name_size + 8], fill=accent, width=2)
 
-    # Champs étiquette / valeur
-    fl = _font(LABEL_FS, bold=True)
-    fv = _font(VALUE_FS, bold=True)
-    top = info_y + name_h + NAME_GAP
-    for label, value in valid_fields:
-        _spaced(dr, NAME_X, top, str(label).upper(), fl, label_color, spacing=1.1)
-        dr.text((NAME_X, top + LABEL_FS + LABEL_GAP), str(value), fill=ink, font=fv)
-        top += field_h + GROUP_GAP
+    top_badges = info_y + name_size + 20
+
+    if badge['kind'] == 'eleve':
+        # ── Badges élèves : CLASSE (vert & or) + MATRICULE (blanc & ardoise) ──
+        b_w1 = 210
+        b_h = 46
+        dr.rounded_rectangle([NAME_X, top_badges, NAME_X + b_w1, top_badges + b_h],
+                             radius=7, fill=primary, outline=accent, width=2)
+        _spaced(dr, NAME_X + 12, top_badges + 6, "CLASSE", _font(10, bold=True), accent)
+        classe_val = str(badge.get('classe') or '—')
+        dr.text((NAME_X + 12, top_badges + 20), classe_val, fill=(255, 255, 255), font=_font(19, bold=True))
+
+        b_x2 = NAME_X + b_w1 + 16
+        b_w2 = min(230, info_max_w - b_w1 - 16)
+        dr.rounded_rectangle([b_x2, top_badges, b_x2 + b_w2, top_badges + b_h],
+                             radius=7, fill=(255, 255, 255), outline=_hex_rgb('#cbd5e1'), width=2)
+        _spaced(dr, b_x2 + 12, top_badges + 6, "N° MATRICULE", _font(10, bold=True), label_color)
+        mat_val = str(badge.get('matricule') or '—')
+        dr.text((b_x2 + 12, top_badges + 20), mat_val, fill=ink, font=_font(17, bold=True))
+
+        # Ligne 2 : Date de naissance ou Statut
+        top_row2 = top_badges + b_h + 16
+        dob_val = badge.get('dob_display') or ''
+        born_lbl = (badge.get('born_word') or 'NÉ(E) LE').upper()
+        if dob_val:
+            dr.text((NAME_X, top_row2), f"{born_lbl} :", fill=label_color, font=_font(12, bold=True))
+            dr.text((NAME_X + 85, top_row2 - 1), str(dob_val), fill=ink, font=_font(15, bold=True))
+        else:
+            dr.text((NAME_X, top_row2), "STATUT :", fill=label_color, font=_font(12, bold=True))
+            dr.text((NAME_X + 85, top_row2 - 1), "Élève régulier(e)", fill=primary, font=_font(15, bold=True))
+
+        # Ligne 3 : Mention de validité officielle
+        top_row3 = top_row2 + 24
+        dr.text((NAME_X, top_row3), "VALIDITÉ :", fill=label_color, font=_font(11, bold=True))
+        dr.text((NAME_X + 85, top_row3), f"Année scolaire {badge.get('year_label', '2026-2027')}", fill=_hex_rgb('#334155'), font=_font(13))
+
+    else:
+        # ── Badges personnel : FONCTION (vert & or) + SERVICE (blanc & ardoise) ──
+        b_w1 = 210
+        b_h = 46
+        dr.rounded_rectangle([NAME_X, top_badges, NAME_X + b_w1, top_badges + b_h],
+                             radius=7, fill=primary, outline=accent, width=2)
+        _spaced(dr, NAME_X + 12, top_badges + 6, "FONCTION", _font(10, bold=True), accent)
+        fn_val = str(badge.get('function') or 'Enseignant')
+        dr.text((NAME_X + 12, top_badges + 20), fn_val, fill=(255, 255, 255), font=_font(18, bold=True))
+
+        b_x2 = NAME_X + b_w1 + 16
+        b_w2 = min(230, info_max_w - b_w1 - 16)
+        dr.rounded_rectangle([b_x2, top_badges, b_x2 + b_w2, top_badges + b_h],
+                             radius=7, fill=(255, 255, 255), outline=_hex_rgb('#cbd5e1'), width=2)
+        _spaced(dr, b_x2 + 12, top_badges + 6, "SERVICE", _font(10, bold=True), label_color)
+        srv_val = str(badge.get('service') or 'Pédagogique')
+        dr.text((b_x2 + 12, top_badges + 20), srv_val, fill=ink, font=_font(16, bold=True))
+
+        # Ligne 2 : Matricule
+        top_row2 = top_badges + b_h + 16
+        dr.text((NAME_X, top_row2), "MATRICULE :", fill=label_color, font=_font(12, bold=True))
+        dr.text((NAME_X + 95, top_row2 - 1), str(badge.get('matricule', '—')), fill=ink, font=_font(16, bold=True))
+
+        # Ligne 3 : Statut
+        top_row3 = top_row2 + 24
+        dr.text((NAME_X, top_row3), "STATUT :", fill=label_color, font=_font(11, bold=True))
+        dr.text((NAME_X + 95, top_row3), f"Personnel titulaire · Année {badge.get('year_label', '2026-2027')}", fill=_hex_rgb('#334155'), font=_font(13))
 
     # ── Pied de page avec liseré or ──
     dr.rectangle([0, FOOTER_TOP, W_PX, FOOTER_TOP + 3], fill=accent)
     dr.rectangle([0, FOOTER_TOP + 3, W_PX, H_PX], fill=primary)
-    f_foot = _font(FOOTER_FS)
+    f_foot = _font(14)
     dr.text((SAFE, FOOTER_TEXT_Y),
-            "Cette carte est personnelle et doit être présentée à l'entrée.",
+            "Carte strictement personnelle et incessible • Propriété de l'établissement",
             fill=(255, 255, 255), font=f_foot)
-    stamp_txt = 'Cachet de la direction'
-    f_stamp = _font(FOOTER_FS, True)
-    tw_stamp = dr.textlength(stamp_txt, font=f_stamp)
-    dr.text((RIGHT_X - tw_stamp, FOOTER_TEXT_Y), stamp_txt, fill=accent, font=f_stamp)
+    valid_txt = f"Validité : {badge.get('year_label', '2026-2027')}"
+    f_val = _font(14, True)
+    tw_val = dr.textlength(valid_txt, font=f_val)
+    dr.text((RIGHT_X - tw_val, FOOTER_TEXT_Y), valid_txt, fill=accent, font=f_val)
 
     out = BytesIO()
     card.save(out, format='PNG', optimize=True, dpi=(300, 300))
@@ -356,6 +431,12 @@ def render_badge_verso_png(badge):
     # ── En-tête vert avec liseré or (105 px) ──
     dr.rectangle([0, 0, W_PX, 105], fill=primary)
     dr.rectangle([0, 102, W_PX, 105], fill=accent)
+
+    # Liseré tricolore discret du drapeau du Mali (vert, or, rouge)
+    fl_w = W_PX // 3
+    dr.rectangle([0, 105, fl_w, 108], fill=_hex_rgb('#009a44'))
+    dr.rectangle([fl_w, 105, fl_w * 2, 108], fill=_hex_rgb('#fed100'))
+    dr.rectangle([fl_w * 2, 105, W_PX, 108], fill=_hex_rgb('#ce1126'))
 
     # Titre officiel centré
     f_rep = _font(22, bold=True)
@@ -396,16 +477,28 @@ def render_badge_verso_png(badge):
     f_box_t = _font(12, bold=True)
     f_box_v = _font(14, bold=True)
     if badge.get('kind') == 'eleve':
-        dr.text((SAFE + 16, box_y + 12), "CONTACT EN CAS D'URGENCE / PARENTS", fill=primary, font=f_box_t)
-        contact_txt = badge.get('emergency_contact') or 'Administration de l’établissement'
-        dr.text((SAFE + 16, box_y + 38), f"Responsable : {contact_txt}", fill=ink, font=f_box_v)
-        if badge.get('parent_phone'):
-            dr.text((SAFE + 560, box_y + 38), f"Tél. urgence : {badge['parent_phone']}", fill=primary, font=f_box_v)
+        em_contact = badge.get('emergency_contact')
+        if em_contact:
+            dr.text((SAFE + 16, box_y + 12), "CONTACT EN CAS D'URGENCE / PARENTS", fill=primary, font=f_box_t)
+            dr.text((SAFE + 16, box_y + 38), f"Responsable : {em_contact}", fill=ink, font=f_box_v)
+            if badge.get('parent_phone'):
+                dr.text((SAFE + 560, box_y + 38), f"Tél. urgence : {badge['parent_phone']}", fill=primary, font=f_box_v)
+        else:
+            dr.text((SAFE + 16, box_y + 12), "RENSEIGNEMENTS ÉLÈVE & URGENCE", fill=primary, font=f_box_t)
+            contact_parts = []
+            if badge.get('phone') and badge.get('phone') != '—':
+                contact_parts.append(f"Tél. élève : {badge['phone']}")
+            if badge.get('address'):
+                contact_parts.append(f"Adresse : {badge['address']}")
+            contact_str = '  ·  '.join(contact_parts) if contact_parts else 'Élève régulièrement inscrit(e)'
+            dr.text((SAFE + 16, box_y + 34), contact_str, fill=ink, font=_font(13, bold=True))
+            dr.text((SAFE + 16, box_y + 54), "En cas d'urgence, aviser immédiatement l'administration de l'établissement.", fill=_hex_rgb('#475569'), font=_font(12))
     else:
         dr.text((SAFE + 16, box_y + 12), "MENTION OFFICIELLE DU PERSONNEL", fill=primary, font=f_box_t)
         srv = badge.get('service') or 'Administration & Pédagogie'
         fn = badge.get('function') or 'Enseignant'
-        dr.text((SAFE + 16, box_y + 38), f"Fonction : {fn}  ·  Service : {srv}", fill=ink, font=f_box_v)
+        dr.text((SAFE + 16, box_y + 34), f"Fonction : {fn}  ·  Service : {srv}", fill=ink, font=f_box_v)
+        dr.text((SAFE + 16, box_y + 54), "En cas d'urgence, aviser immédiatement la direction de l'établissement.", fill=_hex_rgb('#475569'), font=_font(12))
 
     # Zone Validation & Cachet (y = 328 à 542)
     # Colonne Gauche : Dates & Identifiant de sécurité
@@ -419,24 +512,24 @@ def render_badge_verso_png(badge):
     dr.text((SAFE, val_y + 104), f"N° de contrôle : {badge.get('matricule', '—')}", fill=primary, font=_font(13, bold=True))
 
     # Code-barres stylisé de sécurité
-    bar_y = val_y + 130
+    bar_y = val_y + 126
     bar_x = SAFE
     bar_w = 340
-    bar_h = 28
+    bar_h = 32
     dr.rectangle([bar_x, bar_y, bar_x + bar_w, bar_y + bar_h], fill=(255, 255, 255))
-    cur_x = bar_x + 8
+    cur_x = bar_x + 12
     mat_code = str(badge.get('matricule', '') or '0000')
     seed_val = sum(ord(c) for c in mat_code)
     step = 0
-    while cur_x < bar_x + bar_w - 8:
-        w = 3 if ((step + seed_val) % 5 == 0 or (step * 3) % 7 == 0) else 1
+    while cur_x < bar_x + bar_w - 12:
+        w = 3 if ((step + seed_val) % 4 == 0 or (step * 2) % 7 == 0) else 1
         dr.rectangle([cur_x, bar_y, cur_x + w, bar_y + bar_h], fill=_hex_rgb('#0f172a'))
-        cur_x += w + (3 if (step % 3 == 0) else 2)
+        cur_x += w + (3 if (step % 2 == 0) else 2)
         step += 1
     # Texte du matricule sous le code-barres
     f_mat = _font(12, bold=True)
     tw_mat = dr.textlength(mat_code, font=f_mat)
-    dr.text((bar_x + (bar_w - tw_mat) / 2, bar_y + bar_h + 3), mat_code, fill=_hex_rgb('#0f172a'), font=f_mat)
+    dr.text((bar_x + (bar_w - tw_mat) / 2, bar_y + bar_h + 4), mat_code, fill=_hex_rgb('#0f172a'), font=f_mat)
 
     # Colonne Droite : Emplacement Cachet et Signature de la direction
     stamp_w, stamp_h = 360, 180
@@ -452,11 +545,13 @@ def render_badge_verso_png(badge):
     if stamp_img:
         card.paste(stamp_img, (stamp_x + 20, stamp_top + 50), stamp_img)
     else:
-        # Cercle pointillé symbolisant le tampon
+        # Cercle propre symbolisant le tampon et ligne de signature
         cx = stamp_x + stamp_w // 2
-        cy = stamp_top + 110
-        dr.ellipse([cx - 40, cy - 40, cx + 40, cy + 40], outline=_hex_rgb('#cbd5e1'), width=1)
-        dr.text((cx - 24, cy - 8), "Cachet", fill=_hex_rgb('#94a3b8'), font=_font(12, bold=True))
+        cy = stamp_top + 105
+        dr.ellipse([cx - 42, cy - 42, cx + 42, cy + 42], outline=_hex_rgb('#cbd5e1'), width=1)
+        dr.text((cx - 22, cy - 8), "Cachet", fill=_hex_rgb('#94a3b8'), font=_font(12, bold=True))
+        dr.line([stamp_x + 30, stamp_top + stamp_h - 22, stamp_x + stamp_w - 30, stamp_top + stamp_h - 22],
+                fill=_hex_rgb('#cbd5e1'), width=1)
 
     # ── Pied vert du verso avec coordonnées (80 px) ──
     dr.rectangle([0, FOOTER_TOP, W_PX, FOOTER_TOP + 3], fill=accent)

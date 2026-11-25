@@ -136,15 +136,20 @@
       {% if badge.kind == 'eleve' %}
       <div class="badge-role-box-title">Contact en cas d'urgence / Parents</div>
       <div class="badge-role-box-content">
-        <span>Responsable : <strong>{{ badge.emergency_contact|default:badge.father|default:"Direction" }}</strong></span>
-        {% if badge.parent_phone %}<span>Tél. urgence : <strong>{{ badge.parent_phone }}</strong></span>{% endif %}
+        {% if badge.emergency_contact %}
+        <span>Responsable : <strong>{{ badge.emergency_contact }}</strong></span>
+        {% else %}
+        <span>Contact élève : <strong>{{ badge.phone|default:"Direction de l'établissement" }}</strong></span>
+        {% if badge.address %}<span>Adresse : <strong>{{ badge.address }}</strong></span>{% endif %}
+        <div style="width: 100%; font-size: 1.15cqw; color: #64748b; font-weight: normal; margin-top: .3cqh;">En cas d'urgence ou d'accident, aviser immédiatement l'administration scolaire.</div>
+        {% endif %}
       </div>
       {% else %}
       <div class="badge-role-box-title">Mention Officielle du Personnel</div>
       <div class="badge-role-box-content">
-        <span>Statut : <strong>Membre officiel en fonction</strong></span>
+        <span>Statut : <strong>Personnel en fonction</strong></span>
         <span>Service : <strong>{{ badge.service|default:"Administration" }}</strong></span>
-        <span>Réf : <strong>{{ badge.matricule }}</strong></span>
+        <span>Fonction : <strong>{{ badge.function|default:"Enseignant" }}</strong></span>
       </div>
       {% endif %}
     </div>

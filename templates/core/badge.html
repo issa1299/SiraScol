@@ -62,11 +62,15 @@
     flex: 0 0 19.76cqw; height: 39.18cqh; border-radius: 1cqw;
     background: var(--photo-bg); border: .2cqw solid #d8e2da;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    overflow: hidden; gap: .8cqh;
+    overflow: hidden; position: relative;
   }
   .badge-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center; }
-  .badge-photo svg { width: 7cqw; height: 7cqw; fill: none; stroke: #6b8a78; stroke-width: 1.6; }
-  .badge-photo .ph-label { font-size: 1.5cqw; font-weight: 800; color: #6b8a78; letter-spacing: .1em; }
+  .badge-photo svg { width: 7cqw; height: 7cqw; fill: #789987; }
+  .badge-photo .ph-label {
+    position: absolute; bottom: 0; left: 0; right: 0; background: var(--primary);
+    color: var(--accent); font-size: 1.1cqw; font-weight: 800; text-align: center;
+    padding: .3cqh 0; letter-spacing: .08em;
+  }
 
   .badge-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center; }
   .badge-name {
@@ -74,55 +78,71 @@
     font-weight: 800; line-height: 1.1;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .badge-fields {
-    margin-top: 2.51cqh; /* 16 px sous le nom */
-    display: flex; flex-direction: column;
+  .badge-name-bar {
+    width: 28cqw; height: .3cqh; background: var(--accent); margin-top: .6cqh; margin-bottom: 1.8cqh;
   }
-  .badge-field { margin-bottom: 2.82cqh; } /* 18 px entre chaque groupe */
-  .badge-field:last-child { margin-bottom: 0; }
-  .badge-field .lab {
-    font-size: 1.28cqw; /* ~13 px */
-    font-weight: 700; color: var(--label);
-    text-transform: uppercase; letter-spacing: .08em; line-height: 1.1;
+  .badge-badges-row {
+    display: flex; gap: 1.6cqw; margin-bottom: 1.5cqh;
   }
-  .badge-field .val {
-    margin-top: .63cqh; /* 4 px sous l'étiquette */
-    font-size: 1.98cqw; /* ~20 px */
-    font-weight: 700; line-height: 1.15;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  .badge-pill {
+    padding: .8cqh 1.2cqw; border-radius: .8cqw; display: flex; flex-direction: column;
+    justify-content: center; min-width: 16cqw;
   }
+  .badge-pill.primary {
+    background: var(--primary); border: 1.5px solid var(--accent); color: #fff;
+  }
+  .badge-pill.primary .pill-lab { font-size: 1.05cqw; font-weight: 800; color: var(--accent); letter-spacing: .08em; }
+  .badge-pill.primary .pill-val { font-size: 1.88cqw; font-weight: 800; color: #fff; line-height: 1.1; }
+  .badge-pill.outline {
+    background: #fff; border: 1.5px solid #cbd5e1; color: var(--ink);
+  }
+  .badge-pill.outline .pill-lab { font-size: 1.05cqw; font-weight: 800; color: var(--label); letter-spacing: .08em; }
+  .badge-pill.outline .pill-val { font-size: 1.68cqw; font-weight: 800; color: var(--ink); line-height: 1.1; }
 
-  {# ── QR Code à droite (3 mm de marge) avec légende centrée sous le QR ── #}
+  .badge-meta-row {
+    font-size: 1.35cqw; line-height: 1.4; color: var(--ink);
+  }
+  .badge-meta-row .mlab { font-size: 1.15cqw; font-weight: 800; color: var(--label); letter-spacing: .05em; }
+  .badge-meta-row .mval { font-weight: 700; color: var(--ink); }
+
+  {# ── QR Code à droite (3 mm de marge) dans son cartouche de contrôle ── #}
   .badge-qr-block {
     margin-left: auto; flex: 0 0 auto; display: flex; flex-direction: column; align-items: center;
   }
+  .badge-qr-card {
+    background: #fff; border: 1.5px solid #cbd5e1; border-radius: 1.2cqw;
+    padding: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.04);
+  }
+  .badge-qr-header {
+    width: 100%; background: var(--primary); color: var(--accent);
+    font-size: .95cqw; font-weight: 800; text-align: center; padding: .4cqh 0;
+    letter-spacing: .08em;
+  }
   .badge-qr {
-    width: 18.77cqw; aspect-ratio: 1; padding: 1.2cqw; background: #fff;
-    border: .2cqw solid #d1d5db; border-radius: 1.2cqw;
+    width: 16.5cqw; aspect-ratio: 1; padding: 1cqw; background: #fff;
   }
   .badge-qr img { width: 100%; height: 100%; display: block; }
   .badge-qr-legend {
-    margin-top: 1.25cqh; /* 8 px sous le QR */
-    font-size: 1.18cqw; /* 12 px (8 pt) */
-    line-height: 1.1; color: var(--caption);
-    text-align: center; white-space: nowrap;
+    font-size: 1.05cqw; font-weight: 700; line-height: 1.1; color: var(--caption);
+    text-align: center; white-space: nowrap; padding-bottom: .8cqh;
   }
 
   {# ── Pied vert (hauteur 80 px = 12.54cqh) ── #}
   .badge-footer {
     position: absolute; left: 0; right: 0; bottom: 0; height: 12.54cqh;
-    background: var(--primary); color: #fff;
+    background: var(--primary); color: #fff; border-top: .47cqh solid var(--accent);
     display: flex; align-items: center; justify-content: space-between;
     padding: 0 3.56cqw;
   }
-  .badge-footer .note { font-size: 1.68cqw; line-height: 1.1; }
+  .badge-footer .note { font-size: 1.38cqw; line-height: 1.1; }
   .badge-footer .stamp-label {
-    font-size: 1.68cqw; font-weight: 700; color: var(--accent); white-space: nowrap;
+    font-size: 1.38cqw; font-weight: 800; color: var(--accent); white-space: nowrap;
   }
 
   {# ── Impression PVC : sans ombre ni bordure externe ── #}
   @media print {
-    .badge-card, .badge-photo, .badge-qr {
+    .badge-card, .badge-photo, .badge-qr-card {
       border-radius: 0 !important;
       box-shadow: none !important;
     }
@@ -151,36 +171,67 @@
       {% if badge.photo_url %}
       <img src="{{ badge.photo_url }}" alt="Photo de {{ badge.full_name }}">
       {% else %}
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-4 3.1-6.2 7-6.2s7 2.2 7 6.2"/></svg>
-      <span class="ph-label">PHOTO</span>
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+      <span class="ph-label">PHOTO OFFICIELLE</span>
       {% endif %}
     </div>
 
     <div class="badge-info">
       <div class="badge-name">{{ badge.first_name }} {{ badge.last_name }}</div>
-      <div class="badge-fields">
-        {% for label, value in badge.main_fields %}
-        {% if value %}
-        <div class="badge-field">
-          <div class="lab">{{ label }}</div>
-          <div class="val">{{ value }}</div>
+      <div class="badge-name-bar"></div>
+
+      <div class="badge-badges-row">
+        {% if badge.kind == 'eleve' %}
+        <div class="badge-pill primary">
+          <div class="pill-lab">CLASSE</div>
+          <div class="pill-val">{{ badge.classe|default:'—' }}</div>
+        </div>
+        <div class="badge-pill outline">
+          <div class="pill-lab">N° MATRICULE</div>
+          <div class="pill-val">{{ badge.matricule }}</div>
+        </div>
+        {% else %}
+        <div class="badge-pill primary">
+          <div class="pill-lab">FONCTION</div>
+          <div class="pill-val">{{ badge.function|default:'Enseignant' }}</div>
+        </div>
+        <div class="badge-pill outline">
+          <div class="pill-lab">SERVICE</div>
+          <div class="pill-val">{{ badge.service|default:'Pédagogique' }}</div>
         </div>
         {% endif %}
-        {% endfor %}
+      </div>
+
+      <div class="badge-meta-row">
+        {% if badge.kind == 'eleve' %}
+          {% if badge.dob_display %}
+          <span class="mlab">{{ badge.born_word|default:'Né(e) le'|upper }} :</span> <span class="mval">{{ badge.dob_display }}</span>
+          {% else %}
+          <span class="mlab">STATUT :</span> <span class="mval">Élève régulier(e)</span>
+          {% endif %}
+        {% else %}
+          <span class="mlab">MATRICULE :</span> <span class="mval">{{ badge.matricule }}</span>
+        {% endif %}
+      </div>
+      <div class="badge-meta-row" style="margin-top: .4cqh;">
+        <span class="mlab">VALIDITÉ :</span> <span class="mval">Année scolaire {{ badge.year_label }}</span>
       </div>
     </div>
 
     <div class="badge-qr-block">
-      <div class="badge-qr">
-        {% if badge.qr_url %}<img src="{{ badge.qr_url }}" alt="QR {{ badge.qr_payload }}">{% endif %}
+      <div class="badge-qr-card">
+        <div class="badge-qr-header">SÉCURITÉ • SCAN</div>
+        <div class="badge-qr">
+          {% if badge.qr_url %}<img src="{{ badge.qr_url }}" alt="QR {{ badge.qr_payload }}">{% endif %}
+        </div>
+        <div class="badge-qr-legend">Scanner pour vérifier</div>
       </div>
-      <div class="badge-qr-legend">Scanner pour vérifier la carte</div>
     </div>
   </div>
 
   <div class="badge-footer">
-    <span class="note">Cette carte est personnelle et doit être présentée à l'entrée.</span>
-    <span class="stamp-label">Cachet de la direction</span>
+    <span class="note">Carte d'identité scolaire strictement personnelle • Propriété de l'école</span>
+    <span class="stamp-label">Validité : {{ badge.year_label }}</span>
   </div>
 </div>
 
