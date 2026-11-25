@@ -6,7 +6,9 @@ Passage / redoublement en fin d'année.
 """
 from datetime import date
 from decimal import Decimal
+from urllib.parse import urlencode
 
+from django.urls import reverse
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
@@ -207,12 +209,31 @@ def promotion_home(request):
         stats['repeated'] = enrs.filter(end_status='repeated').count()
         stats['pending'] = enrs.filter(end_status='en_cours').count()
 
+    # Onglet « Passage en classe supérieure » : mêmes données que l'ancien
+    # écran dédié, mais affichées dans la page Passage / Redoublement.
+    tab = request.GET.get('tab', 'passage')
+    orientation_classrooms = []
+    orientation_operations = PromotionOperation.objects.none()
+    if source:
+        candidates = ClassRoom.objects.filter(academic_year=source).select_related(
+            'level'
+        ).order_by('level__order', 'name')
+        orientation_classrooms = [
+            c for c in candidates if orientation_rules.is_orientation_classroom(c)
+        ]
+        orientation_operations = PromotionOperation.objects.filter(
+            source_year=source
+        ).select_related('source_classroom', 'target_year', 'validated_by')
+
     return render(request, 'students/promotion_home.html', {
         'years': years,
         'source': source,
         'target': target,
         'classrooms': classrooms,
         'stats': stats,
+        'tab': tab,
+        'orientation_classrooms': orientation_classrooms,
+        'orientation_operations': orientation_operations,
     })
 
 
@@ -475,27 +496,11 @@ def _target_year_for(source):
 
 @role_required('admin', 'directeur', 'secretaire')
 def orientation_home(request):
-    """Point d'entrée « Passage en classe supérieure » (lycée malien)."""
-    years = AcademicYear.objects.all().order_by('-start_date')
-    source_id = request.GET.get('year')
-    source = get_object_or_404(AcademicYear, pk=source_id) if source_id else None
-    if not source:
-        source = AcademicYear.objects.filter(is_current=True).first() or years.first()
-    target = _target_year_for(source) if source else None
-    classrooms = []
-    operations = PromotionOperation.objects.none()
-    if source:
-        candidates = ClassRoom.objects.filter(academic_year=source).select_related(
-            'level'
-        ).order_by('level__order', 'name')
-        classrooms = [c for c in candidates if orientation_rules.is_orientation_classroom(c)]
-        operations = PromotionOperation.objects.filter(source_year=source).select_related(
-            'source_classroom', 'target_year', 'validated_by'
-        )
-    return render(request, 'students/orientation_home.html', {
-        'years': years, 'source': source, 'target': target,
-        'classrooms': classrooms, 'operations': operations,
-    })
+    """Ancienne URL conservée : redirige vers l'onglet de Passage / Redoublement."""
+    params = {'tab': 'orientation'}
+    if request.GET.get('year'):
+        params['year'] = request.GET['year']
+    return redirect(f"{reverse('students:promotion_home')}?{urlencode(params)}")
 
 
 @role_required('admin', 'directeur', 'secretaire')
@@ -504,14 +509,18 @@ def orientation_class(request, classroom_id):
     classroom = get_object_or_404(
         ClassRoom.objects.select_related('level', 'academic_year'), pk=classroom_id
     )
+    source = classroom.academic_year
     if not orientation_rules.is_orientation_classroom(classroom):
         messages.error(request, "Cette classe ne fait pas l'objet d'une orientation lycée.")
-        return redirect('students:orientation_home')
-    source = classroom.academic_year
+        return redirect(
+            f"{reverse('students:promotion_home')}?{urlencode({'tab': 'orientation', 'year': source.pk})}"
+        )
     target = _target_year_for(source)
     if not target:
         messages.error(request, "Créez d'abord l'année scolaire suivante dans Configuration.")
-        return redirect('students:orientation_home')
+        return redirect(
+            f"{reverse('students:promotion_home')}?{urlencode({'tab': 'orientation', 'year': source.pk})}"
+        )
 
     operation, _ = PromotionOperation.objects.get_or_create(
         source_classroom=classroom, source_year=source, target_year=target,

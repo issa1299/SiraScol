@@ -2,7 +2,7 @@
 {% block title %}Orientation — {{ classroom.name }}{% endblock %}
 {% block content %}
 <div class="mb-4">
-  <a href="{% url 'students:orientation_home' %}?year={{ source.pk }}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Passage en classe supérieure</a>
+  <a href="{% url 'students:promotion_home' %}?tab=orientation&amp;year={{ source.pk }}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Passage en classe supérieure</a>
   <h1 class="text-xl font-bold text-slate-800 mt-1">{{ classroom.name }}</h1>
   <p class="text-xs text-slate-500">{{ source.name }} → {{ target.name }} · {{ rows|length }} élève(s)</p>
 </div>

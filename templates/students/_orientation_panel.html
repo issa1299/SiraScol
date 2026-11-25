@@ -1,27 +1,4 @@
-{% extends "base.html" %}
-{% block title %}Passage en classe supérieure{% endblock %}
-{% block content %}
-<div class="mb-4">
-  <a href="{% url 'academics:classroom_list' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Gestion des Classes</a>
-  <h1 class="text-xl sm:text-2xl font-bold text-slate-800 mt-1">Passage en classe supérieure — Lycée</h1>
-  <p class="text-xs text-slate-500 mt-1">
-    Orientation décidée par le conseil des professeurs et validée par la direction.
-    La moyenne est indicative : elle n'oriente jamais l'élève automatiquement.
-  </p>
-</div>
-
-<form method="get" class="bg-white rounded-2xl border p-3 mb-4 flex flex-wrap gap-2 items-end">
-  <div class="flex-1 min-w-[14rem]">
-    <label class="text-xs text-slate-500">Année scolaire (année qui se termine)</label>
-    <select name="year" onchange="this.form.submit()" class="w-full border rounded-xl px-3 py-2.5 text-sm mt-1">
-      {% for y in years %}
-      <option value="{{ y.id }}" {% if source and source.id == y.id %}selected{% endif %}>{{ y.name }}{% if y.is_current %} (en cours){% endif %}</option>
-      {% endfor %}
-    </select>
-  </div>
-  <p class="text-xs text-slate-500 pb-3">Année suivante : <strong class="text-emerald-700">{{ target.name|default:"à créer" }}</strong></p>
-</form>
-
+{# Panneau « Passage en classe supérieure » intégré à l'onglet Passage / Redoublement. #}
 {% if not target %}
 <div class="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-4 text-sm text-amber-900">
   <i class="fas fa-exclamation-triangle"></i> Créez l'année suivante dans
@@ -30,7 +7,7 @@
 {% endif %}
 
 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
-  {% for c in classrooms %}
+  {% for c in orientation_classrooms %}
   <a href="{% url 'students:orientation_class' c.pk %}" class="bg-white rounded-2xl border p-4 hover:border-violet-400 active:scale-[0.99] transition">
     <p class="font-semibold text-slate-800">{{ c.name }}</p>
     <p class="text-xs text-slate-500">{{ c.level.name }}</p>
@@ -43,11 +20,11 @@
   {% endfor %}
 </div>
 
-{% if operations %}
+{% if orientation_operations %}
 <div class="bg-white rounded-2xl border overflow-hidden">
   <div class="px-4 py-3 border-b"><p class="text-sm font-bold text-slate-800">Dossiers d'orientation en cours</p></div>
   <div class="divide-y">
-    {% for op in operations %}
+    {% for op in orientation_operations %}
     <div class="px-4 py-3 flex flex-wrap items-center justify-between gap-2">
       <div>
         <p class="text-sm font-semibold">{{ op.source_classroom.name }} → {{ op.target_year.name }}</p>
@@ -65,4 +42,3 @@
   </div>
 </div>
 {% endif %}
-{% endblock %}

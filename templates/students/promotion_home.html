@@ -2,8 +2,8 @@
 {% block title %}Passage / Redoublement{% endblock %}
 {% block content %}
 <div class="mb-4">
-  <h1 class="text-xl sm:text-2xl font-bold text-slate-800">Fin d'année — Passage & redoublement</h1>
-  <p class="text-xs text-slate-500 mt-1">Décidez qui passe et qui redouble, puis appliquez pour créer les inscriptions de l'année suivante.</p>
+  <h1 class="text-xl sm:text-2xl font-bold text-slate-800">Fin d'année — Passage &amp; redoublement</h1>
+  <p class="text-xs text-slate-500 mt-1">Décisions de fin d'année et orientation des élèves du lycée vers la classe supérieure.</p>
 </div>
 
 {% if not years %}
@@ -14,8 +14,20 @@
 </div>
 {% else %}
 
+<div class="flex gap-1 bg-slate-100 rounded-xl p-1 mb-4">
+  <a href="{% url 'students:promotion_home' %}?tab=passage{% if source %}&amp;year={{ source.pk }}{% endif %}"
+     class="flex-1 py-2.5 rounded-lg text-sm text-center font-semibold {% if tab != 'orientation' %}bg-white shadow text-slate-800{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+    <i class="fas fa-forward mr-1"></i> Passage / Redoublement
+  </a>
+  <a href="{% url 'students:promotion_home' %}?tab=orientation{% if source %}&amp;year={{ source.pk }}{% endif %}"
+     class="flex-1 py-2.5 rounded-lg text-sm text-center font-semibold {% if tab == 'orientation' %}bg-white shadow text-violet-700{% else %}text-slate-500 hover:text-slate-700{% endif %}">
+    <i class="fas fa-route mr-1"></i> Passage en classe supérieure
+  </a>
+</div>
+
 <form method="get" class="bg-white rounded-2xl border p-3 mb-4">
-  <label class="text-xs text-slate-500">Année source (année qui se termine)</label>
+  <input type="hidden" name="tab" value="{{ tab }}">
+  <label class="text-xs text-slate-500">Année scolaire (année qui se termine)</label>
   <select name="year" onchange="this.form.submit()" class="w-full border rounded-xl px-3 py-2.5 text-sm mt-1">
     {% for y in years %}
     <option value="{{ y.id }}" {% if source and source.id == y.id %}selected{% endif %}>{{ y.name }}{% if y.is_current %} (en cours){% endif %}</option>
@@ -23,12 +35,21 @@
   </select>
 </form>
 
+{% if tab == 'orientation' %}
+<div class="bg-violet-50 border border-violet-100 rounded-2xl p-4 mb-4 text-xs text-slate-700 space-y-1">
+  <p class="font-semibold text-violet-800"><i class="fas fa-info-circle"></i> Orientation du lycée (décision du conseil des professeurs)</p>
+  <p>La moyenne est indicative : elle n'oriente jamais un élève automatiquement. La direction valide définitivement l'opération.</p>
+  <p>Année suivante : <strong class="text-emerald-700">{{ target.name|default:"à créer" }}</strong></p>
+</div>
+{% include "students/_orientation_panel.html" %}
+
+{% else %}
 {% if source %}
 <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
   <div class="bg-white rounded-xl border p-3 text-center"><p class="text-2xl font-bold">{{ stats.total }}</p><p class="text-xs text-slate-500">Élèves</p></div>
   <div class="bg-emerald-50 rounded-xl border border-emerald-100 p-3 text-center"><p class="text-2xl font-bold text-emerald-700">{{ stats.promoted }}</p><p class="text-xs text-emerald-600">Admis</p></div>
   <div class="bg-amber-50 rounded-xl border border-amber-100 p-3 text-center"><p class="text-2xl font-bold text-amber-700">{{ stats.repeated }}</p><p class="text-xs text-amber-600">Redoublants</p></div>
-  <div class="bg-slate-50 rounded-xl border p-3 text-center"><p class="text-2xl font-bold text-slate-600">{{ stats.pending }}</p><p class="text-xs text-slate-500">En attente</p></div>
+  <div class="bg-slate-50 rounded-xl border border-slate-100 p-3 text-center"><p class="text-2xl font-bold text-slate-600">{{ stats.pending }}</p><p class="text-xs text-slate-500">En attente</p></div>
 </div>
 
 {% if target %}
@@ -62,6 +83,7 @@
   <p class="mb-2">Aucune classe pour <strong>{{ source.name }}</strong>.</p>
   <a href="{% url 'academics:classroom_list' %}" class="text-blue-600 underline">Créer des classes</a>
 </div>
+{% endif %}
 {% endif %}
 {% endif %}
 {% endif %}

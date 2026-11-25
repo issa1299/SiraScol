@@ -110,16 +110,29 @@ class OrientationTests(TestCase):
             ClassRoom(name='9ème A'), self.target
         ), [])
 
-    def test_pages_and_button(self):
-        for name, args in (
-            ('orientation_home', ()),
-            ('orientation_class', (self.c11l.pk,)),
-        ):
-            response = self.client.get(reverse('students:' + name, args=args))
-            self.assertEqual(response.status_code, 200, name)
-        response = self.client.get(reverse('academics:classroom_list'))
+    def test_pages_and_tab(self):
+        # L'entrée est un onglet de « Passage / Redoublement », pas un bouton
+        # dans Gestion des Classes.
+        response = self.client.get(reverse('students:promotion_home'))
+        self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Passage en classe supérieure')
+
+        response = self.client.get(reverse('students:promotion_home'), {'tab': 'orientation'})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, '11ème L A')
+        self.assertContains(response, '10ème Commune A')
+
+        response = self.client.get(reverse('students:orientation_home'))
+        self.assertRedirects(
+            response,
+            reverse('students:promotion_home') + '?tab=orientation',
+        )
+
+        response = self.client.get(reverse('academics:classroom_list'))
+        self.assertNotContains(response, 'Passage en classe supérieure')
+
         response = self.client.get(reverse('students:orientation_class', args=[self.c11l.pk]))
+        self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'TLL A')
         self.assertContains(response, 'TAL A')
         self.assertNotContains(response, '>TSE A<')

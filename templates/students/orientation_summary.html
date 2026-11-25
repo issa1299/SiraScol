@@ -2,7 +2,8 @@
 {% block title %}Récapitulatif d'orientation{% endblock %}
 {% block content %}
 <div class="mb-4">
-  <a href="{% url 'students:orientation_class' operation.source_classroom_id %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Retour à la classe</a>
+  <a href="{% url 'students:promotion_home' %}?tab=orientation&amp;year={{ operation.source_year_id }}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Passage en classe supérieure</a>
+  <a href="{% url 'students:orientation_class' operation.source_classroom_id %}" class="text-sm text-slate-500 ml-3"><i class="fas fa-arrow-left"></i> Retour à la classe</a>
   <h1 class="text-xl font-bold text-slate-800 mt-1">Récapitulatif avant validation</h1>
   <p class="text-xs text-slate-500">{{ operation.source_classroom.name }} · {{ operation.source_year.name }} → {{ operation.target_year.name }}</p>
 </div>
