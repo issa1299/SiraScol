@@ -135,12 +135,12 @@ def ensure_user_for_parent(parent):
         )
         return user, False, None
 
-    phone = (getattr(parent, 'phone', None) or '').strip()
-    base = _slug(phone) if phone and len(phone) >= 6 else _slug(
-        f'{parent.last_name}.{parent.first_name}'
-    )
-    username = _unique_username(base or 'parent')
-    raw_password = phone if len(phone) >= 4 else username
+    # Identifiant basé sur le nom, jamais sur le numéro de téléphone.
+    # Le mot de passe initial est identique à l'identifiant (comme pour les élèves).
+    base = (_slug(f'{parent.first_name}.{parent.last_name}')
+            or _slug(parent.last_name) or 'parent')
+    username = _unique_username(base)
+    raw_password = username
     user = User.objects.create_user(
         username=username,
         password=raw_password,
@@ -150,7 +150,8 @@ def ensure_user_for_parent(parent):
         is_active=True,
     )
     Profile.objects.update_or_create(user=user, defaults={
-        'role': 'parent', 'phone': phone, 'must_change_password': True,
+        'role': 'parent', 'phone': getattr(parent, 'phone', '') or '',
+        'must_change_password': True,
     })
     type(parent).objects.filter(pk=parent.pk).update(user=user)
     parent.user = user

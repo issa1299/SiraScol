@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
 
+from core.account_sync import _slug, ensure_user_for_parent
 from core.validators import validate_upload
 
 
@@ -24,6 +25,37 @@ class UploadValidatorTests(TestCase):
 
     def test_accepts_valid_pdf(self):
         self.assertEqual(validate_upload(self._File('note.pdf', 1024)).name, 'note.pdf')
+
+
+class ParentUsernameTests(TestCase):
+    def test_new_parent_identifier_is_name_not_phone(self):
+        from students.models import Parent
+
+        parent = Parent.objects.create(
+            first_name='Bintou', last_name='Bah', phone='76 11 22 33 44'
+        )
+        user, _, _ = ensure_user_for_parent(parent)
+        parent.refresh_from_db()
+        self.assertEqual(user.username, 'bintou.bah')
+        self.assertTrue(user.check_password('bintou.bah'))
+
+    def test_fix_command_migrates_phone_usernames(self):
+        from django.core.management import call_command
+        from students.models import Parent
+
+        parent = Parent.objects.create(
+            first_name='Bintou', last_name='Bah', phone='76 11 22 33 44'
+        )
+        user, _, _ = ensure_user_for_parent(parent)
+        user.username = _slug(parent.phone)
+        user.set_password(parent.phone)
+        user.save()
+
+        call_command('fix_parent_usernames')
+
+        user.refresh_from_db()
+        self.assertEqual(user.username, 'bintou.bah')
+        self.assertTrue(user.check_password('bintou.bah'))
 
 
 class PermissionMatrixTests(TestCase):
