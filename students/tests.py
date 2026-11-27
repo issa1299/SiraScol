@@ -285,3 +285,6 @@ class ParentLinkButtonTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'title="Lier un élève à ce parent"')
         self.assertContains(response, reverse('students:parent_link', args=[parent.pk]))
+
+        detail = client.get(reverse('students:parent_detail', args=[parent.pk]))
+        self.assertEqual(detail.status_code, 200)

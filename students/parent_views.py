@@ -169,7 +169,9 @@ def parent_sync(request):
 @role_required('directeur', 'secretaire')
 def parent_detail(request, pk):
     parent = get_object_or_404(Parent, pk=pk)
-    links = parent.children.select_related('student', 'student__enrollments').all()
+    links = parent.children.select_related('student').prefetch_related(
+        'student__enrollments'
+    ).all()
     # classe actuelle
     link_data = []
     for ps in links:
