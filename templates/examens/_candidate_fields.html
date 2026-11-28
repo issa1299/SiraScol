@@ -10,6 +10,16 @@
     Candidat externe (non élève de l’établissement)
   </label>
 
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div><label class="block text-xs text-slate-500 mb-1">Type de candidature</label>{{ form.candidate_kind }}</div>
+    <div>
+      <label class="block text-xs text-slate-500 mb-1">Numéro officiel de place</label>
+      {{ form.official_number }}
+      <p class="text-[10px] text-slate-400 mt-1">Attribué par l’administration compétente — jamais inventé par SiraScol.</p>
+    </div>
+  </div>
+  <div><label class="block text-xs text-slate-500 mb-1">Académie d’enseignement</label>{{ form.academy }}</div>
+
   <div id="exam-internal">
     <label class="block text-xs text-slate-500 mb-1">Élève de l’établissement</label>
     {{ form.student }}

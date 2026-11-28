@@ -3,6 +3,7 @@
     <p class="text-xs text-blue-700">Numéro de candidat</p>
     <p class="text-xl font-bold text-blue-900 font-mono">{{ candidate.registration_number }}</p>
     <p class="text-[11px] text-blue-700 mt-1">{{ candidate.session.get_type_display }} · {{ candidate.session.academic_year.name }} · {{ candidate.get_registration_status_display }}</p>
+    <p class="text-[11px] text-blue-700 mt-1">N° officiel de place : <strong>{{ candidate.official_number|default:"non attribué" }}</strong> · {{ candidate.get_candidate_kind_display }}</p>
   </div>
 
   <div class="flex items-center gap-3">
@@ -22,6 +23,7 @@
     <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Établissement</dt><dd class="font-semibold mt-1">{{ candidate.school_name|default:"—" }}</dd></div>
     <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Parent / tuteur</dt><dd class="font-semibold mt-1">{{ candidate.parent_name|default:"—" }}<br>{{ candidate.parent_phone|default:"" }}</dd></div>
     <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Centre d’examen</dt><dd class="font-semibold mt-1">{{ candidate.exam_center|default:candidate.session.center|default:"—" }}</dd></div>
+    <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Académie</dt><dd class="font-semibold mt-1">{{ candidate.academy|default:"—" }}</dd></div>
     <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Série / spécialité</dt><dd class="font-semibold mt-1">{{ candidate.get_series_display }} {{ candidate.speciality }}</dd></div>
     <div class="bg-slate-50 rounded-xl p-3"><dt class="text-slate-400 uppercase font-bold text-[10px]">Terminale / langue</dt><dd class="font-semibold mt-1">{{ candidate.terminale_class|default:"—" }} · {{ candidate.get_living_language_display|default:"—" }}</dd></div>
     <div class="bg-slate-50 rounded-xl p-3 col-span-2"><dt class="text-slate-400 uppercase font-bold text-[10px]">Matières et options</dt><dd class="font-semibold mt-1">{{ candidate.subjects_options|default:"—" }}</dd></div>

@@ -2,7 +2,7 @@
 {% block exam_title %}{% if exam_type == 'def' %}Candidats DEF (9ᵉ année){% else %}Candidats BAC (12ᵉ année){% endif %}{% endblock %}
 {% block exam_content %}
 <form method="get" class="bg-white rounded-xl border p-3 mb-4 flex flex-wrap gap-2">
-  <input type="text" name="q" value="{{ q }}" placeholder="Nom, matricule ou n° candidat…" class="form-input flex-1 min-w-[12rem]">
+  <input type="text" name="q" value="{{ q }}" placeholder="Nom, prénom, matricule, n° candidat ou n° officiel…" class="form-input flex-1 min-w-[12rem]">
   <select name="registration_status" class="form-input sm:w-40">
     <option value="">Tous statuts d’inscription</option>
     {% for v, l in reg_statuses %}<option value="{{ v }}" {% if reg_status == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
@@ -27,7 +27,8 @@
   <div class="overflow-x-auto">
     <table class="w-full text-sm min-w-[860px]">
       <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500">
-        <th class="px-4 py-2 text-left">N° candidat</th><th class="px-4 py-2 text-left">Candidat</th>
+        <th class="px-4 py-2 text-left">N° candidat</th><th class="px-4 py-2 text-left">N° officiel</th>
+        <th class="px-4 py-2 text-left">Candidat</th>
         <th class="px-4 py-2 text-left">Matricule</th><th class="px-4 py-2 text-left">Classe</th>
         <th class="px-4 py-2">Statut inscription</th><th class="px-4 py-2">Résultat</th>
         <th class="px-4 py-2 text-right">Actions</th>
@@ -35,8 +36,9 @@
       <tbody class="divide-y">
         {% for c in rows %}<tr>
           <td class="px-4 py-3 font-mono text-xs text-blue-700">{{ c.registration_number }}</td>
+          <td class="px-4 py-3 font-mono text-xs text-slate-700">{{ c.official_number|default:"—" }}</td>
           <td class="px-4 py-3 font-semibold text-slate-800">{{ c.candidate_name }}
-            <span class="block text-[10px] font-normal text-slate-400">{% if c.is_external %}Externe{% else %}Élève de l’établissement{% endif %}</span></td>
+            <span class="block text-[10px] font-normal text-slate-400">{{ c.get_candidate_kind_display }}</span></td>
           <td class="px-4 py-3 text-xs">{{ c.candidate_matricule|default:"—" }}</td>
           <td class="px-4 py-3 text-xs">{{ c.classroom.name|default:"—" }}</td>
           <td class="px-4 py-3 text-center"><span class="px-2 py-1 rounded-lg text-[10px] font-bold
@@ -50,7 +52,7 @@
               {% csrf_token %}<button type="submit" class="text-xs text-slate-400 hover:underline ml-2">Retirer</button>
             </form>
           </td>
-        </tr>{% empty %}<tr><td colspan="7" class="py-12 text-center text-slate-400">Aucun candidat trouvé pour cette recherche.</td></tr>{% endfor %}
+        </tr>{% empty %}<tr><td colspan="8" class="py-12 text-center text-slate-400">Aucun candidat trouvé pour cette recherche.</td></tr>{% endfor %}
       </tbody>
     </table>
   </div>

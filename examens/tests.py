@@ -129,6 +129,75 @@ class ExamensTests(TestCase):
         self.assertTrue(c.external_matricule.startswith('EXT2026'))
         self.assertEqual(c.candidate_birth_date, date(2010, 2, 12))
 
+    def test_official_number_director_only_and_search(self):
+        response = self.client.post(reverse('examens:candidate_create'), {
+            'session': self.session_def.pk, 'student': self.student9.pk,
+            'candidate_kind': 'regulier', 'official_number': 'PLACE-001',
+            'registration_status': 'a_verifier',
+        })
+        self.assertEqual(response.status_code, 302)
+        candidate = Candidate.objects.get(student=self.student9)
+        self.assertEqual(candidate.official_number, 'PLACE-001')
+        self.assertEqual(candidate.candidate_kind, 'regulier')
+        html = self.client.get(
+            reverse('examens:candidats_def') + '?q=PLACE-001'
+        ).content.decode('utf8')
+        self.assertIn(candidate.candidate_name, html)
+        # Un numéro officiel en doublon est refusé.
+        response = self.client.post(reverse('examens:candidate_create'), {
+            'session': self.session_def.pk, 'student': self.student12.pk,
+            'candidate_kind': 'regulier', 'official_number': 'PLACE-001',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Candidate.objects.filter(student=self.student12).exists())
+
+    def test_secretary_cannot_set_official_number(self):
+        secretary = User.objects.create_user(username='exam_sec', password='x')
+        secretary.profile.role = 'secretaire'
+        secretary.profile.save()
+        client = Client()
+        client.force_login(secretary)
+        form = client.get(reverse('examens:candidate_create')).context['form']
+        self.assertTrue(form.fields['official_number'].disabled)
+        response = client.post(reverse('examens:candidate_create'), {
+            'session': self.session_def.pk, 'student': self.student9.pk,
+            'candidate_kind': 'regulier', 'official_number': 'FAKE-001',
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Candidate.objects.get(student=self.student9).official_number, '')
+
+    def test_candidate_kind_rules(self):
+        # Un candidat libre ne peut pas être un élève de l'établissement.
+        response = self.client.post(reverse('examens:candidate_create'), {
+            'session': self.session_def.pk, 'student': self.student9.pk,
+            'candidate_kind': 'libre',
+            'external_last_name': 'Libre', 'external_first_name': 'Faux',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Candidate.objects.filter(student=self.student9).exists())
+        # Un candidat externe doit être déclaré comme libre.
+        response = self.client.post(reverse('examens:candidate_create'), {
+            'session': self.session_def.pk, 'is_external': 'on',
+            'candidate_kind': 'regulier',
+            'external_last_name': 'Externe', 'external_first_name': 'Régulier',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Candidate.objects.exists())
+
+    def test_import_uses_class_series_and_session_academy(self):
+        self.class9.serie = 'Littéraire'
+        self.class9.save()
+        self.session_def.academy = 'Académie Test'
+        self.session_def.save()
+        response = self.client.post(reverse('examens:import_confirm'), {
+            'session': self.session_def.pk, 'students': [self.student9.pk],
+        })
+        self.assertEqual(response.status_code, 302)
+        candidate = Candidate.objects.get(student=self.student9)
+        self.assertEqual(candidate.series, 'Littéraire')
+        self.assertEqual(candidate.academy, 'Académie Test')
+        self.assertEqual(candidate.candidate_kind, 'regulier')
+
     def test_import_from_class_9_and_terminale(self):
         for section, expected in (('candidats_def', 'Neuf'), ('candidats_bac', 'Terminal')):
             response = self.client.get(reverse('examens:import_from_class') + '?section=' + section)

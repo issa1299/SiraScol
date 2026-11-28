@@ -100,6 +100,16 @@ class Candidate(models.Model):
     classroom = models.ForeignKey(ClassRoom, on_delete=models.SET_NULL, null=True, blank=True,
                                   related_name='exam_candidates')
     is_external = models.BooleanField(default=False, verbose_name='Candidat externe')
+    CANDIDATE_KIND_CHOICES = [
+        ('regulier', 'Candidat régulier (élève de l’établissement)'),
+        ('libre', 'Candidat libre (dossier spécifique)'),
+    ]
+    candidate_kind = models.CharField(max_length=10, choices=CANDIDATE_KIND_CHOICES,
+                                      default='regulier', verbose_name='Type de candidature')
+    official_number = models.CharField(max_length=30, blank=True,
+                                       verbose_name='Numéro officiel de place')
+    academy = models.CharField(max_length=150, blank=True,
+                               verbose_name='Académie d’enseignement')
 
     # Identité du candidat externe (élève : ces données sont lues sur ``student``)
     external_matricule = models.CharField(max_length=30, blank=True, verbose_name='Matricule (externe)')
@@ -153,7 +163,11 @@ class Candidate(models.Model):
         constraints = [
             models.UniqueConstraint(
                 fields=['student', 'session'], name='exam_unique_candidate',
-            )
+            ),
+            models.UniqueConstraint(
+                fields=['session', 'official_number'], name='exam_unique_official_number',
+                condition=models.Q(official_number__gt=''),
+            ),
         ]
         ordering = ['registration_number', 'student__last_name']
 

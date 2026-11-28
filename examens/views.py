@@ -81,6 +81,7 @@ def _search(qs, q):
             | Q(external_last_name__icontains=q) | Q(external_first_name__icontains=q)
             | Q(external_matricule__icontains=q)
             | Q(registration_number__icontains=q)
+            | Q(official_number__icontains=q)
         )
     return qs
 
@@ -183,6 +184,10 @@ def import_confirm(request):
                     'school_name': '',
                     'registration_status': 'a_verifier',
                     'exam_center': session.center,
+                    'academy': session.academy,
+                    'candidate_kind': 'regulier',
+                    'series': (enrollment.classroom.serie if enrollment
+                               and enrollment.classroom else ''),
                     'recorded_by': request.user,
                 },
             )
@@ -207,7 +212,7 @@ def inscriptions_home(request):
 def candidate_create(request):
     is_modal = request.GET.get('modal') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
-        form = CandidateForm(request.POST, request.FILES)
+        form = CandidateForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             candidate = form.save(commit=False)
             candidate.recorded_by = request.user
@@ -236,7 +241,7 @@ def candidate_create(request):
             sessions = sessions.filter(academic_year=year)
         if sessions.exists():
             initial['session'] = sessions.first().pk
-        form = CandidateForm(initial=initial)
+        form = CandidateForm(initial=initial, user=request.user)
         if year:
             form.fields['session'].queryset = sessions
     template = 'examens/candidate_form_modal.html' if is_modal else 'examens/candidate_form.html'
@@ -250,14 +255,15 @@ def candidate_create(request):
 def candidate_edit(request, pk):
     candidate = get_object_or_404(Candidate, pk=pk)
     if request.method == 'POST':
-        form = CandidateForm(request.POST, request.FILES, instance=candidate)
+        form = CandidateForm(request.POST, request.FILES, instance=candidate,
+                             user=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, 'Dossier du candidat mis à jour.')
             return redirect(_list_url(candidate.session.type))
         messages.error(request, 'Vérifiez les champs du formulaire.')
     else:
-        form = CandidateForm(instance=candidate)
+        form = CandidateForm(instance=candidate, user=request.user)
     return render(request, 'examens/candidate_edit.html', _base(
         request, 'inscriptions', candidate=candidate, form=form,
     ))
@@ -436,13 +442,19 @@ def bulk_enroll(request):
     students = Student.objects.filter(
         enrollments__classroom_id=classroom_id, enrollments__is_active=True
     )
+    source_serie = (ClassRoom.objects.filter(pk=classroom_id)
+                    .values_list('serie', flat=True).first() or '')
     created = 0
     with transaction.atomic():
         for student in students:
             _, was_created = Candidate.objects.get_or_create(
                 student=student, session=session,
-                defaults={'classroom_id': int(classroom_id), 'recorded_by': request.user,
-                          'registration_status': 'a_verifier', 'exam_center': session.center},
+                defaults={
+                    'classroom_id': int(classroom_id), 'recorded_by': request.user,
+                    'registration_status': 'a_verifier', 'exam_center': session.center,
+                    'academy': session.academy, 'candidate_kind': 'regulier',
+                    'series': source_serie,
+                },
             )
             created += int(was_created)
     messages.success(request, f'{created} candidat(s) inscrit(s) depuis la classe.')
@@ -482,6 +494,8 @@ def excel_import(request):
                     'external_last_name': '' if student else last,
                     'external_first_name': '' if student else first,
                     'is_external': not student,
+                    'candidate_kind': 'libre' if not student else 'regulier',
+                    'academy': session.academy,
                     'parent_name': values[6], 'parent_phone': values[7],
                     'birth_place': values[4], 'school_name': values[5],
                 }
