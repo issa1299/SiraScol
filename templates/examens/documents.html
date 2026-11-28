@@ -1,31 +1,55 @@
 {% extends "examens/base_examens.html" %}
 {% block exam_title %}Documents des candidats{% endblock %}
 {% block exam_content %}
+<div class="mb-4 flex flex-wrap gap-2">
+  <a href="{% url 'examens:required_documents' %}" class="px-4 py-3 min-h-[44px] rounded-xl bg-violet-600 text-white text-xs font-semibold">
+    <i class="fas fa-cog"></i> Configurer les pièces exigées
+  </a>
+</div>
+
 <form method="get" class="bg-white rounded-xl border p-3 mb-4 flex flex-wrap gap-2">
-  <input type="text" name="q" value="{{ q }}" placeholder="Nom, matricule ou n° candidat…" class="form-input flex-1 min-w-[12rem]">
+  <input type="text" name="q" value="{{ q }}" placeholder="Nom, matricule, n° candidat ou n° officiel…" class="form-input flex-1 min-w-[12rem]">
   <button class="bg-slate-800 text-white px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-semibold">Rechercher</button>
 </form>
+
 <div class="bg-white rounded-xl border overflow-hidden">
   <div class="overflow-x-auto">
-    <table class="w-full text-sm min-w-[720px]">
+    <table class="w-full text-sm min-w-[860px]">
       <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500">
-        <th class="px-4 py-2 text-left">N° candidat</th><th class="px-4 py-2 text-left">Candidat</th>
-        <th class="px-4 py-2">Photo</th><th class="px-4 py-2">Extrait</th><th class="px-4 py-2">Autre pièce</th>
+        <th class="px-4 py-2 text-left">Candidat</th><th class="px-4 py-2 text-left">Session</th>
+        <th class="px-4 py-2 text-left">Pièces</th><th class="px-4 py-2">Manquantes</th>
         <th class="px-4 py-2 text-right">Dossier</th>
       </tr></thead>
       <tbody class="divide-y">
-        {% for c in rows %}<tr>
-          <td class="px-4 py-3 font-mono text-xs text-blue-700">{{ c.registration_number }}</td>
-          <td class="px-4 py-3 font-semibold text-slate-800">{{ c.candidate_name }}
-            <span class="block text-[10px] font-normal text-slate-400">{{ c.session.get_type_display }} · {{ c.session.academic_year.name }}</span></td>
-          <td class="px-4 py-3 text-center text-xs">{% if c.photo or c.student.photo %}<span class="text-emerald-600"><i class="fas fa-check-circle"></i> oui</span>{% else %}<span class="text-slate-300">—</span>{% endif %}</td>
-          <td class="px-4 py-3 text-center text-xs">{% if c.birth_certificate %}<a href="{{ c.birth_certificate.url }}" target="_blank" class="text-emerald-600"><i class="fas fa-check-circle"></i> voir</a>{% else %}<span class="text-slate-300">—</span>{% endif %}</td>
-          <td class="px-4 py-3 text-center text-xs">{% if c.other_document %}<a href="{{ c.other_document.url }}" target="_blank" class="text-emerald-600"><i class="fas fa-check-circle"></i> voir</a>{% else %}<span class="text-slate-300">—</span>{% endif %}</td>
-          <td class="px-4 py-3 text-right">
-            <button type="button" onclick="openModalUrl('{% url 'examens:candidate_detail' c.pk %}','Dossier {{ c.registration_number }}')" class="text-xs text-blue-600 hover:underline">Ouvrir</button>
-            <a href="{% url 'examens:candidate_edit' c.pk %}" class="text-xs text-indigo-600 hover:underline ml-2">Compléter</a>
+        {% for row in rows %}<tr>
+          <td class="px-4 py-3">
+            <p class="font-semibold text-slate-800">{{ row.candidate.candidate_name }}</p>
+            <p class="text-[10px] text-slate-400 font-mono">{{ row.candidate.registration_number }}</p>
           </td>
-        </tr>{% empty %}<tr><td colspan="6" class="py-12 text-center text-slate-400">Aucun dossier trouvé.</td></tr>{% endfor %}
+          <td class="px-4 py-3 text-xs">{{ row.candidate.session.get_type_display }} · {{ row.candidate.session.academic_year.name }}</td>
+          <td class="px-4 py-3">
+            <div class="flex flex-wrap gap-1">
+              {% for requirement, piece in row.docs %}
+              <span class="px-2 py-0.5 rounded-lg text-[10px] font-semibold
+                {% if not piece or piece.status == 'manquant' %}bg-slate-100 text-slate-500
+                {% elif piece.status == 'valide' %}bg-emerald-50 text-emerald-700
+                {% elif piece.status == 'rejete' %}bg-rose-50 text-rose-700
+                {% else %}bg-amber-50 text-amber-700{% endif %}"
+                title="{{ requirement.name }}">
+                {{ requirement.name|truncatechars:18 }}
+                {% if piece %}· {{ piece.get_status_display }}{% else %}· manquant{% endif %}
+              </span>
+              {% empty %}<span class="text-[10px] text-slate-400">Aucune pièce configurée</span>{% endfor %}
+            </div>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <span class="px-2 py-1 rounded-lg text-xs font-bold {% if row.missing %}bg-rose-50 text-rose-700{% else %}bg-emerald-50 text-emerald-700{% endif %}">{{ row.missing }}</span>
+          </td>
+          <td class="px-4 py-3 text-right">
+            <button type="button" onclick="openModalUrl('{% url 'examens:candidate_detail' row.candidate.pk %}','Dossier {{ row.candidate.registration_number }}')" class="text-xs text-blue-600 hover:underline">Ouvrir</button>
+            <a href="{% url 'examens:candidate_edit' row.candidate.pk %}" class="text-xs text-indigo-600 hover:underline ml-2">Compléter</a>
+          </td>
+        </tr>{% empty %}<tr><td colspan="5" class="py-12 text-center text-slate-400">Aucun dossier trouvé.</td></tr>{% endfor %}
       </tbody>
     </table>
   </div>

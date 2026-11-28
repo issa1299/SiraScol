@@ -62,6 +62,71 @@ class ExamSession(models.Model):
         super().save(*args, **kwargs)
 
 
+class RequiredDocument(models.Model):
+    """Pièce exigée pour une session donnée (modalités officielles)."""
+    session = models.ForeignKey(ExamSession, on_delete=models.CASCADE,
+                                related_name='required_documents')
+    code = models.CharField(max_length=40, verbose_name='Code')
+    name = models.CharField(max_length=120, verbose_name='Nom de la pièce')
+    is_required = models.BooleanField(default=True, verbose_name='Obligatoire')
+    order = models.PositiveIntegerField(default=0, verbose_name='Ordre')
+    help_text = models.TextField(blank=True, verbose_name='Précisions')
+
+    class Meta:
+        verbose_name = 'Pièce exigée'
+        verbose_name_plural = 'Pièces exigées'
+        constraints = [
+            models.UniqueConstraint(fields=['session', 'code'],
+                                    name='exam_unique_required_document'),
+        ]
+        ordering = ['order', 'name']
+
+    def __str__(self):
+        return f'{self.name} ({self.session})'
+
+
+class CandidateDocument(models.Model):
+    """Pièce déposée pour un candidat, avec statut de vérification."""
+    STATUS_CHOICES = [
+        ('manquant', 'Manquant'),
+        ('recu', 'Reçu'),
+        ('a_verifier', 'À vérifier'),
+        ('valide', 'Validé'),
+        ('rejete', 'Rejeté'),
+    ]
+    candidate = models.ForeignKey('Candidate', on_delete=models.CASCADE,
+                                  related_name='documents')
+    required_document = models.ForeignKey(RequiredDocument, on_delete=models.SET_NULL,
+                                          null=True, blank=True,
+                                          related_name='candidate_documents')
+    legacy_label = models.CharField(max_length=120, blank=True,
+                                    verbose_name='Libellé (pièce historique)')
+    file = models.FileField(upload_to='examens/documents/', blank=True, null=True)
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='manquant')
+    deposited_at = models.DateTimeField(null=True, blank=True, verbose_name='Date de dépôt')
+    verified_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
+                                    null=True, blank=True, related_name='exam_documents_verified')
+    verified_at = models.DateTimeField(null=True, blank=True)
+    notes = models.TextField(blank=True)
+
+    class Meta:
+        verbose_name = 'Pièce du candidat'
+        verbose_name_plural = 'Pièces des candidats'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['candidate', 'required_document'],
+                name='exam_unique_candidate_document',
+                condition=models.Q(required_document__isnull=False),
+            )
+        ]
+        ordering = ['required_document__order', 'id']
+
+    def __str__(self):
+        label = (self.required_document.name if self.required_document
+                 else self.legacy_label or 'Pièce')
+        return f'{label} — {self.candidate}'
+
+
 class Candidate(models.Model):
     STATUS_CHOICES = [
         ('inscrit', 'Inscrit'),

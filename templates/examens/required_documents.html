@@ -1,0 +1,60 @@
+{% extends "examens/base_examens.html" %}
+{% block exam_title %}Configuration des pièces exigées{% endblock %}
+{% block exam_content %}
+<div class="mb-4">
+  <a href="{% url 'examens:documents' %}" class="text-sm text-slate-500"><i class="fas fa-arrow-left"></i> Documents des candidats</a>
+  <h1 class="text-xl font-bold text-slate-800 mt-1">Pièces exigées par session</h1>
+  <p class="text-xs text-slate-500">Les exigences sont configurables selon les instructions officielles de chaque session.</p>
+</div>
+
+<form method="get" class="bg-white rounded-xl border p-3 mb-4 flex flex-wrap gap-2 items-end">
+  <div class="flex-1 min-w-[16rem]">
+    <label class="text-xs text-slate-500">Session</label>
+    <select name="session" onchange="this.form.submit()" class="form-input mt-1">
+      {% for s in sessions %}<option value="{{ s.pk }}" {% if session and session.pk == s.pk %}selected{% endif %}>{{ s.get_type_display }} — {{ s.academic_year.name }} ({{ s.kind }})</option>{% endfor %}
+    </select>
+  </div>
+</form>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+  <div class="bg-white rounded-xl border p-5">
+    <p class="text-sm font-bold text-slate-800 mb-3"><i class="fas fa-plus text-blue-600"></i> Ajouter une pièce</p>
+    {% if form.errors %}<div class="mb-3 rounded-xl bg-rose-50 p-3 text-xs text-rose-700">{{ form.errors }}</div>{% endif %}
+    <form method="post" class="space-y-3">
+      {% csrf_token %}
+      <div><label class="block text-xs text-slate-500 mb-1">Session *</label>{{ form.session }}</div>
+      <div><label class="block text-xs text-slate-500 mb-1">Code *</label>{{ form.code }}</div>
+      <div><label class="block text-xs text-slate-500 mb-1">Nom de la pièce *</label>{{ form.name }}</div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="block text-xs text-slate-500 mb-1">Ordre</label>{{ form.order }}</div>
+        <label class="flex items-center gap-2 text-xs text-slate-700 self-end pb-2">{{ form.is_required }} Obligatoire</label>
+      </div>
+      <div><label class="block text-xs text-slate-500 mb-1">Précisions</label>{{ form.help_text }}</div>
+      <button class="bg-blue-600 text-white px-5 py-3 min-h-[44px] rounded-xl text-xs font-semibold">Ajouter</button>
+    </form>
+  </div>
+
+  <div class="lg:col-span-2 bg-white rounded-xl border overflow-hidden">
+    <div class="px-4 py-3 border-b"><p class="text-sm font-bold text-slate-800">Pièces configurées{% if session %} — {{ session }}{% endif %}</p></div>
+    <table class="w-full text-sm">
+      <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500">
+        <th class="px-4 py-2 text-left">Pièce</th><th class="px-4 py-2">Obligatoire</th>
+        <th class="px-4 py-2">Ordre</th><th class="px-4 py-2"></th>
+      </tr></thead>
+      <tbody class="divide-y">
+        {% for d in documents %}<tr>
+          <td class="px-4 py-3"><p class="font-semibold">{{ d.name }}</p><p class="text-[10px] text-slate-400 font-mono">{{ d.code }}</p>
+            {% if d.help_text %}<p class="text-[10px] text-slate-500">{{ d.help_text }}</p>{% endif %}</td>
+          <td class="px-4 py-3 text-center">{% if d.is_required %}<span class="text-emerald-600"><i class="fas fa-check"></i>{% else %}<span class="text-slate-400">—{% endif %}</span></td>
+          <td class="px-4 py-3 text-center">{{ d.order }}</td>
+          <td class="px-4 py-3 text-right">
+            <form method="post" action="{% url 'examens:required_document_delete' d.pk %}" onsubmit="return confirm('Retirer cette pièce exigée ?');">
+              {% csrf_token %}<button class="text-xs text-rose-600 hover:underline">Retirer</button>
+            </form>
+          </td>
+        </tr>{% empty %}<tr><td colspan="4" class="py-10 text-center text-slate-400">Aucune pièce configurée pour cette session.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

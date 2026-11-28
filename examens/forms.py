@@ -8,7 +8,7 @@ from core.permissions import get_role
 from core.widgets import SmartDateInput
 from students.models import Student
 
-from .models import Candidate, ExamSession
+from .models import Candidate, ExamSession, RequiredDocument
 
 
 class SessionForm(forms.ModelForm):
@@ -44,6 +44,24 @@ class SessionForm(forms.ModelForm):
         if start and end and end < start:
             self.add_error('end_date', 'La date de fin doit être postérieure au début.')
         return cleaned
+
+
+class RequiredDocumentForm(forms.ModelForm):
+    """Configuration d'une pièce exigée pour une session."""
+
+    class Meta:
+        model = RequiredDocument
+        fields = ['session', 'code', 'name', 'is_required', 'order', 'help_text']
+        widgets = {
+            'code': forms.TextInput(attrs={'placeholder': 'ex. extrait_naissance'}),
+            'name': forms.TextInput(attrs={'placeholder': 'Nom de la pièce'}),
+            'help_text': forms.Textarea(attrs={'rows': 2}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs['class'] = 'form-input'
 
 
 class CandidateForm(forms.ModelForm):

@@ -11,7 +11,7 @@ from django.urls import reverse
 from academics.models import AcademicYear, ClassRoom, Cycle, Level
 from students.models import Enrollment, Student
 
-from .models import Candidate, ExamSession
+from .models import Candidate, CandidateDocument, ExamSession, RequiredDocument
 
 
 class ExamensTests(TestCase):
@@ -60,8 +60,8 @@ class ExamensTests(TestCase):
 
     def test_menu_pages_load(self):
         for name in ('dashboard', 'sessions', 'candidats_def', 'candidats_bac',
-                     'inscriptions', 'documents', 'lists_stats', 'transmission',
-                     'results', 'session_create', 'excel_import'):
+                     'inscriptions', 'documents', 'required_documents', 'lists_stats',
+                     'transmission', 'results', 'session_create', 'excel_import'):
             response = self.client.get(reverse('examens:' + name))
             self.assertEqual(response.status_code, 200, name)
 
@@ -197,6 +197,65 @@ class ExamensTests(TestCase):
         self.assertEqual(candidate.series, 'Littéraire')
         self.assertEqual(candidate.academy, 'Académie Test')
         self.assertEqual(candidate.candidate_kind, 'regulier')
+
+    def test_required_documents_config_upload_and_validation(self):
+        requirement = RequiredDocument.objects.create(
+            session=self.session_def, code='photo', name='Photo d’identité',
+            is_required=True, order=1,
+        )
+        html = self.client.get(
+            reverse('examens:required_documents') + f'?session={self.session_def.pk}'
+        ).content.decode('utf8')
+        self.assertIn('Photo d’identité', html)
+
+        candidate = Candidate.objects.create(student=self.student9, session=self.session_def)
+        upload = SimpleUploadedFile('photo.png', b'fakepng', content_type='image/png')
+        response = self.client.post(
+            reverse('examens:candidate_document_upload', args=[candidate.pk, requirement.pk]),
+            {'file': upload},
+        )
+        self.assertEqual(response.status_code, 302)
+        piece = CandidateDocument.objects.get(candidate=candidate)
+        self.assertEqual(piece.status, 'recu')
+        self.assertIsNotNone(piece.deposited_at)
+
+        response = self.client.post(
+            reverse('examens:candidate_document_status', args=[candidate.pk, piece.pk]),
+            {'status': 'valide'},
+        )
+        self.assertEqual(response.status_code, 302)
+        piece.refresh_from_db()
+        self.assertEqual(piece.status, 'valide')
+        self.assertEqual(piece.verified_by, self.user)
+        self.assertIsNotNone(piece.verified_at)
+
+        self.assertEqual(
+            self.client.get(reverse('examens:candidate_detail', args=[candidate.pk])).status_code,
+            200,
+        )
+        html = self.client.get(reverse('examens:documents')).content.decode('utf8')
+        self.assertIn(candidate.candidate_name, html)
+
+    def test_secretary_cannot_validate_document(self):
+        requirement = RequiredDocument.objects.create(
+            session=self.session_def, code='extrait', name='Extrait', is_required=True
+        )
+        candidate = Candidate.objects.create(student=self.student9, session=self.session_def)
+        piece = CandidateDocument.objects.create(
+            candidate=candidate, required_document=requirement, status='recu'
+        )
+        secretary = User.objects.create_user(username='exam_doc_sec', password='x')
+        secretary.profile.role = 'secretaire'
+        secretary.profile.save()
+        client = Client()
+        client.force_login(secretary)
+        response = client.post(
+            reverse('examens:candidate_document_status', args=[candidate.pk, piece.pk]),
+            {'status': 'valide'},
+        )
+        self.assertEqual(response.status_code, 302)
+        piece.refresh_from_db()
+        self.assertEqual(piece.status, 'recu')
 
     def test_import_from_class_9_and_terminale(self):
         for section, expected in (('candidats_def', 'Neuf'), ('candidats_bac', 'Terminal')):

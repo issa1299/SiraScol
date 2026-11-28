@@ -14,6 +14,7 @@ from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from academics.models import AcademicYear, ClassRoom
@@ -21,8 +22,8 @@ from core.permissions import role_required
 from core.year_context import get_selected_year
 from students.models import Enrollment, Student
 
-from .forms import CandidateForm, SessionForm
-from .models import Candidate, ExamSession
+from .forms import CandidateForm, RequiredDocumentForm, SessionForm
+from .models import Candidate, CandidateDocument, ExamSession, RequiredDocument
 
 
 def _list_url(exam_type):
@@ -282,19 +283,116 @@ def candidate_delete(request, pk):
 @role_required('directeur', 'secretaire', 'admin')
 def candidate_detail(request, pk):
     candidate = get_object_or_404(Candidate, pk=pk)
+    requirements = RequiredDocument.objects.filter(
+        session=candidate.session
+    ).order_by('order', 'name')
+    existing = {d.required_document_id: d for d in candidate.documents.all()}
+    documents = [(requirement, existing.get(requirement.pk)) for requirement in requirements]
     return render(request, 'examens/candidate_detail.html', _base(
-        request, 'documents', candidate=candidate,
+        request, 'documents', candidate=candidate, documents=documents,
+        status_choices=CandidateDocument.STATUS_CHOICES,
     ))
 
 
 @role_required('directeur', 'secretaire', 'admin')
 def documents(request):
+    """Suivi des pièces exigées, avec configuration par session."""
+    year = get_selected_year(request)
+    sessions = ExamSession.objects.filter(academic_year=year) if year else ExamSession.objects.all()
+    required = list(RequiredDocument.objects.filter(
+        session__in=sessions
+    ).select_related('session').order_by('session__date', 'order', 'name'))
+
     q = (request.GET.get('q') or '').strip()
     qs = _search(Candidate.objects.select_related('student', 'session'), q)
+    if year:
+        qs = qs.filter(session__academic_year=year)
     qs = qs.order_by('registration_number')
+
+    rows = []
+    for candidate in qs[:300]:
+        by_requirement = {d.required_document_id: d for d in candidate.documents.all()}
+        docs = []
+        missing = 0
+        for requirement in required:
+            if requirement.session_id != candidate.session_id:
+                continue
+            piece = by_requirement.get(requirement.pk)
+            if piece is None or piece.status == 'manquant':
+                if requirement.is_required:
+                    missing += 1
+            docs.append((requirement, piece))
+        rows.append({'candidate': candidate, 'docs': docs, 'missing': missing})
     return render(request, 'examens/documents.html', _base(
-        request, 'documents', rows=qs[:300], q=q,
+        request, 'documents', rows=rows, q=q, required=required,
     ))
+
+
+@role_required('admin', 'directeur')
+def required_documents(request):
+    """Configuration des pièces exigées pour une session."""
+    sessions = ExamSession.objects.select_related('academic_year').order_by('-date')
+    session_id = request.GET.get('session') or (sessions.first().pk if sessions else None)
+    session = sessions.filter(pk=session_id).first() if session_id else None
+    if request.method == 'POST':
+        form = RequiredDocumentForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Pièce exigée ajoutée.')
+            return redirect(reverse('examens:required_documents')
+                            + f'?session={form.cleaned_data["session"].pk}')
+        messages.error(request, 'Vérifiez les champs.')
+    else:
+        form = RequiredDocumentForm(initial={'session': session} if session else {})
+    documents = (RequiredDocument.objects.filter(session=session).order_by('order', 'name')
+                 if session else RequiredDocument.objects.none())
+    return render(request, 'examens/required_documents.html', _base(
+        request, 'documents', sessions=sessions, session=session, form=form,
+        documents=documents,
+    ))
+
+
+@role_required('admin', 'directeur')
+@require_POST
+def required_document_delete(request, pk):
+    get_object_or_404(RequiredDocument, pk=pk).delete()
+    messages.success(request, 'Pièce exigée retirée.')
+    return redirect('examens:required_documents')
+
+
+@role_required('directeur', 'secretaire', 'admin')
+@require_POST
+def candidate_document_upload(request, pk, document_id):
+    candidate = get_object_or_404(Candidate, pk=pk)
+    requirement = get_object_or_404(RequiredDocument, pk=document_id)
+    if requirement.session_id != candidate.session_id or not request.FILES.get('file'):
+        messages.error(request, 'Dépôt invalide.')
+        return redirect('examens:candidate_detail', pk=pk)
+    now = timezone.now()
+    piece, _ = CandidateDocument.objects.update_or_create(
+        candidate=candidate, required_document=requirement,
+        defaults={
+            'file': request.FILES['file'], 'status': 'recu',
+            'deposited_at': now, 'verified_by': None, 'verified_at': None,
+        },
+    )
+    messages.success(request, f'Pièce « {requirement.name} » déposée.')
+    return redirect('examens:candidate_detail', pk=pk)
+
+
+@role_required('admin', 'directeur')
+@require_POST
+def candidate_document_status(request, pk, doc_pk):
+    piece = get_object_or_404(CandidateDocument, pk=doc_pk, candidate_id=pk)
+    status = request.POST.get('status')
+    if status in dict(CandidateDocument.STATUS_CHOICES):
+        piece.status = status
+        if status in ('valide', 'rejete', 'a_verifier'):
+            piece.verified_by = request.user
+            piece.verified_at = timezone.now()
+        piece.save()
+        messages.success(request, 'Statut de la pièce mis à jour.')
+    return redirect('examens:candidate_detail', pk=pk)
 
 
 @role_required('directeur', 'secretaire', 'admin')
