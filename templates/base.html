@@ -454,24 +454,8 @@
                 </a>
                 {% endif %}
                 {% if user_role == 'directeur' or user_role == 'secretaire' %}
-                <div class="nav-section">Examens nationaux</div>
-                <a href="{% url 'examens:candidats_def' %}" class="nav-link {% if request.resolver_match.url_name == 'candidats_def' %}active{% endif %}">
-                    <i class="fas fa-user-graduate w-5 text-center"></i> Candidats DEF (9ᵉ année)
-                </a>
-                <a href="{% url 'examens:candidats_bac' %}" class="nav-link {% if request.resolver_match.url_name == 'candidats_bac' %}active{% endif %}">
-                    <i class="fas fa-user-tie w-5 text-center"></i> Candidats BAC (12ᵉ année)
-                </a>
-                <a href="{% url 'examens:inscriptions' %}" class="nav-link {% if request.resolver_match.url_name in 'inscriptions,candidate_create,import_from_class,excel_import' %}active{% endif %}">
-                    <i class="fas fa-file-signature w-5 text-center"></i> Inscriptions aux examens
-                </a>
-                <a href="{% url 'examens:documents' %}" class="nav-link {% if request.resolver_match.url_name == 'documents' %}active{% endif %}">
-                    <i class="fas fa-folder-open w-5 text-center"></i> Documents des candidats
-                </a>
-                <a href="{% url 'examens:lists_stats' %}" class="nav-link {% if request.resolver_match.url_name == 'lists_stats' %}active{% endif %}">
-                    <i class="fas fa-chart-bar w-5 text-center"></i> Listes et statistiques
-                </a>
-                <a href="{% url 'examens:results' %}" class="nav-link {% if request.resolver_match.url_name == 'results' %}active{% endif %}">
-                    <i class="fas fa-trophy w-5 text-center"></i> Résultats des examens
+                <a href="{% url 'examens:dashboard' %}" class="nav-link {% if '/examens/' in request.path %}active{% endif %}">
+                    <i class="fas fa-graduation-cap w-5 text-center"></i> Examens nationaux
                 </a>
                 {% endif %}
                 {# —— PARENTS —— #}

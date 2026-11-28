@@ -64,6 +64,14 @@ class ExamensTests(TestCase):
             response = self.client.get(reverse('examens:' + name))
             self.assertEqual(response.status_code, 200, name)
 
+    def test_single_sidebar_entry_for_exams(self):
+        html = self.client.get(reverse('examens:dashboard')).content.decode('utf8')
+        # Une seule entrée « Examens nationaux » dans la barre latérale, et les
+        # rubriques ne subsistent que dans les onglets internes du module.
+        self.assertEqual(html.count('Candidats DEF (9ᵉ année)'), 1)
+        self.assertEqual(html.count('Candidats BAC (12ᵉ année)'), 1)
+        self.assertIn('Examens nationaux', html)
+
     def test_candidate_number_generation(self):
         d = Candidate.objects.create(student=self.student9, session=self.session_def)
         b = Candidate.objects.create(student=self.student12, session=self.session_bac)
