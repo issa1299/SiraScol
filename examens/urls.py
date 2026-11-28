@@ -13,6 +13,8 @@ urlpatterns = [
     path('documents/', views.documents, name='documents'),
     path('listes-statistiques/', views.lists_stats, name='lists_stats'),
     path('resultats/', views.results, name='results'),
+    path('sessions/', views.sessions_home, name='sessions'),
+    path('transmission/', views.transmission_home, name='transmission'),
 
     # Inscriptions
     path('candidats/', views.candidate_list, name='candidate_list'),
@@ -28,5 +30,7 @@ urlpatterns = [
 
     # Sessions & exports
     path('sessions/ajouter/', views.session_create, name='session_create'),
+    path('sessions/<int:pk>/modifier/', views.session_edit, name='session_edit'),
+    path('sessions/<int:pk>/statut/', views.session_status, name='session_status'),
     path('export/', views.export_report, name='export'),
 ]

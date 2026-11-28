@@ -1,23 +1,32 @@
 {% extends "examens/base_examens.html" %}
-{% block exam_title %}Nouvelle session{% endblock %}
+{% block exam_title %}{% if is_edit %}Modifier la session{% else %}Nouvelle session{% endif %}{% endblock %}
 {% block exam_content %}
-<div class="max-w-lg bg-white rounded-xl border p-5">
+<div class="max-w-3xl bg-white rounded-xl border p-5">
+  <p class="text-sm font-bold text-slate-800 mb-1"><i class="fas fa-calendar-plus text-blue-600"></i> {% if is_edit %}Modifier la session{% else %}Créer une session d'examen{% endif %}</p>
+  <p class="text-xs text-slate-500 mb-4">La session de rattrapage n'est jamais créée automatiquement : saisissez le type voulu.</p>
+  {% if form.errors %}<div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 p-3 text-xs text-rose-700">{{ form.errors }}</div>{% endif %}
   <form method="post" action="{{ form_action }}" class="space-y-3">
     {% csrf_token %}
-    <div class="grid grid-cols-2 gap-3">
-      <div><label class="block text-xs text-slate-500 mb-1">Examen *</label>
-        <select name="type" class="form-input">{% for v, l in types %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
-      <div><label class="block text-xs text-slate-500 mb-1">Session *</label>
-        <select name="session" class="form-input">{% for v, l in sessions %}<option value="{{ v }}">{{ l }}</option>{% endfor %}</select></div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div><label class="block text-xs text-slate-500 mb-1">Examen *</label>{{ form.type }}</div>
+      <div><label class="block text-xs text-slate-500 mb-1">Année scolaire *</label>{{ form.academic_year }}</div>
     </div>
-    <div class="grid grid-cols-2 gap-3">
-      <div><label class="block text-xs text-slate-500 mb-1">Année scolaire *</label>
-        <select name="academic_year" class="form-input">{% for y in years %}<option value="{{ y.id }}" {% if y.is_current %}selected{% endif %}>{{ y.name }}</option>{% endfor %}</select></div>
-      <div><label class="block text-xs text-slate-500 mb-1">Date de l’examen *</label>
-        <input type="date" name="date" value="{{ today|date:'Y-m-d' }}" class="form-input"></div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div><label class="block text-xs text-slate-500 mb-1">Type de session</label>{{ form.kind }}</div>
+      <div><label class="block text-xs text-slate-500 mb-1">Statut de la session</label>{{ form.status }}</div>
     </div>
-    <div><label class="block text-xs text-slate-500 mb-1">Centre d’examen</label><input type="text" name="center" class="form-input"></div>
-    <button class="bg-blue-600 text-white px-5 py-3 min-h-[44px] rounded-xl text-xs font-semibold">Enregistrer la session</button>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div><label class="block text-xs text-slate-500 mb-1">Date de début *</label>{{ form.start_date }}</div>
+      <div><label class="block text-xs text-slate-500 mb-1">Date de fin *</label>{{ form.end_date }}</div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <div><label class="block text-xs text-slate-500 mb-1">Académie d'enseignement</label>{{ form.academy }}</div>
+      <div><label class="block text-xs text-slate-500 mb-1">Centre d'examen</label>{{ form.center }}</div>
+    </div>
+    <div class="flex gap-2 pt-3 border-t">
+      <button class="bg-blue-600 text-white px-5 py-3 min-h-[44px] rounded-xl text-xs font-semibold">Enregistrer la session</button>
+      <a href="{% url 'examens:sessions' %}" class="px-4 py-3 rounded-xl bg-slate-100 text-slate-700 text-xs font-semibold">Annuler</a>
+    </div>
   </form>
 </div>
 {% endblock %}

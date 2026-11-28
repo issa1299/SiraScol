@@ -7,7 +7,42 @@ from django import forms
 from core.widgets import SmartDateInput
 from students.models import Student
 
-from .models import Candidate
+from .models import Candidate, ExamSession
+
+
+class SessionForm(forms.ModelForm):
+    """Création / modification d'une session DEF ou BAC."""
+
+    class Meta:
+        model = ExamSession
+        fields = ['type', 'academic_year', 'kind', 'start_date', 'end_date',
+                  'academy', 'center', 'status']
+        widgets = {
+            'start_date': SmartDateInput(),
+            'end_date': SmartDateInput(),
+            'academy': forms.TextInput(attrs={'placeholder': 'Académie d’enseignement'}),
+            'center': forms.TextInput(attrs={'placeholder': 'Centre d’examen'}),
+            'kind': forms.TextInput(attrs={'placeholder': 'ex. normale, rattrapage'}),
+        }
+        labels = {
+            'kind': 'Type de session',
+            'academy': 'Académie d’enseignement',
+            'status': 'Statut de la session',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            current = field.widget.attrs.get('class', '')
+            if 'smart-date-text' not in current:
+                field.widget.attrs['class'] = (current + ' form-input').strip()
+
+    def clean(self):
+        cleaned = super().clean()
+        start, end = cleaned.get('start_date'), cleaned.get('end_date')
+        if start and end and end < start:
+            self.add_error('end_date', 'La date de fin doit être postérieure au début.')
+        return cleaned
 
 
 class CandidateForm(forms.ModelForm):

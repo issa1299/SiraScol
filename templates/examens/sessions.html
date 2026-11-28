@@ -1,0 +1,57 @@
+{% extends "examens/base_examens.html" %}
+{% block exam_title %}Sessions d'examen{% endblock %}
+{% block exam_content %}
+<div class="mb-4 flex flex-wrap gap-2">
+  <button type="button" onclick="openModalUrl('{% url 'examens:session_create' %}','Nouvelle session')"
+          class="px-4 py-3 min-h-[44px] rounded-xl bg-blue-600 text-white text-xs font-semibold">
+    <i class="fas fa-plus"></i> Nouvelle session
+  </button>
+</div>
+
+<form method="get" class="bg-white rounded-xl border p-3 mb-4 flex flex-wrap gap-2">
+  <select name="type" class="form-input sm:w-64">
+    <option value="">Tous les examens</option>
+    {% for v, l in types %}<option value="{{ v }}" {% if type_filter == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+  </select>
+  <select name="status" class="form-input sm:w-48">
+    <option value="">Tous les statuts</option>
+    {% for v, l in statuses %}<option value="{{ v }}" {% if status_filter == v %}selected{% endif %}>{{ l }}</option>{% endfor %}
+  </select>
+  <button class="bg-slate-800 text-white px-4 py-2.5 min-h-[44px] rounded-xl text-xs font-semibold">Filtrer</button>
+</form>
+
+<div class="bg-white rounded-xl border overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm min-w-[900px]">
+      <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500">
+        <th class="px-3 py-2 text-left">Examen</th><th class="px-3 py-2 text-left">Année</th>
+        <th class="px-3 py-2 text-left">Type</th><th class="px-3 py-2">Début</th>
+        <th class="px-3 py-2">Fin</th><th class="px-3 py-2 text-left">Académie</th>
+        <th class="px-3 py-2 text-left">Centre</th><th class="px-3 py-2">Statut</th>
+        <th class="px-3 py-2">Candidats</th><th class="px-3 py-2 text-right">Actions</th>
+      </tr></thead>
+      <tbody class="divide-y">
+        {% for s in sessions %}<tr>
+          <td class="px-3 py-3 font-semibold">{{ s.get_type_display }}</td>
+          <td class="px-3 py-3">{{ s.academic_year.name }}</td>
+          <td class="px-3 py-3">{{ s.kind }}</td>
+          <td class="px-3 py-3 text-center">{{ s.start_date|date:"d/m/Y"|default:"—" }}</td>
+          <td class="px-3 py-3 text-center">{{ s.end_date|date:"d/m/Y"|default:"—" }}</td>
+          <td class="px-3 py-3 text-xs">{{ s.academy|default:"—" }}</td>
+          <td class="px-3 py-3 text-xs">{{ s.center|default:"—" }}</td>
+          <td class="px-3 py-3 text-center"><span class="px-2 py-1 rounded-lg text-[10px] font-bold
+            {% if s.status == 'ouverte' %}bg-emerald-50 text-emerald-700{% elif s.status == 'cloturee' %}bg-rose-50 text-rose-700{% else %}bg-slate-100 text-slate-600{% endif %}">{{ s.get_status_display }}</span></td>
+          <td class="px-3 py-3 text-center font-bold text-blue-700">{{ s.candidates.count }}</td>
+          <td class="px-3 py-3 text-right whitespace-nowrap">
+            <a href="{% url 'examens:session_edit' s.pk %}" class="text-xs text-blue-600 hover:underline">Modifier</a>
+            {% if user_role == 'directeur' %}
+            {% if s.status != 'ouverte' %}<form method="post" action="{% url 'examens:session_status' s.pk %}" class="inline m-0">{% csrf_token %}<input type="hidden" name="status" value="ouverte"><button class="text-xs text-emerald-600 hover:underline ml-2">Ouvrir</button></form>{% endif %}
+            {% if s.status != 'cloturee' %}<form method="post" action="{% url 'examens:session_status' s.pk %}" class="inline m-0">{% csrf_token %}<input type="hidden" name="status" value="cloturee"><button class="text-xs text-rose-600 hover:underline ml-2" onclick="return confirm('Clôturer définitivement cette session ?');">Clôturer</button></form>{% endif %}
+            {% endif %}
+          </td>
+        </tr>{% empty %}<tr><td colspan="10" class="py-12 text-center text-slate-400">Aucune session pour cette année scolaire.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

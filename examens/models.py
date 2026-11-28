@@ -11,13 +11,27 @@ class ExamSession(models.Model):
     TYPE_CHOICES = [('def', 'DEF — Diplôme d’Études Fondamentales'),
                     ('bac', 'BAC — Baccalauréat')]
     SESSION_CHOICES = [('normal', 'Session normale'), ('rattrapage', 'Rattrapage')]
+    STATUS_CHOICES = [
+        ('preparation', 'Préparation'),
+        ('ouverte', 'Ouverte'),
+        ('cloturee', 'Clôturée'),
+    ]
 
     type = models.CharField(max_length=5, choices=TYPE_CHOICES)
     academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE,
                                       related_name='exam_sessions')
+    # `session` est conservé pour compatibilité ; `kind` est la typologie
+    # configurable (normale, rattrapage, session spéciale…), jamais imposée.
     session = models.CharField(max_length=12, choices=SESSION_CHOICES, default='normal')
+    kind = models.CharField(max_length=40, default='normale', verbose_name='Type de session')
     date = models.DateField(verbose_name='Date de l’examen')
+    start_date = models.DateField(null=True, blank=True, verbose_name='Date de début')
+    end_date = models.DateField(null=True, blank=True, verbose_name='Date de fin')
+    academy = models.CharField(max_length=150, blank=True,
+                               verbose_name='Académie d’enseignement')
     center = models.CharField(max_length=150, blank=True, verbose_name='Centre d’examen')
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default='preparation',
+                              verbose_name='Statut de la session')
     is_open = models.BooleanField(default=True, verbose_name='Inscriptions ouvertes')
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -26,12 +40,26 @@ class ExamSession(models.Model):
             models.UniqueConstraint(
                 fields=['type', 'academic_year', 'session'],
                 name='exam_unique_session',
-            )
+            ),
+            models.UniqueConstraint(
+                fields=['type', 'academic_year', 'kind'],
+                name='exam_unique_session_kind',
+            ),
         ]
         ordering = ['-date']
 
     def __str__(self):
-        return f'{self.get_type_display()} — {self.academic_year.name} ({self.get_session_display()})'
+        return (f'{self.get_type_display()} — {self.academic_year.name} '
+                f'({self.kind}, {self.get_status_display()})')
+
+    def save(self, *args, **kwargs):
+        if not self.start_date:
+            self.start_date = self.date
+        if not self.end_date:
+            self.end_date = self.date
+        # `is_open` reste cohérent avec le statut pour le code historique.
+        self.is_open = self.status == 'ouverte'
+        super().save(*args, **kwargs)
 
 
 class Candidate(models.Model):

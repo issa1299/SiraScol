@@ -1,5 +1,5 @@
 {% extends "examens/base_examens.html" %}
-{% block exam_title %}Sessions d’examens{% endblock %}
+{% block exam_title %}Tableau de bord{% endblock %}
 {% block exam_content %}
 <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-5">
   <div class="bg-white rounded-xl border p-4"><p class="text-[10px] uppercase font-bold text-slate-400">Total candidats</p><p class="text-2xl font-bold text-slate-900 mt-1">{{ stats.total }}</p></div>
@@ -11,23 +11,29 @@
 
 <div class="flex flex-wrap gap-2 mb-5">
   <a href="{% url 'examens:candidate_create' %}" class="px-4 py-3 min-h-[44px] rounded-xl bg-blue-600 text-white text-xs font-semibold"><i class="fas fa-user-plus"></i> Inscrire un candidat</a>
-  <button type="button" onclick="openModalUrl('{% url 'examens:session_create' %}','Nouvelle session')" class="px-4 py-3 min-h-[44px] rounded-xl bg-slate-700 text-white text-xs font-semibold"><i class="fas fa-calendar-plus"></i> Nouvelle session</button>
+  <a href="{% url 'examens:sessions' %}" class="px-4 py-3 min-h-[44px] rounded-xl bg-slate-700 text-white text-xs font-semibold"><i class="fas fa-calendar"></i> Gérer les sessions</a>
 </div>
 
 <div class="bg-white rounded-xl border overflow-hidden">
-  <div class="px-4 py-3 border-b"><p class="text-sm font-bold text-slate-800"><i class="fas fa-calendar text-blue-600"></i> Sessions d’examen</p></div>
+  <div class="px-4 py-3 border-b flex items-center justify-between">
+    <p class="text-sm font-bold text-slate-800"><i class="fas fa-calendar text-blue-600"></i> Sessions d’examen</p>
+    <a href="{% url 'examens:sessions' %}" class="text-xs text-blue-600 underline">Toutes les sessions →</a>
+  </div>
   <div class="overflow-x-auto">
-    <table class="w-full text-sm min-w-[620px]">
-      <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500"><th class="px-4 py-2 text-left">Examen</th><th class="px-4 py-2 text-left">Année</th><th class="px-4 py-2 text-left">Session</th><th class="px-4 py-2">Date</th><th class="px-4 py-2 text-left">Centre</th><th class="px-4 py-2">Candidats</th></tr></thead>
+    <table class="w-full text-sm min-w-[760px]">
+      <thead><tr class="bg-slate-50 text-[10px] uppercase text-slate-500"><th class="px-4 py-2 text-left">Examen</th><th class="px-4 py-2 text-left">Année</th><th class="px-4 py-2 text-left">Type</th><th class="px-4 py-2">Début</th><th class="px-4 py-2">Fin</th><th class="px-4 py-2 text-left">Académie</th><th class="px-4 py-2 text-left">Centre</th><th class="px-4 py-2">Statut</th><th class="px-4 py-2">Candidats</th></tr></thead>
       <tbody class="divide-y">
         {% for s in sessions %}<tr>
           <td class="px-4 py-3 font-semibold">{{ s.get_type_display }}</td>
           <td class="px-4 py-3">{{ s.academic_year.name }}</td>
-          <td class="px-4 py-3">{{ s.get_session_display }}</td>
-          <td class="px-4 py-3 text-center">{{ s.date|date:"d/m/Y" }}</td>
-          <td class="px-4 py-3">{{ s.center|default:"—" }}</td>
+          <td class="px-4 py-3">{{ s.kind }}</td>
+          <td class="px-4 py-3 text-center">{{ s.start_date|date:"d/m/Y"|default:"—" }}</td>
+          <td class="px-4 py-3 text-center">{{ s.end_date|date:"d/m/Y"|default:"—" }}</td>
+          <td class="px-4 py-3 text-xs">{{ s.academy|default:"—" }}</td>
+          <td class="px-4 py-3 text-xs">{{ s.center|default:"—" }}</td>
+          <td class="px-4 py-3 text-center text-xs">{{ s.get_status_display }}</td>
           <td class="px-4 py-3 text-center font-bold text-blue-700">{{ s.candidates.count }}</td>
-        </tr>{% empty %}<tr><td colspan="6" class="py-10 text-center text-slate-400">Aucune session. Créez-en une pour commencer.</td></tr>{% endfor %}
+        </tr>{% empty %}<tr><td colspan="9" class="py-10 text-center text-slate-400">Aucune session. Créez-en une pour commencer.</td></tr>{% endfor %}
       </tbody>
     </table>
   </div>

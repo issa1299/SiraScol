@@ -59,10 +59,38 @@ class ExamensTests(TestCase):
         session.save()
 
     def test_menu_pages_load(self):
-        for name in ('dashboard', 'candidats_def', 'candidats_bac', 'inscriptions',
-                     'documents', 'lists_stats', 'results', 'session_create', 'excel_import'):
+        for name in ('dashboard', 'sessions', 'candidats_def', 'candidats_bac',
+                     'inscriptions', 'documents', 'lists_stats', 'transmission',
+                     'results', 'session_create', 'excel_import'):
             response = self.client.get(reverse('examens:' + name))
             self.assertEqual(response.status_code, 200, name)
+
+    def test_phase1_session_fields_and_status(self):
+        response = self.client.post(reverse('examens:session_create'), {
+            'type': 'bac',
+            'academic_year': self.year.pk,
+            'kind': 'Rattrapage spécial',
+            'start_date': '10/06/2027',
+            'end_date': '20/06/2027',
+            'academy': 'Académie de Bamako',
+            'center': 'Centre Test',
+            'status': 'preparation',
+        })
+        self.assertEqual(response.status_code, 302)
+        session = ExamSession.objects.get(kind='Rattrapage spécial')
+        self.assertEqual(session.start_date, date(2027, 6, 10))
+        self.assertEqual(session.end_date, date(2027, 6, 20))
+        self.assertEqual(session.academy, 'Académie de Bamako')
+        self.assertEqual(session.status, 'preparation')
+        self.assertFalse(session.is_open)
+        self.client.post(reverse('examens:session_status', args=[session.pk]),
+                         {'status': 'ouverte'})
+        session.refresh_from_db()
+        self.assertEqual(session.status, 'ouverte')
+        self.assertTrue(session.is_open)
+        html = self.client.get(reverse('examens:sessions')).content.decode('utf8')
+        self.assertIn('Académie de Bamako', html)
+        self.assertIn('Rattrapage spécial', html)
 
     def test_single_sidebar_entry_for_exams(self):
         html = self.client.get(reverse('examens:dashboard')).content.decode('utf8')

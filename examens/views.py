@@ -21,7 +21,7 @@ from core.permissions import role_required
 from core.year_context import get_selected_year
 from students.models import Enrollment, Student
 
-from .forms import CandidateForm
+from .forms import CandidateForm, SessionForm
 from .models import Candidate, ExamSession
 
 
@@ -35,20 +35,24 @@ def _base(request, section, **extra):
         'today': date.today(),
         'year': get_selected_year(request),
         'menu': [
+            {'key': 'dashboard', 'label': 'Tableau de bord',
+             'icon': 'fa-gauge-high', 'url': reverse('examens:dashboard')},
+            {'key': 'sessions', 'label': 'Sessions',
+             'icon': 'fa-calendar', 'url': reverse('examens:sessions')},
             {'key': 'candidats_def', 'label': 'Candidats DEF (9ᵉ année)',
              'icon': 'fa-user-graduate', 'url': reverse('examens:candidats_def')},
             {'key': 'candidats_bac', 'label': 'Candidats BAC (12ᵉ année)',
              'icon': 'fa-user-tie', 'url': reverse('examens:candidats_bac')},
-            {'key': 'inscriptions', 'label': 'Inscriptions aux examens',
+            {'key': 'inscriptions', 'label': 'Inscriptions',
              'icon': 'fa-file-signature', 'url': reverse('examens:inscriptions')},
-            {'key': 'documents', 'label': 'Documents des candidats',
+            {'key': 'documents', 'label': 'Documents',
              'icon': 'fa-folder-open', 'url': reverse('examens:documents')},
             {'key': 'listes', 'label': 'Listes et statistiques',
              'icon': 'fa-chart-bar', 'url': reverse('examens:lists_stats')},
-            {'key': 'resultats', 'label': 'Résultats des examens',
+            {'key': 'transmission', 'label': 'Transmission des listes',
+             'icon': 'fa-paper-plane', 'url': reverse('examens:transmission')},
+            {'key': 'resultats', 'label': 'Résultats',
              'icon': 'fa-trophy', 'url': reverse('examens:results')},
-            {'key': 'dashboard', 'label': 'Sessions',
-             'icon': 'fa-calendar', 'url': reverse('examens:dashboard')},
         ],
     }
     ctx.update(extra)
@@ -327,23 +331,98 @@ def results(request):
 
 
 @role_required('directeur', 'secretaire', 'admin')
+def sessions_home(request):
+    """Liste des sessions, filtrée par année de travail."""
+    year = get_selected_year(request)
+    qs = ExamSession.objects.select_related('academic_year')
+    if year:
+        qs = qs.filter(academic_year=year)
+    type_filter = request.GET.get('type', '')
+    status_filter = request.GET.get('status', '')
+    if type_filter:
+        qs = qs.filter(type=type_filter)
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+    return render(request, 'examens/sessions.html', _base(
+        request, 'sessions', sessions=qs, types=ExamSession.TYPE_CHOICES,
+        statuses=ExamSession.STATUS_CHOICES, type_filter=type_filter,
+        status_filter=status_filter,
+    ))
+
+
+@role_required('directeur', 'secretaire', 'admin')
 def session_create(request):
     is_modal = request.GET.get('modal') == '1' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
     if request.method == 'POST':
-        ExamSession.objects.update_or_create(
-            type=request.POST.get('type'), academic_year_id=request.POST.get('academic_year'),
-            session=request.POST.get('session', 'normal'),
-            defaults={'date': request.POST.get('date') or date.today(),
-                      'center': request.POST.get('center', '')},
-        )
-        messages.success(request, 'Session d’examen enregistrée.')
-        return redirect('examens:dashboard')
-    years = AcademicYear.objects.order_by('-is_current', '-start_date')
+        form = SessionForm(request.POST)
+        if form.is_valid():
+            data = form.cleaned_data
+            legacy = ('rattrapage' if 'rattrapage' in data['kind'].lower() else 'normal')
+            ExamSession.objects.update_or_create(
+                type=data['type'], academic_year=data['academic_year'], kind=data['kind'],
+                defaults={
+                    'date': data['start_date'] or date.today(),
+                    'start_date': data['start_date'], 'end_date': data['end_date'],
+                    'academy': data['academy'], 'center': data['center'],
+                    'status': data['status'], 'session': legacy,
+                },
+            )
+            messages.success(request, 'Session d’examen enregistrée.')
+            return redirect('examens:sessions')
+        messages.error(request, 'Vérifiez les champs de la session.')
+    else:
+        year = get_selected_year(request)
+        form = SessionForm(initial={
+            'type': 'def', 'kind': 'normale', 'status': 'preparation',
+            'start_date': date.today(), 'end_date': date.today(),
+            'academic_year': year,
+        })
     template = 'examens/session_form_modal.html' if is_modal else 'examens/session_form.html'
     return render(request, template, _base(
-        request, 'dashboard', years=years, types=ExamSession.TYPE_CHOICES,
-        sessions=ExamSession.SESSION_CHOICES, form_action=reverse('examens:session_create'),
+        request, 'sessions', form=form,
+        form_action=reverse('examens:session_create'),
     ))
+
+
+@role_required('directeur', 'secretaire', 'admin')
+def session_edit(request, pk):
+    session = get_object_or_404(ExamSession, pk=pk)
+    if request.method == 'POST':
+        form = SessionForm(request.POST, instance=session)
+        if form.is_valid():
+            data = form.cleaned_data
+            form.save(commit=False)
+            session.date = data['start_date'] or session.date
+            session.session = ('rattrapage' if 'rattrapage' in data['kind'].lower()
+                               else 'normal')
+            session.save()
+            messages.success(request, 'Session mise à jour.')
+            return redirect('examens:sessions')
+        messages.error(request, 'Vérifiez les champs de la session.')
+    else:
+        form = SessionForm(instance=session)
+    return render(request, 'examens/session_form.html', _base(
+        request, 'sessions', form=form, is_edit=True, form_action=request.path,
+    ))
+
+
+@role_required('admin', 'directeur')
+@require_POST
+def session_status(request, pk):
+    """Ouvre ou clôture définitivement une session (directeur uniquement)."""
+    session = get_object_or_404(ExamSession, pk=pk)
+    status = request.POST.get('status')
+    if status in dict(ExamSession.STATUS_CHOICES):
+        session.status = status
+        session.save()
+        messages.success(request, f'Session passée en « {session.get_status_display()} ».')
+    return redirect('examens:sessions')
+
+
+@role_required('directeur', 'secretaire', 'admin')
+def transmission_home(request):
+    """Onglet Transmission des listes (implémenté en phase 5)."""
+    return render(request, 'examens/transmission.html', _base(request, 'transmission'))
 
 
 @role_required('directeur', 'secretaire', 'admin')
